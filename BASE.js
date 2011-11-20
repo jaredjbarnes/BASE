@@ -85,6 +85,10 @@
       return obj;
     };
 
+    var clonePrototype = function(deep){
+        return clone(this, deep);
+    };
+
     (function(){
         var dEval = function (src, callback, onerror) {
             var script = document.createElement("script");
@@ -256,7 +260,7 @@
         
         Object.defineProperties(Object.prototype, {
             "clone":{
-                value: clone,
+                value: clonePrototype,
                 enumerable: false,
                 writable: false
             },
