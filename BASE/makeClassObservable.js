@@ -117,63 +117,133 @@
            for (var x in instance) (function (x) {
              if (typeof instance[x] !== 'function') {
                variables[x] = instance[x];
-               var hasGetter = instance.__lookupGetter__(x);
-               var hasSetter = instance.__lookupSetter__(x);
+               
+               var descriptor = Object.getOwnPropertyDescriptor(instance, x);
+               
+               var hasGetter = descriptor.get;
+               var hasSetter = descriptor.set;
               
                //If it has a getter already, then let the getter handle the response.
                if (hasGetter) {
-                 instance.__defineGetter__(x, function () {
-                   return hasGetter.apply(instance, arguments);
+                 
+                 Object.defineProperty(instance, x, {
+                    enumerable: true,
+                    configurable: true,
+                    get: hasGetter
                  });
+                 
                } else {
-                 instance.__defineGetter__(x, function () {
-                   return variables[x];
+                 Object.defineProperty(instance, x, {
+                    enumerable: true,
+                    configurable: true,
+                    get: function(){
+                        return variables[x];
+                    }
                  });
                }
               
                if (hasSetter) {
-                 instance.__defineSetter__(x, function (val) {
-                   var fireEvents = instance.notifyObservers.enabled;
-                   var oldValue = variables[x];
-                   var event = new Event(x);
+                 
+                 Object.defineProperty(instance, x, {
+                    writable: true,
+                    enumerable: true,
+                    configurable: true,
+                    set: function (val) {
+                        var fireEvents = instance.notifyObservers.enabled;
+                        
                   
-                   event.__defineGetter__("newValue", function(){return val;});
-                   event.__defineGetter__("oldValue", function(){return oldValue;});
-                   event.__defineGetter__("property", function(){return x;});
-                   event.target = instance;
+                        if (fireEvents) {
+                            instance.notifyObservers.enabled = false;
+                        };
                   
+                        hasSetter.apply(instance, arguments);
+                        if (fireEvents) {
+                            instance.notifyObservers.enabled = true;
+                        }
                   
-                   if (fireEvents) {
-                     instance.notifyObservers.enabled = false;
-                   };
-                  
-                   hasSetter.apply(instance, arguments);
-                   if (fireEvents) {
-                     instance.notifyObservers.enabled = true;
-                   }
-                  
-                   //Trigger event
-                   if (oldValue !== val && instance[x]===val) instance.notifyObservers(event);
-                  
-                  
+                        //Trigger event
+                        if (oldValue !== val && instance[x]===val){
+                            var oldValue = variables[x];
+                            var event = new Event(x);
+                        
+                            Object.defineProperties(event, {
+                                "newValue": {
+                                    get: function(){
+                                        return val;
+                                    },
+                                    enumerable: true
+                                },
+                                "oldValue": {
+                                    get: function(){
+                                        return oldValue;
+                                    },
+                                    enumerable: true
+                                },
+                                "property": {
+                                    get: function(){
+                                        return x;
+                                    },
+                                    enumerable: true
+                                },
+                                "target": {
+                                    get: function(){
+                                        return instance;
+                                    },
+                                    enumerable: true
+                                }
+                            });
+                        
+                            instance.notifyObservers(event);
+                        }
+                    }
                  });
-               } else {
-                 if (!hasGetter && !hasSetter) {
-                   instance.__defineSetter__(x, function (val) {
-                     var event = new Event(x);
-                     var oldValue = variables[x];
-                     var event = new Event(x);
+                 
+               } else if (!hasGetter && !hasSetter) {
+                 
+                   
+                   Object.defineProperty(instance, x, {
+                        set: function (val) {
+                            variables[x] = val;
+                            //Trigger event
+                            if (oldValue !== val){
+                                var event = new Event(x);
+                                var oldValue = variables[x];
+                                var event = new Event(x);
                     
-                     event.__defineGetter__("newValue", function(){return val;});
-                     event.__defineGetter__("oldValue", function(){return oldValue;});
-                     event.__defineGetter__("property", function(){return x;});
+                                Object.defineProperties(event, {
+                                    "newValue": {
+                                        get: function(){
+                                            return val;
+                                        },
+                                        enumerable: true
+                                    },
+                                    "oldValue": {
+                                        get: function(){
+                                            return oldValue;
+                                        },
+                                        enumerable: true
+                                    },
+                                    "property": {
+                                        get: function(){
+                                            return x;
+                                        },
+                                        enumerable: true
+                                    },
+                                    "target": {
+                                        get: function(){
+                                            return instance;
+                                        },
+                                        enumerable: true
+                                    }
+                                });
+                                
+                                instance.notifyObservers(event);
+                            }
                     
-                     variables[x] = val;
-                     //Trigger event
-                     if (oldValue !== val) instance.notifyObservers(event);
-                    
+                        }
                    });
-                 }
+                   
+                 
                }
              }
            })(x);
