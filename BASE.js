@@ -1,10 +1,28 @@
 //Scopes variables
 (function () {
     
-    var BASE = window.BASE = {};
+    var extend = function(NewClass, prototype){
+        var OldClass = this;
+        
+        NewClass.prototype = new OldClass();
+        Object.defineProperties(NewClass.prototype, {
+            "superConstructor":{
+                get: function(){return OldClass;},
+                enumerable: false,
+                configurable: false
+            }
+        });
+        
+        for (var x in prototype){
+            NewClass.prototype[x] = prototype[x];
+        }
+        
+        return NewClass;
+        
+    };
     
     //Checks to see if an object exists at the specified namespace.
-    BASE.namespace = function (obj) {
+    var namespace = function (obj) {
         var a = obj.split('.');
         var length = a.length;
         var tmpObj;
@@ -31,7 +49,7 @@
     };
 
     //Checks to see if the 
-    var isObject = BASE.isObject = function (namespace) {
+    var isObject = function (namespace) {
         var a = namespace.split('.');
         var length = a.length;
         var tmpObj;
@@ -54,12 +72,12 @@
         return true;
     };
 
-    var clone = BASE.clone = function(proto, deep){
+    var clone = function(proto, deep){
       var obj = {};
       
       for (var x  in proto){
         if (typeof proto[x] === 'object' && deep && proto[x].nodeType === undefined){
-          obj[x] = BASE.clone(proto[x], deep);
+          obj[x] = clone(proto[x], deep);
         } else {
           obj[x] = proto[x];
         }
@@ -98,7 +116,7 @@
         var received = 1;
         var callbacks = [];
         
-        var require = BASE.require = function (namespaceArray, callback) {
+        var require = function (namespaceArray, callback) {
             callback = callback || function () { };
             namespaceArray = Object.prototype.toString.call(namespaceArray) === '[object Array]' ? namespaceArray : [namespaceArray];
             callback.dependencies = namespaceArray.slice(0);
@@ -122,7 +140,7 @@
     
                 for (var u = 0; u < namespaceArray.length; u++) {
                     sent++;
-                    url = BASE.require.getPath(namespaceArray[u]);
+                    url = require.getPath(namespaceArray[u]);
                     dEval(url, onSuccess, (function(n){ return function(){console.log('Error loading resource: '+n);};})(namespaceArray[u]));
                 }
     
@@ -137,13 +155,13 @@
         };
         
         var paths = {};
-        BASE.require.setPath = function(namespace, path){
+        require.setPath = function(namespace, path){
                 if (namespace && path) paths[namespace] = path;
         };
-        BASE.require.getPath = function(namespace){
+        require.getPath = function(namespace){
             var path = '';
-            var prefix = BASE.require.getPrefix(namespace);
-            var dir = BASE.require.root;
+            var prefix = require.getPrefix(namespace);
+            var dir = require.root;
             
             if (prefix.length > 0) {
                 if (prefix === namespace) {
@@ -163,7 +181,7 @@
             return typeof dir === 'string' ? dir + '/' +path : path ;
         };
         
-        BASE.require.getPrefix = function(namespace) {
+        require.getPrefix = function(namespace) {
             var prefix;
             var deepestPrefix = '';
 
@@ -182,10 +200,10 @@
             return deepestPrefix;
         };
         
-        BASE.require.root = null;
-        BASE.require.pending = {};
-        BASE.require.enableDebugging = false;
-        BASE.require.sweep = function () {
+        require.root = null;
+        require.pending = {};
+        require.enableDebugging = false;
+        require.sweep = function () {
             var dependencies;
             for (var x = 0; x < callbacks.length; x++) {
                 dependencies = callbacks[x].dependencies;
@@ -210,7 +228,7 @@
             }
         };
     
-        BASE.require.getUnloaded = function () {
+        require.getUnloaded = function () {
             var ret = [];
             for (var x = 0; x < callbacks.length; x++) {
                 ret.concat(callbacks[x]);
@@ -218,6 +236,37 @@
             return ret;
         };
 
+        Object.defineProperties(Object, {
+            "require": {
+                value: require,
+                enumerable: false,
+                writable: false
+            },
+            "namespace": {
+                value: namespace,
+                enumerable: false,
+                writable: false
+            },
+            "clone":{
+                value: clone,
+                enumerable: false,
+                writable: false
+            }
+        });
+        
+        Object.defineProperties(Object.prototype, {
+            "clone":{
+                value: clone,
+                enumerable: false,
+                writable: false
+            },
+            "extend": {
+                value: extend,
+                enumerable: false,
+                writable: false
+            }
+        });
+        
     })();
     
 })();
