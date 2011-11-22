@@ -1,4 +1,3 @@
-
 (function(){var Event=function(type){if(!(this instanceof Event)){return new Event(type);}
 var event=this;Object.defineProperty(event,"type",{get:function(){return type;}});};var enableObserving=function(){var instance=this;var propertyListeners={};var changeListeners=[];instance.Event=Event;var notifyObservers=function(event){if(event instanceof Event&&notifyObservers.enabled){for(var y=0;y<changeListeners.length;y++){changeListeners[y].apply(instance,arguments);}
 var listenerArray=propertyListeners[event.type];if(listenerArray){for(var x=0;x<listenerArray.length;x++){listenerArray[x].apply(instance,arguments);}}}};notifyObservers.enabled=true;var observe=function(type,callback){if(arguments.length===2){if(!propertyListeners[type]){propertyListeners[type]=[];}
