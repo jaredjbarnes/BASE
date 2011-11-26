@@ -20,7 +20,6 @@
         //Listener object.
            var propertyListeners = {};
            var changeListeners = [];
-           instance.Event = Event;
           
            //Emits a property change event, and invokes callbacks.
            var notifyObservers = function (event) {
