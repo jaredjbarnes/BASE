@@ -1,23 +1,8 @@
 ﻿BASE.require(["jQuery", "jQuery.loadFile", "jQuery.fn.popView", "jQuery.fn.region"], function () {
     jQuery.fn.pushView = function (viewUrl, options, callback) {
-        switch (arguments.length) {
-            case 2:
-                callback = options;
-                options = {};
-                break;
-            case 1:
-                options = {};
-                callback = function () { };
-                break;
-            case 0:
-                options = {};
-                callback = function () { };
-                break;
-        }
 
-        if (typeof callback !== "function") {
-            callback = function () { };
-        }
+        callback = typeof options === 'function' ? options : callback || function () { };
+        options = typeof options === 'object' ? options : {};
 
         var beforeDisplay = options.beforeDisplay || function () { };
 
@@ -51,13 +36,22 @@
                         }
 
                         newElem = $(html).css({ display: "block", position: "absolute", top: "0px", left: (-region.width) + "px" }).appendTo(elem);
+                        var $scripts = newElem.find("script[type='text/module']");
+
+                        $scripts.each(function () {
+                            var $script = $(this);
+                            var text = $script.html();
+                            var script = new Function(text);
+
+                            script.apply(newElem[0], options.args || []);
+                        });
 
                         beforeDisplay.apply(newElem, []);
 
                         newElem.css({
                             left: region.width
                         }).animate({ left: 0 }, 300, "easeInQuad", function () {
-                            afterDisplay.apply(newElem, []);
+                            finalize();
                         });
 
                         if (oldElem) {
@@ -66,16 +60,24 @@
                             });
                         }
 
-                        finalize();
                     } else {
                         $this.children().css({ display: "none" });
 
                         newElem = $(html).css({ display: "block", position: "absolute", top: "0px", left: "0px" });
+                        var $scripts = newElem.find("script[type='text/module']");
+
+                        $scripts.each(function () {
+                            var $script = $(this);
+                            var text = $script.html();
+                            script = new Function(text);
+
+                            script.apply(newElem[0], options.args || []);
+                        });
+
                         beforeDisplay.apply(newElem, []);
 
                         newElem.appendTo(elem);
 
-                        afterDisplay.apply(newElem, []);
                         finalize();
                     }
 

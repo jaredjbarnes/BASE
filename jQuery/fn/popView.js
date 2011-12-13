@@ -16,33 +16,36 @@
 
             var oldElem = array.pop();
             var newElem = array[array.length - 1];
-            if (!newElem) {
-                newElem = $this.children().first();
-            }
+
             var finalize = function () {
-                if (array.length > 0 && oldElem && newElem) {
+                if (oldElem) {
                     oldElem.remove();
+                }
+
+                if (newElem) {
                     newElem.css({ display: "block", position: "absolute" });
 
                     var onDeactivate = new $.Event("deactivate");
                     onDeactivate.data = options.data || {};
                     newElem.trigger(onDeactivate);
-                }
 
+                }
                 callback.apply(newElem || null, [options.data || {}]);
 
             };
 
-            if (options.animate && newElem && oldElem) {
+            if (options.animate && oldElem) {
                 var region = $this.region();
 
-                oldElem.animate({ left: region.width + 'px' }, 300, "easeInQuad");
-                newElem.css({
-                    left: (-region.width) + "px",
-                    display: "block"
-                }).animate({ left: '0px' }, 300, "easeInQuad", function () {
+                oldElem.animate({ left: region.width + 'px' }, 300, "easeInQuad", function () { 
                     finalize();
                 });
+                if (newElem) {
+                    newElem.css({
+                        left: (-region.width) + "px",
+                        display: "block"
+                    }).animate({ left: '0px' }, 300, "easeInQuad");
+                } 
             } else {
                 if (newElem) newElem.css({ top: "0px", left: "0px", display: "block" });
                 finalize();

@@ -1,13 +1,17 @@
-(function () {
+/// <reference path="/js/scripts/Object/keys.js" />
+/// <reference path="/js/scripts/Array/prototype/indexOf.js" />
+/// <reference path="/js/scripts/Array/prototype/forEach.js" />
 
-    var indexOf = Array.prototype.indexOf || function (val) {
-        for (var x = 0; x < this.length; x++) {
-            if (val === this[x]) {
-                return x;
-            }
-        }
-        return -1;
-    };
+BASE.require(["Array.prototype.indexOf", "Object.keys", "Array.prototype.forEach"], function () {
+
+    var camelCase = (function () {
+        var re = /^./i
+        return function (x) {
+            return x.replace(re, function (x) {
+                return x.toUpperCase();
+            });
+        };
+    } ());
 
     var Event = function (type) {
         ///<summary>
@@ -114,19 +118,21 @@
             if (callback && typeof type === "string" && propertyListeners[type]) {
                 var listenerArray = propertyListeners[type];
 
-                var index = indexOf.apply(listenerArray, [callback]);
+                var index = listenerArray.indexOf(callback);
                 if (index > -1) {
                     listenerArray.splice(index, 1);
                 }
 
             } else if (typeof type === "function") {
-                for (var a in propertyListeners) {
-                    var index = indexOf.apply(propertyListeners[a], [type]);
+
+                Object.keys(propertyListeners).forEach(function (a) {
+                    var index = propertyListeners[a].indexOf(type);
                     if (index > -1) {
                         propertyListeners[a].splice(index, 1);
                     }
-                }
-                index = indexOf.apply(changeListeners, [type]);
+                });
+
+                var index = changeListeners.indexOf(type);
                 if (index > -1) {
                     changeListeners.splice(index, 1);
                 }
@@ -136,14 +142,13 @@
         //This is the object where we store the variable values.
         var variables = {};
 
-        //For loop wrapped with an instant invocation of an anonomous function to preserve scope.
-        for (var x in instance) (function (x) {
+        //Get the property names using Object.keys, then forEach the values.
+        Object.keys(instance).forEach(function (x) {
             if (typeof instance[x] !== 'function') {
                 variables[x] = instance[x];
 
-                var camelCase = x.replace(/^./i, function (x) { return x.toUpperCase(); });
-                var getterName = "get" + camelCase;
-                var setterName = "set" + camelCase;
+                var getterName = "get" + camelCase(x);
+                var setterName = "set" + camelCase(x);
 
                 var hasGetter = instance[getterName];
                 var hasSetter = instance[setterName];
@@ -208,9 +213,8 @@
                     };
                 }
             }
-        })(x);
-
+        });
     };
 
 
-})();
+});

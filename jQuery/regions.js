@@ -1,13 +1,13 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery/mouseManager.js" />
-/// <reference path="/scripts/BASE/Region.js" />
+/// <reference path="/scripts/WEB/Region.js" />
 
 BASE.require(["jQuery.mouseManager"], function () {
     var droppableRegions = {};
 
     jQuery.regions = {
         addDroppable: function (region, options) {
-            if (region instanceof BASE.Region) {
+            if (region instanceof WEB.Region) {
                 options = options || {};
                 options.condition = options.condition || function () { return true; };
                 droppableRegions[region] = {

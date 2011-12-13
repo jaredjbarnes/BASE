@@ -1,10 +1,10 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery.js" />
-/// <reference path="/scripts/BASE/Region.js" />
+/// <reference path="/scripts/WEB/Region.js" />
 
-BASE.require(['jQuery', 'BASE.Region'], function () {
+BASE.require(['jQuery', 'WEB.Region'], function () {
 
-    var Region = BASE.Region;
+    var Region = WEB.Region;
 
     //jquery plugins
     jQuery.fn.region = function () {
