@@ -88,9 +88,6 @@ BASE.require(["jQuery.fn.region", "WEB.Region", "BASE.enableEventEmitting", "Arr
                 //Dragged Node Region
                 nregion = $node.region();
 
-                nintersection = region.intersect(nregion);
-                cintersection = region.intersect(cregion);
-
                 dropRegion = dropRegions[z];
                 //Adjust region to pinned area if its pinned.
                 if (dropRegion.pinToNode && dropRegion.pinTo) {
@@ -118,6 +115,9 @@ BASE.require(["jQuery.fn.region", "WEB.Region", "BASE.enableEventEmitting", "Arr
                         dropRegion.setXYOriginByRegion(pinArray[0], pinArray[1], pinNodeRegion);
                     }
                 }
+
+                nintersection = region.intersect(nregion);
+                cintersection = region.intersect(cregion);
 
                 if (nintersection && !dropRegion.nodeHasEntered) {
                     dropRegion.nodeHasEntered = true;
@@ -199,15 +199,17 @@ BASE.require(["jQuery.fn.region", "WEB.Region", "BASE.enableEventEmitting", "Arr
                 }
                 //TODO: make this mousedrop and nodedrop
                 if (dropRegion.mouseHasEntered) {
-                    mouseDrop = new dropRegion.Event("mouseDrop");
+                    mouseDrop = new dropRegion.Event("mousedrop");
                     mouseDrop.jQueryEvent = e;
                     mouseDrop.emit();
 
                     if (mouseDrop.isDropHandled) {
                         e.isDropHandled = true;
                     }
-                } else if (dropRegion.nodeHasEntered) {
-                    nodeDrop = new dropRegion.Event("nodeDrop");
+                }
+
+                if (dropRegion.nodeHasEntered) {
+                    nodeDrop = new dropRegion.Event("nodedrop");
                     nodeDrop.jQueryEvent = e;
                     nodeDrop.emit();
                     if (nodeDrop.isDropHandled) {
@@ -224,8 +226,8 @@ BASE.require(["jQuery.fn.region", "WEB.Region", "BASE.enableEventEmitting", "Arr
 
             dm.node = node = null;
             dm.event = null;
-
             $(document).unbind("mousemove", mousemove);
+            modeTypeRegions = {};
         };
 
         $(document).bind("mousedown", mousedown);
