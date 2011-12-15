@@ -3,7 +3,7 @@
 /// <reference path="/scripts/jQuery/fn/region.js" />
 /// <reference path="/scripts/WEB/Region.js" />
 
-BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function () {
+BASE.require(["jQuery.mouseManager", "WEB.Region", "jQuery.fn.region"], function () {
     var defaultDm = $.mouseManager;
 
     var indexOf = Array.prototype.indexOf || function (val) {
@@ -22,7 +22,8 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
 
         var listeners = {
             start: options.start,
-            stop: options.stop
+            stop: options.stop,
+            dropped: options.dropped
         };
 
         var proxyNodes = options.proxyNodes || [];
@@ -80,7 +81,7 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
                         if (containmentRegion || containmentNode) {
                             var cregion = containmentNode ? $(containmentNode).region() : containmentRegion;
                             var eregion = $elem.region();
-                            var nregion = new WEB.Region(newY, newX+eregion.width, newY+eregion.height, newX);
+                            var nregion = new WEB.Region(newY, newX + eregion.width, newY + eregion.height, newX);
 
                             if (nregion.top < cregion.top) {
                                 newY = newY + (cregion.top - nregion.top);
@@ -93,7 +94,7 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
                             if (nregion.bottom > cregion.bottom) {
                                 newY = newY + (cregion.bottom - nregion.bottom);
                             }
-                            
+
                             if (nregion.left < cregion.left) {
                                 newX = newX + (cregion.left - nregion.left);
                             }
@@ -123,7 +124,7 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
                     }
                 };
 
-                var onEnd = function () {
+                var onEnd = function (e) {
                     dm.unobserve("xy", onDrag);
                     var event = $.Event("dragstop");
                     event.mouseManager = dm;
@@ -131,6 +132,14 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
                     event.pageY = dm.xy.y;
 
                     $elem.trigger(event);
+
+                    var devent = $.Event("dragdropped");
+                    devent.mouseManager = dm;
+                    devent.pageX = dm.xy.x;
+                    devent.pageY = dm.xy.y;
+                    devent.isDropHandled = dm.event.isDropHandled;
+
+                    $elem.trigger(devent);
                 };
 
                 var isDragging = function (e) {
@@ -147,12 +156,15 @@ BASE.require(["jQuery.mouseManager","WEB.Region","jQuery.fn.region"], function (
                     }
                 };
 
-                if (dm.isDragging) {
-                    isDragging.apply(null, [{ newValue: true}]);
-                }
+                $elem.bind("mousedown", function () {
+                    if (dm.isDragging) {
+                        isDragging.apply(null, [{ newValue: true}]);
+                    }
 
-                dm.observe("isDragging", isDragging);
-                $elem.data({ isDragging: isDragging });
+                    dm.observe("isDragging", isDragging);
+                    $elem.data({ isDragging: isDragging });
+                });
+
 
             }
         });

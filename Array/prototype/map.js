@@ -1,4 +1,4 @@
-﻿if (!Array.prototype.hasOwnProperty("map")){
+﻿if (!Array.prototype.hasOwnProperty("map")) {
     Array.prototype.map = function (fn, thisp) {
         var i;
         var length = this.length;

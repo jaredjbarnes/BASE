@@ -14,7 +14,8 @@ BASE.require(["jQuery.mouseManager"], function () {
         ///3. (Optional) mouseleave - Callback invoked when the mouse leaves the region of the droppable.
         ///4. (Optional) mouseenter - Callback invoked when the node enters the region of the droppable.
         ///5. (Optional) nodeleave - Callback invoked when the node leaves the region of the droppable.
-        ///6. (Optional) drop - Callback invoked when the dragged node is dropped in the region.
+        ///6. (Optional) drop - Callback invoked when the dragged node is dropped in the region. 
+        ///There is a special property to the drop event named "isDropHandled". If this is set to true, it notifies the dragged element that the drop has been handled through the dragdropped event.
         ///</param>
         ///</returns>
 
@@ -82,8 +83,12 @@ BASE.require(["jQuery.mouseManager"], function () {
                                     event.draggedNode = dm.node;
                                     event.mouseManager = dm;
                                     event.mouseEvent = ev;
-
+                                    event.isDropHandled = false;
                                     $this.trigger(event);
+
+                                    if (event.isDropHandled) {
+                                        return true;
+                                    }
                                 }
                             });
                         }

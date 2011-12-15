@@ -1,8 +1,8 @@
-﻿/// <reference path="/scripts/BASE.js" />
-/// <reference path="/scripts/WEB/Region.js" />
-/// <reference path="/scripts/jQuery/fn/region.js" />
+﻿/// <reference path="/js/scripts/BASE.js" />
+/// <reference path="/js/scripts/WEB/Region.js" />
+/// <reference path="/js/scripts/jQuery/fn/region.js" />
 
-BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
+BASE.require(["jQuery.fn.region", "WEB.Region", "BASE.enableEventEmitting", "Array.prototype.forEach"], function () {
     BASE.namespace("WEB");
     WEB.MouseManager = function () {
         if (!(this instanceof WEB.MouseManager)) {
@@ -14,9 +14,10 @@ BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
         dm.isDragging = false;
         dm.node = null;
         dm.event = null;
+        dm.mode = "default";
 
-        var dropNodes = [];
-        var dropRegions = [];
+        var modeTypeRegions = {};
+
         var node;
 
         var mousedown = function (e) {
@@ -70,49 +71,18 @@ BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
             var x = xy.x;
             var y = xy.y;
             var z; // For loops
-
-            for (z = 0; z < dropNodes.length; z++) {
-                $droppable = $(dropNodes[z].node);
-                //Droppable Region
-                region = $droppable.region();
-                //Mouse Region
-                cregion = new WEB.Region(y, x + 1, y + 1, x);
-                //Dragged Node Region
-                nregion = $node.region();
-
-                nintersection = region.intersect(nregion);
-                cintersection = region.intersect(cregion);
-
-                if (nintersection && !dropNodes[z].nodeHasEntered) {
-                    dropNodes[z].nodeHasEntered = true;
-                    e.intersection = nintersection;
-                    e.draggedNode = $node[0];
-                    dropNodes[z].nodeenter.apply($droppable, [e]);
-                } else if (!nintersection) {
-                    if (dropNodes[z].nodeHasEntered) {
-                        e.draggedNode = $node[0];
-                        dropNodes[z].nodeleave.apply($droppable, [e]);
-                    }
-                    dropNodes[z].nodeHasEntered = false;
-                }
-
-                if (cintersection && !dropNodes[z].mouseHasEntered) {
-                    dropNodes[z].mouseHasEntered = true;
-                    e.intersection = cintersection;
-                    e.draggedNode = $node[0];
-                    dropNodes[z].mouseenter.apply($droppable, [e]);
-                } else if (!cintersection) {
-                    if (dropNodes[z].mouseHasEntered) {
-                        e.draggedNode = $node[0];
-                        dropNodes[z].mouseleave.apply($droppable, [e]);
-                    }
-                    dropNodes[z].mouseHasEntered = false;
-                }
-            }
+            var pinArray;
+            var pinNodeRegion;
+            var dropRegion;
+            var dropRegions = modeTypeRegions[dm.mode] || [];
+            var mouseEnter;
+            var mouseLeave;
+            var nodeEnter;
+            var nodeLeave;
 
             for (z = 0; z < dropRegions.length; z++) {
                 //Droppable Region
-                region = dropRegions[z].region;
+                region = dropRegions[z];
                 //Mouse Region
                 cregion = new WEB.Region(y, x + 1, y + 1, x);
                 //Dragged Node Region
@@ -121,30 +91,66 @@ BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
                 nintersection = region.intersect(nregion);
                 cintersection = region.intersect(cregion);
 
-                if (nintersection && !dropRegions[z].nodeHasEntered) {
-                    dropRegions[z].nodeHasEntered = true;
-                    e.intersection = nintersection;
-                    e.draggedNode = $node[0];
-                    dropRegions[z].nodeenter.apply(region, [e]);
-                } else if (!nintersection) {
-                    if (dropRegions[z].nodeHasEntered) {
-                        e.draggedNode = $node[0];
-                        dropRegions[z].nodeleave.apply(region, [e]);
+                dropRegion = dropRegions[z];
+                //Adjust region to pinned area if its pinned.
+                if (dropRegion.pinToNode && dropRegion.pinTo) {
+                    pinArray = dropRegion.pinTo;
+                    pinNodeRegion = dropRegion.pinToNode.region();
+
+                    if (isNaN(pinArray[0]) || isNaN(pinArray[0])) {
+                        for (var p = 0; p < pinArray.length; p++) {
+                            switch (pinArray[p]) {
+                                case "top":
+                                    dropRegion.setTopByRegion(pinNodeRegion);
+                                    break;
+                                case "right":
+                                    dropRegion.setRightByRegion(pinNodeRegion);
+                                    break;
+                                case "bottom":
+                                    dropRegion.setBottomByRegion(pinNodeRegion);
+                                    break;
+                                case "left":
+                                    dropRegion.setLeftByRegion(pinNodeRegion);
+                                    break;
+                            }
+                        }
+                    } else {
+                        dropRegion.setXYOriginByRegion(pinArray[0], pinArray[1], pinNodeRegion);
                     }
-                    dropRegions[z].nodeHasEntered = false;
+                }
+
+                if (nintersection && !dropRegion.nodeHasEntered) {
+                    dropRegion.nodeHasEntered = true;
+                    nodeEnter = new dropRegion.Event("nodeenter");
+                    nodeEnter.intersection = nintersection;
+                    nodeEnter.draggedNode = $node[0];
+                    nodeEnter.jQueryEvent = e;
+                    nodeEnter.emit();
+                } else if (!nintersection) {
+                    if (dropRegion.nodeHasEntered) {
+                        nodeLeave = new dropRegion.Event("nodeleave");
+                        nodeLeave.draggedNode = $node[0];
+                        nodeLeave.jQueryEvent = e;
+                        nodeLeave.emit();
+                    }
+                    dropRegion.nodeHasEntered = false;
                 }
 
                 if (cintersection && !dropRegions[z].mouseHasEntered) {
-                    dropRegions[z].mouseHasEntered = true;
-                    e.intersection = cintersection;
-                    e.draggedNode = $node[0];
-                    dropRegions[z].mouseenter.apply(region, [e]);
+                    dropRegion.mouseHasEntered = true;
+                    mouseEnter = new dropRegion.Event("mouseenter");
+                    mouseEnter.intersection = cintersection;
+                    mouseEnter.draggedNode = $node[0];
+                    mouseEnter.jQueryEvent = e;
+                    mouseEnter.emit();
                 } else if (!cintersection) {
-                    if (dropRegions[z].mouseHasEntered) {
-                        e.draggedNode = $node[0];
-                        dropRegions[z].mouseleave.apply(region, [e]);
+                    if (dropRegion.mouseHasEntered) {
+                        mouseLeave = new dropRegion.Event("mouseleave");
+                        mouseLeave.draggedNode = $node[0];
+                        mouseLeave.jQueryEvent = e;
+                        mouseLeave.emit();
                     }
-                    dropRegions[z].mouseHasEntered = false;
+                    dropRegion.mouseHasEntered = false;
                 }
             }
 
@@ -153,27 +159,67 @@ BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
 
         var mouseup = function (e) {
             dm.event = e;
+            e.isDropHandled = false;
+            var z;
+            var pinArray;
+            var pinNodeRegion;
+            var dropRegion;
+            var mouseDrop;
+            var nodeDrop;
+            var dropRegions = modeTypeRegions[dm.mode] || [];
+
+            for (z = 0; z < dropRegions.length; z++) {
+                dropRegion = dropRegions[z];
+
+                //Adjust region to pinned area if its pinned.
+                if (dropRegion.pinToNode && dropRegion.pinTo && dropRegion.pinTo.length == 2) {
+                    pinArray = dropRegion.pinTo;
+                    pinNodeRegion = dropRegion.pinToNode.region();
+
+                    if (isNaN(pinArray[0])) {
+                        for (var p = 0; p < pinArray.length; p++) {
+                            switch (pinArray[p]) {
+                                case "top":
+                                    dropRegion.setTopByRegion(pinNodeRegion);
+                                    break;
+                                case "right":
+                                    dropRegion.setRightByRegion(pinNodeRegion);
+                                    break;
+                                case "bottom":
+                                    dropRegion.setBottomByRegion(pinNodeRegion);
+                                    break;
+                                case "left":
+                                    dropRegion.setLeftByRegion(pinNodeRegion);
+                                    break;
+                            }
+                        }
+                    } else {
+                        dropRegion.setXYOriginByRegion(pinArray[0], pinArray[1], pinNodeRegion);
+                    }
+                }
+                //TODO: make this mousedrop and nodedrop
+                if (dropRegion.mouseHasEntered) {
+                    mouseDrop = new dropRegion.Event("mouseDrop");
+                    mouseDrop.jQueryEvent = e;
+                    mouseDrop.emit();
+
+                    if (mouseDrop.isDropHandled) {
+                        e.isDropHandled = true;
+                    }
+                } else if (dropRegion.nodeHasEntered) {
+                    nodeDrop = new dropRegion.Event("nodeDrop");
+                    nodeDrop.jQueryEvent = e;
+                    nodeDrop.emit();
+                    if (nodeDrop.isDropHandled) {
+                        e.isDropHandled = true;
+                    }
+                }
+            }
+
             if (typeof dm.setIsDragging === "function") {
                 dm.setIsDragging(false);
             } else {
                 dm.isDragging = false;
-            }
-            var z;
-
-            for (z = 0; z < dropNodes.length; z++) {
-                if (dropNodes[z].mouseHasEntered && dropNodes[z].dropType === "mouse") {
-                    dropNodes[z].drop.apply(dropNodes[z].node, [e]);
-                } else if (dropNodes[z].nodeHasEntered && dropNodes[z].dropType === "node") {
-                    dropNodes[z].drop.call(dropNodes[z].node);
-                }
-            }
-
-            for (z = 0; z < dropRegions.length; z++) {
-                if (dropRegions[z].mouseHasEntered && dropRegions[z].dropType === "mouse") {
-                    dropRegions[z].drop.apply(dropRegions[z].region, [e]);
-                } else if (dropRegions[z].nodeHasEntered && dropRegions[z].dropType === "node") {
-                    dropRegions[z].drop.apply(dropRegions[z].region, [e]);
-                }
             }
 
             dm.node = node = null;
@@ -185,38 +231,62 @@ BASE.require(["jQuery.fn.region", "WEB.Region"], function () {
         $(document).bind("mousedown", mousedown);
         $(document).bind("mouseup", mouseup);
 
+        var listenerNames = ["mouseenter", "mouseleave", "nodeenter", "nodeleave", "nodeenter", "nodeleave", "drop"];
+
         dm.addRegionByNode = function (DOMNode, options) {
             if (DOMNode) {
                 options = options || {};
-                dropNodes.push({
+                options.pin = {
                     node: DOMNode,
-                    dropType: options.dropType || "mouse",
-                    mouseenter: options.mouseenter || function () { },
-                    mouseleave: options.mouseleave || function () { },
-                    nodeenter: options.nodeenter || function () { },
-                    nodeleave: options.nodeleave || function () { },
-                    drop: options.drop || function () { },
-                    mouseHasEntered: false,
-                    nodeHasEntered: false
+                    to: ["top", "left"]
+                };
+
+                var region = $(DOMNode).region();
+                BASE.enableEventEmitting(region);
+                var dropRegions = modeTypeRegions[options.mode || "default"];
+
+                if (!dropRegions) {
+                    dropRegions = modeTypeRegions[options.mode || "default"] = [];
+                }
+                region.pinToNode = options.pin.node ? $(options.pin.node) : undefined;
+                region.pinTo = options.pin.to || undefined;
+                region.mouseHasEntered = false;
+                region.nodeHasEntered = false;
+
+                listenerNames.forEach(function (value) {
+                    if (options[value]) {
+                        region.on(value, options[value]);
+                    }
                 });
+
+                dropRegions.push(region);
             }
         };
 
         dm.Region = WEB.Region;
         dm.addRegion = function (region, options) {
             options = options || {};
+            options.pin = options.pin || {};
+
             if (region instanceof WEB.Region) {
-                dropRegions.push({
-                    region: region,
-                    dropType: options.dropType || "mouse",
-                    mouseenter: options.mouseenter || function () { },
-                    mouseleave: options.mouseleave || function () { },
-                    nodeenter: options.nodeenter || function () { },
-                    nodeleave: options.nodeleave || function () { },
-                    drop: options.drop || function () { },
-                    mouseHasEntered: false,
-                    nodeHasEntered: false
+                BASE.enableEventEmitting(region);
+                var dropRegions = modeTypeRegions[options.mode || "default"];
+
+                if (!dropRegions) {
+                    dropRegions = modeTypeRegions[options.mode || "default"] = [];
+                }
+                region.pinToNode = options.pin.node ? $(options.pin.node) : undefined;
+                region.pinTo = options.pin.to || undefined;
+                region.mouseHasEntered = false;
+                region.nodeHasEntered = false;
+
+                listenerNames.forEach(function (value) {
+                    if (options[value]) {
+                        region.on(value, options[value]);
+                    }
                 });
+
+                dropRegions.push(region);
             }
         };
 

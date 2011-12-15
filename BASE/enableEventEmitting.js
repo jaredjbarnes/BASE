@@ -1,8 +1,8 @@
 ﻿(function () {
-    var EventEmitter = function () {
-        if (!this.isEmitter) {
+    BASE.enableEventEmitting = function (obj) {
+        var eventEmitter = obj;
+        if (!eventEmitter.isEmitter) {
             var listeners = {};
-            var eventEmitter = this;
 
             var Event = function (type) {
                 if (!(this instanceof Event)) {
@@ -47,7 +47,7 @@
             };
 
             eventEmitter.removeAllListeners = function () {
-                this.setListeners({});
+                eventEmitter.setListeners({});
             };
 
             eventEmitter.spliceListener = function (index, type, callback) {
@@ -66,7 +66,7 @@
                 listeners[type].push(callback);
             };
 
-            eventEmitter.on = this.addListener;
+            eventEmitter.on = eventEmitter.addListener;
             eventEmitter.once = function (type, callback) {
 
                 var once = function (e) {
@@ -119,19 +119,9 @@
                     listeners = o;
                 }
             };
-            Object.defineProperty(eventEmitter, "isEmitter", {
-                get: function () {
-                    return true;
-                }
-            });
+            eventEmitter.isEmitter = true;
             eventEmitter.Event = Event;
         }
     };
-
-    Object.defineProperty(Object.prototype, "enableEventEmitting", {
-        writable: false,
-        enumerable: false,
-        value: EventEmitter
-    });
 
 })();
