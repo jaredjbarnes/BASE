@@ -144,6 +144,9 @@
             ///This will only be invoked if all dependencies are loaded.
             ///</param>
             ///<returns type="undefined" />
+            
+            //Makes sure that all sweeping is done before making another request.
+            require.sweep();
             var namespaceArray = dependencies;
             callback = callback || function () { };
 
@@ -280,8 +283,6 @@
                     throw new Error("Failed to load all dependencies.");
                 }
                 require.sweep(tries);
-
-
             }
         };
 
