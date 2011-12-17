@@ -111,6 +111,9 @@
                ", height: " + this.height +
                ", width: " + this.width +
                "}");
+        },
+        copy: function () {
+            return new WEB.Region(this.top, this.right, this.bottom, this.left);
         }
     };
 

@@ -109,43 +109,48 @@ BASE.require(["jQuery.mouseManager", "WEB.Region", "jQuery.fn.region"], function
                 };
 
                 var onStart = function (e) {
-                    startXY = dm.xy;
-                    elemXY = $elem.region();
+                    dm.unobserve("xy", onDrag);
+                    if (dm.mode === "move") {
+                        startXY = dm.xy;
+                        elemXY = $elem.region();
 
-                    var event = $.Event("dragstart");
-                    event.mouseManager = dm;
-                    event.pageX = dm.xy.x;
-                    event.pageY = dm.xy.y;
-                    $elem.trigger(event);
+                        var event = $.Event("dragstart");
+                        event.mouseManager = dm;
+                        event.pageX = dm.xy.x;
+                        event.pageY = dm.xy.y;
+                        $elem.trigger(event);
 
-                    if (!event.isDefaultPrevented()) {
-                        dm.unobserve("xy", onDrag);
-                        dm.observe("xy", onDrag);
+
+                        if (!event.isDefaultPrevented()) {
+                            dm.observe("xy", onDrag);
+                        }
                     }
                 };
 
                 var onEnd = function (e) {
                     dm.unobserve("xy", onDrag);
-                    var event = $.Event("dragstop");
-                    event.mouseManager = dm;
-                    event.pageX = dm.xy.x;
-                    event.pageY = dm.xy.y;
+                    if (dm.mode === "move") {
+                        var event = $.Event("dragstop");
+                        event.mouseManager = dm;
+                        event.pageX = dm.xy.x;
+                        event.pageY = dm.xy.y;
 
-                    $elem.trigger(event);
+                        $elem.trigger(event);
 
-                    var devent = $.Event("dragdropped");
-                    devent.mouseManager = dm;
-                    devent.pageX = dm.xy.x;
-                    devent.pageY = dm.xy.y;
-                    devent.isDropHandled = dm.event.isDropHandled;
+                        var devent = $.Event("dragdropped");
+                        devent.mouseManager = dm;
+                        devent.pageX = dm.xy.x;
+                        devent.pageY = dm.xy.y;
+                        devent.isDropHandled = dm.event.isDropHandled;
 
-                    $elem.trigger(devent);
+                        $elem.trigger(devent);
+                    }
                 };
 
                 var isDragging = function (e) {
                     var isProxy = indexOf.apply(proxyNodes, [dm.node]) >= 0 ? true : false;
 
-                    if (e.newValue) {
+                    if (e.newValue === true) {
                         if (($elem[0] === dm.node && asTargetOnly) || (!asTargetOnly && isProxy)) {
                             onStart.apply(this, [e]);
                         }

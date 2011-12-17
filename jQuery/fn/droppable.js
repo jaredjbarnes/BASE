@@ -1,7 +1,7 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery/mouseManager.js" />
 
-BASE.require(["jQuery.mouseManager"], function () {
+BASE.require(["jQuery.mouseManager", "BASE.enableEventEmitting", "Object.keys", "Array.prototype.forEach"], function () {
 
     var defaultDm = $.mouseManager;
     $.fn.droppable = function (options) {
@@ -20,7 +20,6 @@ BASE.require(["jQuery.mouseManager"], function () {
         ///</returns>
 
         options = options || {};
-        var dropRegion = options.dropRegion || "mouse"; // "mouse" || "node"
         var condition = options.condition || function () { return true; };
         var dm = options.mouseManager || defaultDm;
 
@@ -29,68 +28,94 @@ BASE.require(["jQuery.mouseManager"], function () {
             mouseleave: options.mouseleave,
             nodeenter: options.nodeenter,
             nodeleave: options.nodeleave,
-            "": options.drop
+            nodedrop: options.nodedrop,
+            mousedrop: options.mousedrop
         };
 
         return this.each(function () {
             var $this = $(this);
-
             if (!$this.data("droppableInitialized")) {
                 $this.data("droppableInitialized", true);
 
-                for (var x in listeners) {
-                    $this.bind("drop" + x, listeners[x]);
+                var region = $this.region();
+                BASE.enableEventEmitting(region);
+
+                listeners.keys().forEach(function (value) {
+                    $this.bind("drop" + value, listeners[value]);
+                });
+
+                var mouseenter = function (ev) {
+                    var event = new $.Event("dropmouseenter");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+
+                    $this.trigger(event);
+                };
+                var mouseleave = function (ev) {
+                    var event = new $.Event("dropmouseleave");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+
+                    $this.trigger(event);
+                };
+
+                var nodeenter = function (ev) {
+                    var event = new $.Event("dropnodeenter");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+
+                    $this.trigger(event);
+                };
+
+                var nodeleave = function (ev) {
+                    var event = new $.Event("dropnodeleave");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+
+                    $this.trigger(event);
                 }
+
+                var mousedrop = function (ev) {
+                    var event = new $.Event("dropbymouse");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+                    event.isDropHandled = false;
+                    $this.trigger(event);
+
+                    if (event.isDropHandled) {
+                        return true;
+                    }
+                };
+
+                var nodedrop = function (ev) {
+                    var event = new $.Event("dropbynode");
+                    event.draggedNode = dm.node;
+                    event.mouseManager = dm;
+                    event.mouseEvent = ev;
+                    event.isDropHandled = false;
+                    $this.trigger(event);
+
+                    if (event.isDropHandled) {
+                        return true;
+                    }
+                };
+
+                region.on("mouseenter", mouseenter);
+                region.on("mouseleave", mouseleave);
+                region.on("nodeenter", nodeenter);
+                region.on("nodeleave", nodeleave);
+                region.on("mousedrop", mousedrop);
+                region.on("nodedrop", nodedrop);
 
                 dm.observe("isDragging", function (e) {
                     if (e.newValue) {
                         if (condition.apply($this[0], [dm.node])) {
-                            dm.addRegionByNode($this[0], {
-                                mouseenter: function (ev) {
-                                    var event = new $.Event("dropmouseenter");
-                                    event.draggedNode = dm.node;
-                                    event.mouseManager = dm;
-                                    event.mouseEvent = ev;
-
-                                    $this.trigger(event);
-                                },
-                                mouseleave: function (ev) {
-                                    var event = new $.Event("dropmouseleave");
-                                    event.draggedNode = dm.node;
-                                    event.mouseManager = dm;
-                                    event.mouseEvent = ev;
-
-                                    $this.trigger(event);
-                                },
-                                nodeenter: function (ev) {
-                                    var event = new $.Event("dropnodeenter");
-                                    event.draggedNode = dm.node;
-                                    event.mouseManager = dm;
-                                    event.mouseEvent = ev;
-
-                                    $this.trigger(event);
-                                },
-                                nodeleave: function (ev) {
-                                    var event = new $.Event("dropnodeleave");
-                                    event.draggedNode = dm.node;
-                                    event.mouseManager = dm;
-                                    event.mouseEvent = ev;
-
-                                    $this.trigger(event);
-                                },
-                                drop: function (ev) {
-                                    var event = new $.Event("drop");
-                                    event.draggedNode = dm.node;
-                                    event.mouseManager = dm;
-                                    event.mouseEvent = ev;
-                                    event.isDropHandled = false;
-                                    $this.trigger(event);
-
-                                    if (event.isDropHandled) {
-                                        return true;
-                                    }
-                                }
-                            });
+                            dm.addRegion(region, { pin: { node: this[0], to: ["top", "left"]} });
                         }
                     }
                 });
