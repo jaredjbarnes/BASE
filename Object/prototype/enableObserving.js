@@ -197,6 +197,7 @@
 
                     Object.defineProperty(instance, x, {
                         set: function (val) {
+                            var oldValue = variables[x];
                             variables[x] = val;
                             //Trigger event
                             if (oldValue !== val) {
