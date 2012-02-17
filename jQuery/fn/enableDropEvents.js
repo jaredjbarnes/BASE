@@ -4,7 +4,7 @@
 BASE.require(["jQuery.mouseManager", "BASE.enableEventEmitting", "Object.keys", "Array.prototype.forEach"], function () {
 
     var defaultDm = $.mouseManager;
-    $.fn.droppable = function (options) {
+    $.fn.enableDropEvents = function (options) {
         ///<summary>
         ///Makes a DomElement droppable.
         ///</summary>
@@ -34,13 +34,13 @@ BASE.require(["jQuery.mouseManager", "BASE.enableEventEmitting", "Object.keys", 
 
         return this.each(function () {
             var $this = $(this);
-            if (!$this.data("droppableInitialized")) {
-                $this.data("droppableInitialized", true);
+            if (!$this.data("dropEventsInitialized")) {
+                $this.data("dropEventsInitialized", true);
 
                 var region = $this.region();
                 BASE.enableEventEmitting(region);
 
-                listeners.keys().forEach(function (value) {
+                Object.keys(listeners).forEach(function (value) {
                     $this.bind("drop" + value, listeners[value]);
                 });
 
@@ -115,7 +115,7 @@ BASE.require(["jQuery.mouseManager", "BASE.enableEventEmitting", "Object.keys", 
                 dm.observe("isDragging", function (e) {
                     if (e.newValue) {
                         if (condition.apply($this[0], [dm.node])) {
-                            dm.addRegion(region, { pin: { node: this[0], to: ["top", "left"]} });
+                            dm.addRegion(region, { pin: { node: $this[0], to: ["top", "left"]}, mode: options.mode||"move" });
                         }
                     }
                 });
