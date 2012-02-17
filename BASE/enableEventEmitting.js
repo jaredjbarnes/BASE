@@ -1,7 +1,7 @@
 ﻿(function () {
     BASE.enableEventEmitting = function (obj) {
         var eventEmitter = obj;
-        if (!eventEmitter.isEmitter) {
+        if (!eventEmitter.on || !eventEmitter.emit || !eventEmitter.Event) {
             var listeners = {};
 
             var Event = function (type) {
@@ -119,7 +119,7 @@
                     listeners = o;
                 }
             };
-            eventEmitter.isEmitter = true;
+
             eventEmitter.Event = Event;
         }
     };
