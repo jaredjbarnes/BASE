@@ -115,7 +115,7 @@ BASE.require(["jQuery.mouseManager", "BASE.enableEventEmitting", "Object.keys", 
                 dm.observe("isDragging", function (e) {
                     if (e.newValue) {
                         if (condition.apply($this[0], [dm.node])) {
-                            dm.addRegion(region, { pin: { node: $this[0], to: ["top", "left"]}, mode: options.mode||"move" });
+                            dm.addRegion(region, { pin: { node: $this[0], to: ["top", "left"]}, mode: options.mode||"default" });
                         }
                     }
                 });
