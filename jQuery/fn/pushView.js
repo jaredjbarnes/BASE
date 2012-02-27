@@ -5,7 +5,7 @@
         options = typeof options === 'object' ? options : {};
 
         var beforeDisplay = options.beforeDisplay || function () { };
-
+        var easing = options.easing;
         return this.each(function () {
             var elem = this;
             var $this = $(this);
@@ -27,7 +27,7 @@
                         callback.apply(newElem, [options.data || {}]);
                     };
 
-                    if (options.animate) {
+                    if (options.easing) {
                         var region = $this.region();
 
                         oldElem = array[array.length - 1];
@@ -50,12 +50,12 @@
 
                         newElem.css({
                             left: region.width
-                        }).animate({ left: 0 }, 300, "easeInQuad", function () {
+                        }).animate({ left: 0 }, 300, easing, function () {
                             finalize();
                         });
 
                         if (oldElem) {
-                            oldElem.animate({ left: -region.width }, 300, "easeInQuad", function () {
+                            oldElem.animate({ left: -region.width }, 300, easing, function () {
                                 oldElem.css({ display: "none" });
                             });
                         }

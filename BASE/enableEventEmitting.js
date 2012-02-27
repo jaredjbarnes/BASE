@@ -32,6 +32,7 @@
                 if (event instanceof Event) {
                     var listenerArray = listeners[event.type];
                     if (listenerArray) {
+                        listenerArray = listenerArray.slice();
                         for (var x = 0; x < listenerArray.length; x++) {
                             if (event.propagation) {
                                 if (listenerArray[x].apply(eventEmitter, [event]) === false) {

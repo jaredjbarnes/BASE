@@ -144,7 +144,7 @@
             ///This will only be invoked if all dependencies are loaded.
             ///</param>
             ///<returns type="undefined" />
-            
+
             //Makes sure that all sweeping is done before making another request.
             require.sweep();
             var namespaceArray = dependencies;
@@ -258,6 +258,7 @@
         require.sweep = function (tries) {
             tries = tries || 0;
             var dependencies;
+            var c;
             for (var x = 0; x < callbacks.length; x++) {
                 dependencies = callbacks[x].dependencies;
 
@@ -269,9 +270,9 @@
                 }
 
                 if (dependencies.length === 0) {
-                    callbacks[x]();
-                    callbacks.splice(x, 1);
+                    c = callbacks.splice(x, 1);
                     x--;
+                    c[0]();
                 }
             }
             if (sent === received && callbacks.length > 0) {

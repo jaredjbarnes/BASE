@@ -3,7 +3,7 @@
 
         callback = typeof options === 'function' ? options : callback || function () { };
         options = typeof options === 'object' ? options : {};
-
+        var easing = options.easing;
         return this.each(function () {
             var elem = this;
             var $this = $(this);
@@ -34,17 +34,17 @@
 
             };
 
-            if (options.animate && oldElem) {
+            if (options.easing && oldElem) {
                 var region = $this.region();
 
-                oldElem.animate({ left: region.width + 'px' }, 300, "easeInQuad", function () { 
+                oldElem.animate({ left: region.width + 'px' }, 300, easing, function () { 
                     finalize();
                 });
                 if (newElem) {
                     newElem.css({
                         left: (-region.width) + "px",
                         display: "block"
-                    }).animate({ left: '0px' }, 300, "easeInQuad");
+                    }).animate({ left: '0px' }, 300, easing);
                 } 
             } else {
                 if (newElem) newElem.css({ top: "0px", left: "0px", display: "block" });

@@ -1,7 +1,7 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery/mouseManager.js" />
 
-BASE.require(["jQuery.mouseManager"], function () {
+BASE.require(["jQuery","jQuery.mouseManager"], function () {
     jQuery.fn.enableDragEvents = function () {
         return this.each(function () {
             var elem = this;
