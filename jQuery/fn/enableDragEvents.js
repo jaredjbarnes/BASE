@@ -1,7 +1,7 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery/mouseManager.js" />
 
-BASE.require(["jQuery","jQuery.mouseManager"], function () {
+BASE.require(["jQuery", "jQuery.mouseManager"], function () {
     jQuery.fn.enableDragEvents = function () {
         return this.each(function () {
             var elem = this;
@@ -15,6 +15,7 @@ BASE.require(["jQuery","jQuery.mouseManager"], function () {
                 var offsetY = null;
                 var startX = null;
                 var startY = null;
+                var mouseIsDown = null;
 
                 var mousemove = function (e) {
                     var event = new $.Event("drag");
@@ -26,8 +27,27 @@ BASE.require(["jQuery","jQuery.mouseManager"], function () {
                     event.startY = startY;
 
                     event.originalEvent = e;
+                    if (e.which > 0) {
+                        $elem.trigger(event);
+                    } else {
+                        $(document).unbind("mousemove", mousemove);
 
-                    $elem.trigger(event);
+                        var event = new $.Event("dragstop");
+                        event.pageX = mm.event.pageX;
+                        event.pageY = mm.event.pageY;
+                        event.offsetX = offsetX;
+                        event.offsetY = offsetY;
+                        event.startX = startX;
+                        event.startY = startY;
+                        event.originalEvent = mm.event;
+
+                        $elem.trigger(event);
+
+                        offsetX = null;
+                        offsetY = null;
+                        jQuery.mouseManager.unobserve("isDragging", isDragging);
+                    }
+
                 };
 
                 $elem.bind("mousedown", function () {
@@ -50,6 +70,7 @@ BASE.require(["jQuery","jQuery.mouseManager"], function () {
 
                             $elem.trigger(event);
                             $(document).bind("mousemove", mousemove);
+                            jQuery.mouseManager.event.preventDefault();
                         } else if (!e.newValue && mm.node === elem) {
                             $(document).unbind("mousemove", mousemove);
 
