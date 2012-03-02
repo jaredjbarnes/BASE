@@ -30,11 +30,12 @@
         var notifyObservers = function (event) {
             if (event instanceof Event && notifyObservers.enabled) {
 
-                for (var y = 0; y < changeListeners.length; y++) {
-                    changeListeners[y].apply(instance, arguments);
+                var copyChangeListeners = changeListeners.slice();
+                for (var y = 0; y < copyChangeListeners.length; y++) {
+                    copyChangeListeners[y].apply(instance, arguments);
                 }
 
-                var listenerArray = propertyListeners[event.type];
+                var listenerArray = propertyListeners[event.type].slice();
                 if (listenerArray) {
                     for (var x = 0; x < listenerArray.length; x++) {
                         listenerArray[x].apply(instance, arguments);
