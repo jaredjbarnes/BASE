@@ -36,7 +36,7 @@
                         for (var x = 0; x < listenerArray.length; x++) {
                             if (event.propagation) {
                                 if (listenerArray[x].apply(eventEmitter, [event]) === false) {
-                                    event.propagation = false;
+                                    event.preventDefault();
                                     event.stopPropagation();
                                 }
                             } else {
