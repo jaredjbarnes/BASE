@@ -1,6 +1,6 @@
 ﻿(function () {
     var EventEmitter = function () {
-        if (!this.isEmitter) {
+        if (!this.hasOwnProperty("isEmitter")) {
             var listeners = {};
             var eventEmitter = this;
 
