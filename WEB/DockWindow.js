@@ -191,7 +191,7 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
             dockWindow.dockTo(dockedOn);
         };
 
-        var nofityOn = {
+        var notifyOn = {
             "top": function (msg, options) {
                 msg = msg || "No Message.";
                 options = options || {};
@@ -232,7 +232,8 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
         var nTimeout;
 
         dockWindow.notify = function () {
-            nofityOn(dockedOn);
+            //console.log(dockedOn);
+            notifyOn[dockedOn].apply(dockWindow, arguments);
         };
 
         this.enableEventEmitting();

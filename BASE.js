@@ -332,9 +332,9 @@
             BASE.clone = clone;
             BASE.inherits = inherits;
         } else {
-            BASE = window.BASE = Object;
+            BASE = window.BASE = function () { };
             //This really sets it as it should be.
-            BASE.defineProperties(BASE, {
+            Object.defineProperties(BASE, {
                 "require": {
                     value: require,
                     enumerable: false,
@@ -357,13 +357,15 @@
                 }
             });
 
-            BASE.defineProperties(BASE.prototype, {
+
+            Object.defineProperties(BASE.prototype, {
                 "clone": {
                     value: clonePrototype,
                     enumerable: false,
                     writable: false
                 }
             });
+
 
         }
     })();
