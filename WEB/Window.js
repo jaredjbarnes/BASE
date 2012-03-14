@@ -227,6 +227,9 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.enableDragEvent
                 $resize.bind("dragstop", function (e) {
                     //console.log(e.pageX);
                 });
+            } else {
+                var $resize = $window.find(".web-window-resize");
+                $resize.remove();
             }
         };
 
