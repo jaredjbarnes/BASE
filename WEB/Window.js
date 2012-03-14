@@ -178,7 +178,7 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.enableDragEvent
                 var y = e.pageY - scrollTop;
                 var x = e.pageX - scrollLeft;
 
-                tWindow.position(x - e.offsetX, y - e.offsetY);
+                tWindow.position((x - e.offsetX), (y - e.offsetY) + parseInt($titlebar.css("height"), 10));
                 //console.log("drag: (", "offsetX: ", e.offsetX, "offsetY: ", e.offsetY, ")");
             });
             $titlebar.bind("dragstart", function (e) {
@@ -187,6 +187,47 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.enableDragEvent
             $titlebar.bind("dragstop", function (e) {
                 //console.log(e.pageX);
             });
+
+            if (options.resize) {
+                var $resize = $window.find(".web-window-resize");
+                var mouse;
+                var windowWidth;
+                var windowHeight;
+
+                $resize.enableDragEvents();
+                $resize.bind("drag", function (e) {
+                    var cmouse = {
+                        x: e.pageX,
+                        y: e.pageY
+                    };
+                    var diff = {
+                        x: cmouse.x - mouse.x,
+                        y: cmouse.y - mouse.y
+                    };
+
+                    var newWidth = ((windowWidth + diff.x));
+                    var newHeight = ((windowHeight + diff.y));
+
+                    $window.css({
+                        width: newWidth > 15 ? newWidth : 15 + "px",
+                        height: newHeight > 15 ? newHeight : 15 + "px"
+                    });
+                });
+
+                $resize.bind("dragstart", function (e) {
+                    //console.log(e.pageX);
+                    mouse = {
+                        x: e.pageX,
+                        y: e.pageY
+                    };
+                    windowWidth = parseInt($window.css("width"));
+                    windowHeight = parseInt($window.css("height"));
+
+                });
+                $resize.bind("dragstop", function (e) {
+                    //console.log(e.pageX);
+                });
+            }
         };
 
 
@@ -197,29 +238,38 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.enableDragEvent
                 width: "250px",
                 height: "250px",
                 position: "fixed",
-                overflow: "auto",
-                display: browserPrefix + "box",
-                "-webkit-box-align": "top",
-                "-webkit-box-orient": "vertical",
-                "-moz-box-align": "top",
-                "-moz-box-orient": "vertical",
+                overflow: "visible",
                 "box-shadow": "0px 1px 5px #000",
                 padding: "0px 0px 20px 0px"
             }).addClass("web-window");
 
-            $titlebar = $("<div></div>").css({
-                width: "100%"
-            }).addClass("web-window-titlebar").appendTo($window);
-
             $content = $("<div></div>").css({
                 width: "100%",
-                "-webkit-box-flex": "1",
-                "-moz-box-flex": "1",
+                height: "100%",
+                position: "absolute",
+                top: "0px",
+                left: "0px",
                 //backgroundColor: "#FFF",
                 overflow: "auto",
                 resize: "none"
             }).addClass("web-window-content").appendTo($window);
 
+            $titlebar = $("<div></div>").css({
+                width: "100%",
+                height: "20px",
+                position: "absolute",
+                top: "-20px",
+                left: "0px"
+            }).addClass("web-window-titlebar").appendTo($window);
+
+            $resize = $("<div></div>").css({
+                width: "15px",
+                height: "15px",
+                position: "absolute",
+                bottom: "0px",
+                right: "0px",
+                cursor: "nw-resize"
+            }).addClass("web-window-resize").appendTo($window);
 
             //Create DragDrop
             createDragDrop();

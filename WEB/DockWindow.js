@@ -148,11 +148,13 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
         };
 
         dockWindow.dockTo = function (type) {
+
             if (dockTo[type]) {
                 var event = new dockWindow.Event("position");
                 event.dockedTo = type;
                 dockWindow.emit(event);
                 if (!event.isDefaultPrevented()) {
+                    $notify.css("height", "0px");
                     dockTo[type]();
                 }
             } else {
@@ -161,6 +163,7 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
                 event.dockedTo = top;
                 dockWindow.emit(event);
                 if (!event.isDefaultPrevented()) {
+                    $notify.css("height", "0px");
                     dockTo.top();
                 }
             }
@@ -208,9 +211,15 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
                     backgroundColor: backgroundColor,
                     color: color,
                     "top": (dockSize) + "px",
+                    bottom: "",
                     left: Math.ceil((windowWidth / 2) - (mregion.width / 2)) + "px",
                     height: "0px",
-                    padding: "0px"
+                    padding: "0px",
+                    "border-top-right-radius": "0px",
+                    "border-top-left-radius": "0px",
+                    "border-bottom-right-radius": "3px",
+                    "border-bottom-left-radius": "3px",
+                    "box-shadow": "0px 2px 2px rgba(0,0,0,0.6)"
                 });
 
                 $notify.animate({
@@ -223,10 +232,101 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
                         }, 300, "easeOutCirc");
                     }, duration);
                 });
+
+                $notifyInset.css({
+                    "bottom": "",
+                    "top": "0px"
+                });
             },
-            "right": function () { },
-            "bottom": function () { },
-            "left": function () { }
+            "right": function (msg, options) {
+                msg = msg || "No Message.";
+                options = options || {};
+                duration = options.duration || 5000;
+                color = options.color || "#FFF";
+                backgroundColor = options.backgroundColor || "#999";
+
+                var $msg = $notify.find("#msg");
+                $msg.html(msg);
+                var mregion = $msg.region();
+                var windowWidth = $(window).width();
+
+                $notify.css({
+                    backgroundColor: backgroundColor,
+                    color: color,
+                    "top": "0px",
+                    bottom: "",
+                    left: Math.ceil((windowWidth / 2) - (mregion.width / 2)) + "px",
+                    height: "0px",
+                    padding: "0px",
+                    "border-top-right-radius": "0px",
+                    "border-top-left-radius": "0px",
+                    "border-bottom-right-radius": "3px",
+                    "border-bottom-left-radius": "3px",
+                    "box-shadow": "0px 2px 2px rgba(0,0,0,0.6)"
+                });
+
+                $notify.animate({
+                    height: mregion.height + 10
+                }, 300, "easeOutCirc", function () {
+                    clearTimeout(nTimeout);
+                    nTimeout = setTimeout(function () {
+                        $notify.animate({
+                            height: 0
+                        }, 300, "easeOutCirc");
+                    }, duration);
+                });
+
+                $notifyInset.css({
+                    "bottom": "",
+                    "top": "0px"
+                });
+            },
+            "bottom": function (msg, options) {
+                msg = msg || "No Message.";
+                options = options || {};
+                duration = options.duration || 5000;
+                color = options.color || "#FFF";
+                backgroundColor = options.backgroundColor || "#999";
+
+                var $msg = $notify.find("#msg");
+                $msg.html(msg);
+                var mregion = $msg.region();
+                var windowWidth = $(window).width();
+
+                $notify.css({
+                    backgroundColor: backgroundColor,
+                    color: color,
+                    "top": "",
+                    "bottom": (dockSize) + "px",
+                    left: Math.ceil((windowWidth / 2) - (mregion.width / 2)) + "px",
+                    height: "0px",
+                    padding: "0px",
+                    "border-top-right-radius": "3px",
+                    "border-top-left-radius": "3px",
+                    "border-bottom-right-radius": "0px",
+                    "border-bottom-left-radius": "0px",
+                    "box-shadow": "0px -2px 2px rgba(0,0,0,0.6)"
+                });
+
+                $notify.animate({
+                    height: mregion.height + 10
+                }, 300, "easeOutCirc", function () {
+                    clearTimeout(nTimeout);
+                    nTimeout = setTimeout(function () {
+                        $notify.animate({
+                            height: 0
+                        }, 300, "easeOutCirc");
+                    }, duration);
+                });
+
+                $notifyInset.css({
+                    "bottom": "0px",
+                    "top": ""
+                });
+            },
+            "left": function () {
+                notifyOn.right.apply(this, arguments);
+            }
         };
 
         var nTimeout;
@@ -249,18 +349,10 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
             "position": "fixed",
             "top": (dockSize) + "px",
             "left": "0px",
-            "height": "auto",
+            "height": "0px",
             "width": "auto",
             "backgroundColor": "#999",
             "color": "#fff",
-            "box-shadow": "0px 2px 2px rgba(0,0,0,0.6)",
-            /*
-            "border-bottom": "2px solid #fff",
-            "border-left": "2px solid #fff",
-            "border-right": "2px solid #fff",
-            */
-            "border-bottom-right-radius": "3px",
-            "border-bottom-left-radius": "3px",
             "font-size": "12px",
             "font-weight": "bold",
             "overflow": "hidden",
@@ -268,9 +360,9 @@ BASE.require(["Object.prototype.enableEventEmitting", "jQuery.fn.region", "jQuer
         }).appendTo($dock);
 
         var $notifyInset = $("<div></div>").css({
-            "box-shadow": "inset -2px 2px 5px rgba(0,0,0,0.4)",
+            "background": "rgba(0,0,0,0.4)",
             "width": "120%",
-            "height": "5px",
+            "height": "2px",
             "position": "absolute",
             "top": "0px",
             "left": "0px"
