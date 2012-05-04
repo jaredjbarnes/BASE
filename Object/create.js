@@ -6,10 +6,10 @@
         F.prototype = object;
         result = new F();
 
-        if (properties){
+        if (properties) {
             Object.defineProperties(result, properties);
         }
-        }
+
         return result;
     };
 }
