@@ -272,12 +272,12 @@
                     path = path.indexOf("/") === 0 ? path.substr(1) : path;
                     dir = dir.lastIndexOf("/") === dir.length - 1 ? dir.substr(0, dir.length - 1) : dir;
 
-                    return typeof dir === 'string' ? dir + '/' + path : path;
+                    return typeof dir === 'string' && prefix.length === 0 ? dir + '/' + path : path;
                 }
                 path = paths[prefix];
                 namespace = namespace.substring(prefix.length + 1);
             }
-            if (path.length > 0) {
+            if (path.length > 0 && path.lastIndexOf("/") != path.length - 1) {
                 path += '/';
             }
             path = path.replace(/\/\.\//g, '/') + namespace.replace(/\./g, "/") + '.js';
@@ -285,7 +285,7 @@
                 path = path.indexOf("/") === 0 ? path.substr(1) : path;
                 dir = dir.lastIndexOf("/") === dir.length - 1 ? dir.substr(0, dir.length - 1) : dir;
             }
-            return typeof dir === 'string' ? dir + '/' + path : path;
+            return typeof dir === 'string' && prefix.length === 0 ? dir + '/' + path : path;
         };
 
         require.getPrefix = function (namespace) {
