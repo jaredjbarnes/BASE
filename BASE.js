@@ -61,6 +61,29 @@
         return true;
     };
 
+    var getObject = function (namespace) {
+        var a = namespace.split('.');
+        var length = a.length;
+        var tmpObj;
+
+        for (var x = 0; x < length; x++) {
+            if (x === 0) {
+                if (typeof window[a[0]] === 'undefined') {
+                    return undefined;
+                } else {
+                    tmpObj = window[a[0]];
+                }
+            } else {
+                if (typeof tmpObj[a[x]] === 'undefined') {
+                    return undefined;
+                } else {
+                    tmpObj = tmpObj[a[x]];
+                }
+            }
+        }
+        return tmpObj;
+    };
+
     var clone = function (object, deep) {
         ///<summary>
         ///Returns a clone of the specified object.
@@ -207,7 +230,12 @@
                 for (var u = 0; u < namespaceArray.length; u++) {
                     sent++;
                     url = require.getPath(namespaceArray[u]);
-                    dEval(url, onSuccess, (function (n) { return function () { console.log('Error loading resource: ' + n); }; })(namespaceArray[u]));
+                    dEval(url, onSuccess, (function (n) {
+                        return function () {
+                            throw new Error('Error loading resource: ' + n);
+                            delete require.pending[n];
+                        };
+                    })(namespaceArray[u]));
                 }
 
             } else {
@@ -308,7 +336,8 @@
                 //console.log(tries);
 
                 if (tries > 1000) {
-                    throw new Error("Failed to load all dependencies.");
+                    throw new Error("Failed to load these dependencies: " + require.getUnloaded());
+                    pending = {};
                 }
                 require.sweep(tries);
             }
@@ -331,6 +360,7 @@
             BASE.namespace = namespace;
             BASE.clone = clone;
             BASE.inherits = inherits;
+            BASE.getObject = getObject;
         } else {
             BASE = window.BASE = function () { };
             //This really sets it as it should be.
@@ -352,6 +382,11 @@
                 },
                 "inherits": {
                     value: inherits,
+                    enumerable: false,
+                    writable: false
+                },
+                "getObject": {
+                    value: getObject,
                     enumerable: false,
                     writable: false
                 }

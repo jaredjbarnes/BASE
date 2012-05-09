@@ -6,8 +6,14 @@
         F.prototype = object;
         result = new F();
 
-        if (properties) {
+        if (Object.defineProperties && properties) {
             Object.defineProperties(result, properties);
+        } else if (properties) {
+            for (var p in properties) {
+                if (properties.hasOwnProperty(p)) {
+                    result[p] = properties[p];
+                }
+            }
         }
 
         return result;
