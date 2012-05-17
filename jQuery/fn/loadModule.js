@@ -4,7 +4,7 @@ BASE.require(["jQuery","jQuery.loadFile","jQuery.executeDataScript"], function()
         options = options || {};
         var beforeAppend = options.beforeAppend || function(){};
         var afterAppend = options.afterAppend || function(){};
-        
+        var err = options.error || function(){};
         return this.each(function(){
             var $this = $(this);
             $.loadFile(url, {
@@ -17,7 +17,8 @@ BASE.require(["jQuery","jQuery.loadFile","jQuery.executeDataScript"], function()
                     afterAppend.call($this[0], $module[0]);
                 },
                 error: function(){
-                    throw new Error("Couldn't find module located at \""+url+"\".");
+                    err.call($this[0]);
+                    //throw new Error("Couldn't find module located at \""+url+"\".");
                 }
             }, function(){});
         });
