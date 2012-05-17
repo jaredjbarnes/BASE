@@ -17,5 +17,9 @@
                 }            
             });  
         };
+        
+      jQuery(function(){
+            jQuery.executeDataScript();
+      });
     
    });

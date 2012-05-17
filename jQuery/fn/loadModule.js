@@ -23,7 +23,5 @@ BASE.require(["jQuery","jQuery.loadFile","jQuery.executeDataScript"], function()
         });
     };
      
-    jQuery(function(){
-          jQuery.executeDataScript();
-    });
+
 });
