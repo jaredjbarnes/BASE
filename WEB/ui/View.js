@@ -16,13 +16,27 @@ BASE.require(["jQuery"], function () {
         });
     };
 
-    // Finds all active views on load.
-    // and initializes them.
-    if (document.body) {
-        $(function () {
-            $("[data-viewUrl]").each(function () {
+    WEB.ui.View.initializeFromRoot = function( root ){
+        
+        var findFirstParent = function($elem, condition, callback){
+            callback = callback || function(){};
+            condition = condition || function(){};
+            var $children = $elem.children();
+            $children.each(function(){
                 var $this = $(this);
-                var script = $this.attr("[data-script]");
+                if (condition($this)){
+                     callback($this);
+                     console.log("found");
+                } else {
+                    findFirstParent($this);
+                }
+            });
+        };
+        
+        findFirstParent($(root), function($elem){
+            if ($elem.attr("data-viewUrl") && $elem.attr("data-script")){return true;} else {return false;}
+        }, function($this){
+            var script = $this.attr("[data-script]");
                 var view = $this.data("WEB.ui.View");
                 if ((!view || (view && !view.isInitialized)) && script) {
                     BASE.require([script], function () {
@@ -32,11 +46,19 @@ BASE.require(["jQuery"], function () {
                         if (uiView instanceof WEB.ui.View) {
 
                         } else {
-                            throw new Error(script + " was not an instance of WEB.ui.ViewController");
+                            throw new Error(script + " was not an instance of WEB.ui.View");
                         }
                     });
                 }
-            });
+        });
+        
+    };
+    
+    // Finds all active views on load.
+    // and initializes them.
+    if (document.body) {
+        $(function () {
+            WEB.ui.View.initializeFromRoot();
         });
     }
 });
