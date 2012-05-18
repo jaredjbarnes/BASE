@@ -152,13 +152,15 @@
     };
 
     (function () {
-        var dEval = function (src, callback, onerror) {
+        var dEval = function (n, src, callback, onerror) {
             var script = document.createElement("script");
 
             script.onload = function () {
                 if (!script.onloadDone) {
                     script.onloadDone = true;
-                    callback();
+                    if (require.pending[n]) {
+                        callback(n);
+                    }
                 }
             };
 
@@ -168,7 +170,9 @@
 
             script.onreadystatechange = function () {
                 if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
-                    callback();
+                    if (require.pending[n]) {
+                        callback(n);
+                    }
                 }
             }
 
@@ -222,15 +226,16 @@
             callbacks.push(callback);
 
             if (namespaceArray.length > 0) {
-                var onSuccess = function (response, opts) {
+                var onSuccess = function (n) {
                     received++;
+                    delete require.pending[n];
                     require.sweep();
                 };
 
                 for (var u = 0; u < namespaceArray.length; u++) {
                     sent++;
                     url = require.getPath(namespaceArray[u]);
-                    dEval(url, onSuccess, (function (n) {
+                    dEval(namespaceArray[u], url, onSuccess, (function (n) {
                         return function () {
                             throw new Error('Error loading resource: ' + n);
                             delete require.pending[n];
@@ -339,7 +344,7 @@
                     throw new Error("Failed to load these dependencies: " + require.getUnloaded());
                     pending = {};
                 }
-                require.sweep(tries);
+                setTimeout(function () { require.sweep(tries); }, 1);
             }
         };
 
