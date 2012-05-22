@@ -20,7 +20,6 @@ BASE.require(["jQuery","jQuery.loadFile","jQuery.executeDataScript"], function()
                 },
                 error: function(){
                     err.call($this[0]);
-                    //
                 }
             }, function(){});
         });

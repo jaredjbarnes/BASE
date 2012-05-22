@@ -20,9 +20,11 @@
         var bounds = $container.region();
         var currentPercent = 0;
 
+
         //Enabling drag events.
         $handle.enableDragEvents();
         $handle.bind("drag", function (e) {
+            $handle.stop();
             var currentRegion = $handle.region();
             var containerRegion = $container.region();
             var top = e.pageY - e.offsetY;
@@ -53,13 +55,47 @@
             currentPercent = event.percent = parseFloat(percent.toFixed(4), 10);
 
             $elem.trigger(event);
+
         });
 
         $handle.bind("dragstop", function (e) {
             var event = new $.Event("sliderChanged");
-            event.percent = parseFloat(currentPercent.toFixed(4), 10);
+            event.percent = currentPercent;
 
             $elem.trigger(event);
         });
+
+        self.setPercent = function (value, callback) {
+            if (value >= 0 && value <= 1) {
+                value = parseFloat(value.toFixed(4), 10);
+                callback = callback || function () { };
+                var region = $container.region();
+                var hregion = $handle.region();
+                var diff = Math.abs(value - currentPercent) * (region.width - hregion.width);
+                var moveBy = parseInt(diff, 10);
+                var op;
+                if (value >= currentPercent) {
+                    op = "+=";
+                } else {
+                    op = "-=";
+                }
+                var event = new $.Event("sliderChanging");
+                currentPercent = event.percent = value;
+                $elem.trigger(event);
+
+                isAnimating = true;
+                var pos = $handle.css("position");
+                $handle.css("position", pos === "static" ? "relative" : pos);
+                $handle.animate({ left: op + moveBy }, 1000, "easeOutExpo", function () {
+                    callback();
+                });
+            } else {
+                callback();
+            }
+        };
+
+        self.getPercent = function () {
+            return currentPercent;
+        };
     };
 });

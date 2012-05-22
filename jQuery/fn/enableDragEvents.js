@@ -16,6 +16,7 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
                 var startX = null;
                 var startY = null;
                 var mouseIsDown = null;
+                var isDragging;
 
                 var mousemove = function (e) {
                     var event = new $.Event("drag");
@@ -33,8 +34,8 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
                         $(document).unbind("mousemove", mousemove);
 
                         var event = new $.Event("dragstop");
-                        event.pageX = mm.event.pageX;
-                        event.pageY = mm.event.pageY;
+                        event.pageX = e.pageX;
+                        event.pageY = e.pageY;
                         event.offsetX = offsetX;
                         event.offsetY = offsetY;
                         event.startX = startX;
@@ -51,8 +52,8 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
                 };
 
                 $elem.bind("mousedown", function () {
-                    var isDragging = function (e) {
-                        if (e.newValue && mm.node === elem) {
+                    isDragging = function (e) {
+                        if (e.newValue && mm.node === elem && mm.event && mm.event.pageX) {
                             var region = $elem.region();
                             offsetX = mm.event.pageX - region.x;
                             offsetY = mm.event.pageY - region.y;
@@ -71,7 +72,7 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
                             $elem.trigger(event);
                             $(document).bind("mousemove", mousemove);
                             jQuery.mouseManager.event.preventDefault();
-                        } else if (!e.newValue && mm.node === elem) {
+                        } else if (!e.newValue && mm.node === elem && mm.event && mm.event.pageX) {
                             $(document).unbind("mousemove", mousemove);
 
                             var event = new $.Event("dragstop");
