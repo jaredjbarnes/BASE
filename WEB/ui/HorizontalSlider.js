@@ -65,6 +65,9 @@
             $elem.trigger(event);
         });
 
+        var pos = $handle.css("position");
+        $handle.css("position", pos === "static" ? "relative" : pos);
+
         self.setPercent = function (value, callback) {
             if (value >= 0 && value <= 1) {
                 value = parseFloat(value.toFixed(4), 10);
@@ -79,13 +82,12 @@
                 } else {
                     op = "-=";
                 }
-                var event = new $.Event("sliderChanging");
+                var event = new $.Event("sliderChanged");
                 currentPercent = event.percent = value;
                 $elem.trigger(event);
 
                 isAnimating = true;
-                var pos = $handle.css("position");
-                $handle.css("position", pos === "static" ? "relative" : pos);
+
                 $handle.animate({ left: op + moveBy }, 1000, "easeOutExpo", function () {
                     callback();
                 });
@@ -97,5 +99,6 @@
         self.getPercent = function () {
             return currentPercent;
         };
+
     };
 });
