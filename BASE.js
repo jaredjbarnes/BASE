@@ -124,33 +124,6 @@
         return clone(this, deep);
     };
 
-    var inherits = function (ctor, superCtor) {
-        ///<summary>
-        ///Extends an Class
-        ///</summary>
-        ///<param name="[ctor]" type="function">
-        ///The constructor of the subclass.
-        ///</param>
-        ///<param name="[superCtor]" type="function">
-        ///The constructor of the super class.
-        ///</param>
-        ///<returns type="undefined" >
-        ///undefined
-        ///</returns>
-        ctor.super_ = superCtor;
-        ctor.prototype = Object.create(superCtor.prototype, {
-            constructor: {
-                value: ctor,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            }
-        });
-        ctor.prototype.superConstructor = function () {
-            superCtor.apply(this, arguments);
-        };
-    };
-
     (function () {
         var dEval = function (n, src, callback, onerror) {
             var script = document.createElement("script");
@@ -364,7 +337,6 @@
             BASE.require = require;
             BASE.namespace = namespace;
             BASE.clone = clone;
-            BASE.inherits = inherits;
             BASE.getObject = getObject;
         } else {
             BASE = window.BASE = function () { };
@@ -382,11 +354,6 @@
                 },
                 "clone": {
                     value: clone,
-                    enumerable: false,
-                    writable: false
-                },
-                "inherits": {
-                    value: inherits,
                     enumerable: false,
                     writable: false
                 },
