@@ -1,7 +1,7 @@
 BASE.require(["BASE.EventEmitter"], function(){
 	
 	var SECOND_IN_MILLISECONDS = 1000;
-	var MINUTE_IN_MILLISECONDS = SECOND_IN_MILLSECONDS * 60;
+	var MINUTE_IN_MILLISECONDS = SECOND_IN_MILLISECONDS * 60;
 	var HOUR_IN_MILLISECONDS = MINUTE_IN_MILLISECONDS * 60;
 	var DAY_IN_MILLISECONDS = HOUR_IN_MILLISECONDS * 24;
 	var WEEK_IN_MILLISECONDS = DAY_IN_MILLISECONDS * 7;
@@ -33,7 +33,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 			},
 			"milliseconds":{
 				get: function(){
-					_date.getMilliseconds();
+					return _date.getMilliseconds();
 				},
 				set: function(milliseconds){
 					var event = new BASE.Event("dateChanged");
@@ -109,6 +109,34 @@ BASE.require(["BASE.EventEmitter"], function(){
 					self.emit(event);
 				}
 			},
+			"week": {
+				get: function(){
+					var date = new Date(_date.getTime());
+					date.setMonth(0);
+					date.setDate(1);
+					
+					var now = _date.getTime();
+					var then = date.getTime();
+					
+					return Math.floor((now - then)/WEEK_IN_MILLISECONDS);
+				},
+				set: function(week){
+					if (week < 51){
+						var fromDate = new Date(_date.getTime());
+						fromDate.setMonth(0);
+						fromDate.setDate(1);
+						
+						var toDate = new Date(fromDate.getTime()+(week*WEEK_IN_MILLISECONDS));
+						
+						var event = new BASE.Event("dateChanged");
+						event.oldValue = _date.getTime();
+						_date.setTime(toDate.getTime());
+						event.newValue = _date.getTime();
+						
+						self.emit(event);
+					}
+				}
+			},
 			"month":{
 				get: function(){
 					return _date.getMonth();
@@ -124,12 +152,12 @@ BASE.require(["BASE.EventEmitter"], function(){
 			},
 			"year":{
 				get: function(){
-					return _date.getYear();
+					return _date.getFullYear();
 				},
 				set: function(year){
 					var event = new BASE.Event("dateChanged");
 					event.oldValue = _date.getTime();					
-					_date.setYear(year);
+					_date.setFullYear(year);
 					event.newValue = _date.getTime();
 					
 					self.emit(event);
@@ -144,7 +172,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 				var remainder = result%1000;
 				var seconds = Math.floor(result/1000);
 				
-				self.setSeconds(seconds);
+				self.addSeconds(seconds);
 				result = remainder;
 			}
 			self.milliseconds = result;
@@ -183,7 +211,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 			self.hours = result;
 		};
 		self.addDays = function(days){
-			var result = self.days + days;
+			var result = self.day + days;
 			if (result >= 7){
 				var remainder = result%7;
 				var weeks = Math.floor(result/7);
@@ -194,7 +222,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 			self.days = result;
 		};
 		self.addWeeks = function(weeks){
-			var result = self.weeks + weeks;
+			var result = self.week + weeks;
 			if (result >= 52){
 				var remainder = result%52;
 				var years = Math.floor(result/52);
@@ -202,10 +230,10 @@ BASE.require(["BASE.EventEmitter"], function(){
 				self.addYears(years);
 				result = remainder;
 			}
-			self.weeks = result;
+			self.week = result;
 		};
 		self.addMonths = function(months){
-			var result = self.months + months;
+			var result = self.month + months;
 			if (result >= 12){
 				var remainder = result%12;
 				var years = Math.floor(result/12);
@@ -216,7 +244,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 			self.months = result;
 		};		
 		self.addYears = function(years){
-			self.years = self.years + years;
+			self.year = self.year + years;
 		};
 		
 		self.equals = function(date){
