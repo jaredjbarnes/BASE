@@ -102,8 +102,9 @@ BASE.require(["BASE.EventEmitter"], function(){
 				},
 				set: function(day){
 					var event = new BASE.Event("dateChanged");
+					var day = _date.getDate() - _date.getDay() + day;
 					event.oldValue = _date.getTime();					
-					_date.setDay(day);
+					_date.setDate(day);
 					event.newValue = _date.getTime();
 					
 					self.emit(event);
@@ -219,7 +220,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 				self.addWeeks(weeks);
 				result = remainder;
 			}
-			self.days = result;
+			self.day = result;
 		};
 		self.addWeeks = function(weeks){
 			var result = self.week + weeks;
@@ -241,7 +242,7 @@ BASE.require(["BASE.EventEmitter"], function(){
 				self.addYears(years);
 				result = remainder;
 			}
-			self.months = result;
+			self.month = result;
 		};		
 		self.addYears = function(years){
 			self.year = self.year + years;
@@ -250,6 +251,10 @@ BASE.require(["BASE.EventEmitter"], function(){
 		self.equals = function(date){
 			return date.time === self.time;
 		}
+		
+		self.toString = function(){
+			return _date.toString();
+		};
 	};
 	
 	BASE.Date.prototype = new BASE.EventEmitter();
