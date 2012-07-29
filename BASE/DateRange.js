@@ -55,6 +55,41 @@ BASE.require(["BASE.EventEmitter","BASE.Date"], function(){
 					_endDate = date;
 					_endDate.on("dateChanged", _onEndDateChanged);
 				}
+			},
+			"totalMinutesSpan":{
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.MINUTE_IN_MILLISECONDS);
+				}
+			},
+			"totalHoursSpan":{
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.HOUR_IN_MILLISECONDS);
+				}
+			},
+			"totalDaysSpan": {
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.DAY_IN_MILLISECONDS);
+				}
+			},
+			"totalWeeksSpan": {
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.WEEK_IN_MILLISECONDS);
+				}
+			},
+			"totalMonthsSpan": {
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.MONTH_IN_MILLISECONDS);
+				}
+			},
+			"totalYearsSpan":{
+				get: function(){
+					return Math.floor(self.totalTimeSpan/BASE.Date.YEAR_IN_MILLISECONDS);
+				}
+			},
+			"totalTimeSpan": {
+				get: function(){
+					return _endDate.time - _startDate.time; 
+				}
 			}
 		});
 		
