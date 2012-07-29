@@ -234,36 +234,32 @@
         };
 
         var paths = {};
+		var concat = function(){
+			var result = "";
+			for (var x = 0 ; x < arguments.length; x++){
+				result += "/"+arguments[x];
+			}
+			return result.replace(/\/+/g, '/');
+		};
+		
         require.dependencyList = [];
 
         require.setPath = function (namespace, path) {
-            if (namespace && path) paths[namespace] = path;
+			if (namespace && path){
+				var finalPath = path;
+				if (path.indexOf("/") !== 0){
+					finalPath = concat(require.root, path);
+				}
+				 paths[namespace] = finalPath;
+			}
         };
         require.getPath = function (namespace) {
-            var path = '';
-            var prefix = require.getPrefix(namespace);
-            var dir = require.root;
-
-            if (prefix.length > 0) {
-                if (prefix === namespace) {
-                    path = paths[prefix];
-                    path = path.indexOf("/") === 0 ? path.substr(1) : path;
-                    dir = dir.lastIndexOf("/") === dir.length - 1 ? dir.substr(0, dir.length - 1) : dir;
-
-                    return typeof dir === 'string' && prefix.length === 0 ? dir + '/' + path : path;
-                }
-                path = paths[prefix];
-                namespace = namespace.substring(prefix.length + 1);
-            }
-            if (path.length > 0 && path.lastIndexOf("/") != path.length - 1) {
-                path += '/';
-            }
-            path = path.replace(/\/\.\//g, '/') + namespace.replace(/\./g, "/") + '.js';
-            if (dir) {
-                path = path.indexOf("/") === 0 ? path.substr(1) : path;
-                dir = dir.lastIndexOf("/") === dir.length - 1 ? dir.substr(0, dir.length - 1) : dir;
-            }
-            return typeof dir === 'string' && prefix.length === 0 ? dir + '/' + path : path;
+            var path = require.getPrefix(namespace);
+			if (/\.js$/.test(path)){
+				return path;
+			}
+			
+			return concat(path, namespace.replace(/\./, "/")+".js");
         };
 
         require.getPrefix = function (namespace) {
@@ -271,7 +267,7 @@
             var deepestPrefix = '';
 
             if (paths.hasOwnProperty(namespace)) {
-                return namespace;
+                return paths[namespace];
             }
 
             for (prefix in paths) {
@@ -282,7 +278,7 @@
                 }
             }
 
-            return deepestPrefix;
+            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./, "/") ;
         };
 
         require.root = null;
