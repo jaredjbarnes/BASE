@@ -1,4 +1,4 @@
-BASE.require(["BASE.DateRange", "BASE.ObservableArray"], function(){
+BASE.require(["BASE.DateRange", "BASE.ObservableArray","BASE.EventEmitter"], function(){
 	
 	BASE.DateEvent = function(dateRange){
 		if (!(this instanceof BASE.DateEvent)){

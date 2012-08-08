@@ -31,7 +31,7 @@ BASE.require(["jQuery"], function(){
 	};
 	
 	window.MVC = {
-		apply: function(root, callback){
+		applyTo: function(root, callback){
 			var totalViews = [];
 			var totalControllers = [];
 			callback = callback || function(){};
@@ -88,5 +88,5 @@ BASE.require(["jQuery"], function(){
 		}
 	};
 	
-	MVC.apply(document.body);
+	MVC.applyTo($("html")[0]);
 });

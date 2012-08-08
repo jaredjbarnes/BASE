@@ -250,7 +250,7 @@
 				if (path.indexOf("/") !== 0){
 					finalPath = concat(require.root, path);
 				}
-				 paths[namespace] = finalPath;
+				 paths[namespace] = finalPath.replace(/\/+/g, '/');
 			}
         };
         require.getPath = function (namespace) {
@@ -259,7 +259,7 @@
 				return path;
 			}
 			
-			return concat(path, namespace.replace(/\./, "/")+".js");
+			return concat(path, namespace.replace(/\./g, "/")+".js");
         };
 
         require.getPrefix = function (namespace) {
@@ -278,10 +278,10 @@
                 }
             }
 
-            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./, "/") ;
+            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./g, "/") ;
         };
 
-        require.root = null;
+        require.root = "";
         require.pending = {};
         require.enableDebugging = false;
         require.sweep = function (tries) {

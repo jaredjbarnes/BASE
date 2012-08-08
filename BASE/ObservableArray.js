@@ -1,5 +1,5 @@
 
-BASE.require(["BASE.EventEmitter"], function(){
+BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
 	BASE.ObservableArray = function(array){
 		if (!(this instanceof BASE.ObservableArray)){
 			return new BASE.ObservableArray(array);
