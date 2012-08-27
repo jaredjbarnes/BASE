@@ -7,7 +7,6 @@
 
         var self = this;
         delegate = delegate || {};
-        var appendIframesToElement = delegate.appendIframesToElement || document.body;
 
         BASE.EventEmitter.call(this);
 
@@ -53,39 +52,34 @@
 
         };
 
-        var _createIframe = function (callback, isVisible) {
-            var css = isVisible ? {
-                width: "100%",
-                height: "1024px"
-            } : {
-                display: "none"
-            };
-
-            var $iframe = $("<iframe></iframe>").css(css).bind("load", function () {
-                _loadScripts($iframe[0].contentWindow, [BASE.require.getPath("BASE"), BASE.require.getPath("jQuery")], function () {
-                    callback($iframe[0].contentWindow, $iframe[0]);
-                });
-            });
-
-            $iframe.appendTo(appendIframesToElement);
-        };
-
-        var _createSandbox = function (callback, isVisible) {
-            _createIframe(callback, isVisible);
-        };
-
-        //properties
-
         //methods
         self.run = function (namespaceOfTest, options) {
             options = options || {};
 
-            var beforeTest = options.beforeTest || function () { };
-            var afterTest = options.afterTest || function () { };
+            var setupUnitTest = options.setupUnitTest || function () { };
+            var breakDownUnitTest = options.breakDownUnitTest || function () { };
+
+            var _createIframe = function (callback) {
+                var $iframe = $("<iframe></iframe>").bind("load", function () {
+                    _loadScripts($iframe[0].contentWindow, [BASE.require.getPath("BASE"), BASE.require.getPath("jQuery")], function () {
+                        callback($iframe[0].contentWindow, $iframe[0]);
+                    });
+                });
+
+                if (typeof delegate.appendIframe === "function") {
+                    delegate.appendIframe($iframe[0], namespaceOfTest);
+                } else {
+                    $iframe.appendTo(document.body);
+                }
+            };
+
+            var _createSandbox = function (callback) {
+                _createIframe(callback);
+            };
 
             _createSandbox(function (window) {
                 window.document.title = namespaceOfTest;
-                beforeTest(window);
+                setupUnitTest(window);
 
                 window.BASE.require([namespaceOfTest], function () {
                     var test = new window.BASE.getObject(namespaceOfTest)();
@@ -96,7 +90,25 @@
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
-                        afterTest(window);
+                        breakDownUnitTest(window);
+                    });
+
+                    test.on("warning", function () {
+                        var event = new BASE.Event("warning");
+                        event.message = e.message;
+                        event.testNamespace = namespaceOfTest;
+
+                        self.emit(event);
+                        breakDownUnitTest(window);
+                    });
+
+                    test.on("notes", function () {
+                        var event = new BASE.Event("notes");
+                        event.message = e.message;
+                        event.testNamespace = namespaceOfTest;
+
+                        self.emit(event);
+                        breakDownUnitTest(window);
                     });
 
                     test.on("success", function (e) {
@@ -105,7 +117,7 @@
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
-                        afterTest(window);
+                        breakDownUnitTest(window);
                     });
 
                     test.run();
@@ -113,10 +125,6 @@
 
 
             }, options.isVisible);
-        };
-
-        self.createSandbox = function (callback) {
-            return _createSandbox(callback);
         };
 
         return self;
