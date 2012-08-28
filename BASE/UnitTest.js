@@ -87,24 +87,27 @@
                     test.on("error", function (e) {
                         var event = new BASE.Event("error");
                         event.message = e.message;
+                        event.details = e.details;
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
                         breakDownUnitTest(window);
                     });
 
-                    test.on("warning", function () {
+                    test.on("warning", function (e) {
                         var event = new BASE.Event("warning");
                         event.message = e.message;
+                        event.details = e.details;
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
                         breakDownUnitTest(window);
                     });
 
-                    test.on("notes", function () {
+                    test.on("notes", function (e) {
                         var event = new BASE.Event("notes");
                         event.message = e.message;
+                        event.details = e.details;
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
@@ -114,6 +117,7 @@
                     test.on("success", function (e) {
                         var event = new BASE.Event("success");
                         event.message = e.message;
+                        event.details = e.details;
                         event.testNamespace = namespaceOfTest;
 
                         self.emit(event);
