@@ -1,4 +1,6 @@
-﻿BASE.Event = function (type) {
+﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+
+BASE.Event = function (type) {
     if (!(this instanceof BASE.Event)) {
         return new Event(type);
     }
