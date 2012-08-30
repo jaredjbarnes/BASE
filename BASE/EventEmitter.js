@@ -1,9 +1,15 @@
-﻿/// <reference path="/scripts/BASE.js" />
-/// <reference path="/scripts/BASE/Event.js" />
-/// <reference path="/scripts/Object/create.js" />
+﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Event.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/create.js" />
 
 BASE.require(["BASE.Event"], function () {
     BASE.EventEmitter = function () {
+        ///<summary>
+        ///A Class that provides all nesseccary methods to create events and emit them to objects that are listening.
+        ///</summary>
+        ///<returns type="BASE.EventEmitter" >
+        ///Returns "BASE.EventEmitter" object.
+        ///</returns>
         var eventEmitter = this;
         var listeners = {};
 

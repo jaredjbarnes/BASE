@@ -13,7 +13,7 @@ BASE.require(["BASE.EventEmitter"], function () {
         ///<summary>
         ///A Utility Date class that wraps the javascript Date class. It eases modification of time, as well as fires events when the date value is changed, because it is a Event Emitter.
         ///</summary>
-        ///<returns type="undefined" >
+        ///<returns type="BASE.Date" >
         ///Returns "BASE.Date" object.
         ///</returns>
         if (!(this instanceof BASE.Date)) {
