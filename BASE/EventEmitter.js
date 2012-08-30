@@ -1,6 +1,5 @@
 ﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Event.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/create.js" />
 
 BASE.require(["BASE.Event"], function () {
     BASE.EventEmitter = function () {
