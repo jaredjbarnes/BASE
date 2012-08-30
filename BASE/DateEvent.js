@@ -3,7 +3,7 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/ObservableArray.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
 
-BASE.require(["BASE.DateRange", "BASE.ObservableArray","BASE.EventEmitter"], function(){
+BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.EventEmitter"], function(){
 	
 	BASE.DateEvent = function(dateRange){
 		if (!(this instanceof BASE.DateEvent)){

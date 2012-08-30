@@ -113,4 +113,5 @@ BASE.require(["BASE.Event"], function () {
 
         return eventEmitter;
     };
+
 });

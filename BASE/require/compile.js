@@ -1,4 +1,7 @@
 ﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/jQuery.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Array/prototype/forEach.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/keys.js" />
 
 BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
 
@@ -27,8 +30,8 @@ BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
                 dataType: "text",
                 complete: function (xhr) {
                     var data = xhr.responseText;
-                    
-                    compilation.push("/*FILE: "+url+" START*/\n"+data+"\n/*FILE: "+url+" END*/\n");
+
+                    compilation.push("/*FILE: " + url + " START*/\n" + data + "\n/*FILE: " + url + " END*/\n");
                     if (compilation.length === urlList.length) {
                         var encoded = encodeURI(compilation.join("\n"));
                         location.href = "data:application/javascript;charset=utf-8," + encoded;
@@ -37,5 +40,4 @@ BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
             });
         });
     };
-
 });
