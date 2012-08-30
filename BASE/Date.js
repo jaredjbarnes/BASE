@@ -1,4 +1,5 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
 
 BASE.require(["BASE.EventEmitter"], function () {
 

@@ -110,5 +110,5 @@ BASE.require(["BASE.Event"], function () {
                 listeners = o;
             }
         };
-    };
+    };  
 });
