@@ -1,7 +1,14 @@
-﻿BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
+﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 
-    BASE.require.compile = function (callback) {
+BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
 
+    BASE.require.compile = function () {
+        ///<summary>
+        ///A method that compiles all scripts that have been loaded with BASE.require to this point.
+        ///</summary>
+        ///<returns type="undefined" >
+        ///Returns undefined, and open a new tab with the compiled file.
+        ///</returns>
         var dependencies = BASE.require.dependencyList;
         var compilation = [];
         var hash = {};
