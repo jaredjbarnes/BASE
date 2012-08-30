@@ -26,154 +26,157 @@ BASE.require(["BASE.EventEmitter"], function () {
 
         var _date = typeof milliseconds !== "undefined" ? new Date(milliseconds) : new Date();
 
-        Object.defineProperties(self, {
-            "time": {
-                get: function () {
-                    return _date.getTime();
-                },
-                set: function (time) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setTime(time);
-                    event.newValue = _date.getTime();
+        if (typeof Object.defineProperties === "function") {
 
-                    self.emit(event);
-                }
-            },
-            "milliseconds": {
-                get: function () {
-                    return _date.getMilliseconds();
-                },
-                set: function (milliseconds) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setMilliseconds(milliseconds);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "seconds": {
-                get: function () {
-                    return _date.getSeconds();
-                },
-                set: function (seconds) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setSeconds(seconds);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "minutes": {
-                get: function () {
-                    return _date.getMinutes();
-                },
-                set: function (minutes) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setMinutes(minutes);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "hours": {
-                get: function () {
-                    return _date.getHours();
-                },
-                set: function (hours) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setHours(hours);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "date": {
-                get: function () {
-                    return _date.getDate();
-                },
-                set: function (date) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setDate(date);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "day": {
-                get: function () {
-                    return _date.getDay();
-                },
-                set: function (day) {
-                    var event = new BASE.Event("dateChanged");
-                    var day = _date.getDate() - _date.getDay() + day;
-                    event.oldValue = _date.getTime();
-                    _date.setDate(day);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "week": {
-                get: function () {
-                    var date = new Date(_date.getTime());
-                    date.setMonth(0);
-                    date.setDate(1);
-
-                    var now = _date.getTime();
-                    var then = date.getTime();
-
-                    return Math.floor((now - then) / WEEK_IN_MILLISECONDS);
-                },
-                set: function (week) {
-                    if (week < 51) {
-                        var fromDate = new Date(_date.getTime());
-                        fromDate.setMonth(0);
-                        fromDate.setDate(1);
-
-                        var toDate = new Date(fromDate.getTime() + (week * WEEK_IN_MILLISECONDS));
-
+            Object.defineProperties(self, {
+                "time": {
+                    get: function () {
+                        return _date.getTime();
+                    },
+                    set: function (time) {
                         var event = new BASE.Event("dateChanged");
                         event.oldValue = _date.getTime();
-                        _date.setTime(toDate.getTime());
+                        _date.setTime(time);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "milliseconds": {
+                    get: function () {
+                        return _date.getMilliseconds();
+                    },
+                    set: function (milliseconds) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setMilliseconds(milliseconds);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "seconds": {
+                    get: function () {
+                        return _date.getSeconds();
+                    },
+                    set: function (seconds) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setSeconds(seconds);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "minutes": {
+                    get: function () {
+                        return _date.getMinutes();
+                    },
+                    set: function (minutes) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setMinutes(minutes);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "hours": {
+                    get: function () {
+                        return _date.getHours();
+                    },
+                    set: function (hours) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setHours(hours);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "date": {
+                    get: function () {
+                        return _date.getDate();
+                    },
+                    set: function (date) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setDate(date);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "day": {
+                    get: function () {
+                        return _date.getDay();
+                    },
+                    set: function (day) {
+                        var event = new BASE.Event("dateChanged");
+                        var day = _date.getDate() - _date.getDay() + day;
+                        event.oldValue = _date.getTime();
+                        _date.setDate(day);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "week": {
+                    get: function () {
+                        var date = new Date(_date.getTime());
+                        date.setMonth(0);
+                        date.setDate(1);
+
+                        var now = _date.getTime();
+                        var then = date.getTime();
+
+                        return Math.floor((now - then) / WEEK_IN_MILLISECONDS);
+                    },
+                    set: function (week) {
+                        if (week < 51) {
+                            var fromDate = new Date(_date.getTime());
+                            fromDate.setMonth(0);
+                            fromDate.setDate(1);
+
+                            var toDate = new Date(fromDate.getTime() + (week * WEEK_IN_MILLISECONDS));
+
+                            var event = new BASE.Event("dateChanged");
+                            event.oldValue = _date.getTime();
+                            _date.setTime(toDate.getTime());
+                            event.newValue = _date.getTime();
+
+                            self.emit(event);
+                        }
+                    }
+                },
+                "month": {
+                    get: function () {
+                        return _date.getMonth();
+                    },
+                    set: function (month) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setMonth(month);
+                        event.newValue = _date.getTime();
+
+                        self.emit(event);
+                    }
+                },
+                "year": {
+                    get: function () {
+                        return _date.getFullYear();
+                    },
+                    set: function (year) {
+                        var event = new BASE.Event("dateChanged");
+                        event.oldValue = _date.getTime();
+                        _date.setFullYear(year);
                         event.newValue = _date.getTime();
 
                         self.emit(event);
                     }
                 }
-            },
-            "month": {
-                get: function () {
-                    return _date.getMonth();
-                },
-                set: function (month) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setMonth(month);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            },
-            "year": {
-                get: function () {
-                    return _date.getFullYear();
-                },
-                set: function (year) {
-                    var event = new BASE.Event("dateChanged");
-                    event.oldValue = _date.getTime();
-                    _date.setFullYear(year);
-                    event.newValue = _date.getTime();
-
-                    self.emit(event);
-                }
-            }
-        });
+            });
+        }
 
         self.addMilliseconds = function (milliseconds) {
             var result = self.milliseconds + milliseconds;
