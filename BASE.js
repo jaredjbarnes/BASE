@@ -136,35 +136,30 @@
         prototypeProperties = prototypeProperties || {};
         classProperties = classProperties || {};
 
-        var Klass = function () {
-            var self = this;
-            if (!(self instanceof Klass)) {
-                throw new Error("Forgot to use the new operator while trying to instantiate: " + Constructor.toString());
-            }
-            SuperClass.apply(self, []);
-            Constructor.apply(self, arguments);
-        };
-
-        Klass.prototype = new SuperClass();
-        Klass.prototype.constructor = Klass;
+        Constructor.prototype = new SuperClass();
 
         for (var pp in prototypeProperties) {
             if (prototypeProperties.hasOwnProperty(pp)) {
-                Klass.prototype[pp] = prototypeProperties[pp];
+                Constructor.prototype[pp] = prototypeProperties[pp];
             }
         }
 
         for (var cp in classProperties) {
             if (classProperties.hasOwnProperty(cp)) {
-                Klass[cp] = classProperties[cp];
+                Constructor[cp] = classProperties[cp];
             }
         }
 
         for (var sp in SuperClass) {
-            Klass[sp] = SuperClass[sp];
+            Constructor[sp] = SuperClass[sp];
         }
 
-        return Klass;
+        Constructor.prototype.constructor = Constructor;
+        Constructor.prototype._super = function () {
+            SuperClass.apply(self, arguments);
+        };
+
+        return Constructor;
     };
    
     (function () {
