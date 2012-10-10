@@ -128,12 +128,13 @@
         ///<summary>
         /// Creates Classes through prototypal inheritance.
         ///</summary>
-        ///<param type="Function" name="SuperClass">Super Class</param>
-        ///<param type="Function" name="Constructor">Constructor</param>
-        ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually only methods)</param>
+        ///<param type="Function" name="SuperClass">Super Class Constructor</param>
+        ///<param type="Function" name="Constructor">Constructor Of Class</param>
+        ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually just methods, because of prototypal oddities)</param>
         ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
-        ///<returns type="Function" >Class Constructor</return>
-        methods = methods || {};
+        ///<returns type="Function" >Class Constructor</returns>
+        prototypeProperties = prototypeProperties || {};
+        classProperties = classProperties || {};
 
         var Klass = function () {
             var self = this;
@@ -147,17 +148,21 @@
         Klass.prototype = new SuperClass();
         Klass.prototype.constructor = Klass;
 
-        Object.keys(methods).forEach(function (x) {
-            Klass.prototype[x] = prototypeProperties[x];
-        });
+        for (var pp in prototypeProperties) {
+            if (prototypeProperties.hasOwnProperty(pp)) {
+                Klass.prototype[pp] = prototypeProperties[pp];
+            }
+        }
 
-        Object.keys(classProperties).forEach(function (x) {
-            Klass[x] = classProperties[x];
-        });
+        for (var cp in classProperties) {
+            if (classProperties.hasOwnProperty(cp)) {
+                Klass[cp] = classProperties[cp];
+            }
+        }
 
         return Klass;
     };
-
+   
     (function () {
         var dEval = function (n, src, callback, onerror) {
             var script = document.createElement("script");
@@ -409,9 +414,7 @@
                     writable: false
                 }
             });
-
-
         }
     })();
-
+    
 })();
