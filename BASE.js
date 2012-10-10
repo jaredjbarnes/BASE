@@ -124,6 +124,7 @@
         return clone(this, deep);
     };
 
+    var BASEClass = function () { };
     var defineClass = function (SuperClass, Constructor, prototypeProperties, classProperties) {
         ///<summary>
         /// Creates Classes through prototypal inheritance.
@@ -135,7 +136,7 @@
         ///<returns type="Function">Class Constructor</returns>
         prototypeProperties = prototypeProperties || {};
         classProperties = classProperties || {};
-
+        SuperClass = SuperClass === Object ? BASEClass : SuperClass;
         Constructor.prototype = new SuperClass();
 
         for (var pp in prototypeProperties) {
