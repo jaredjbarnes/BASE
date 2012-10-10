@@ -124,6 +124,40 @@
         return clone(this, deep);
     };
 
+    var defineClass = function (SuperClass, Constructor, prototypeProperties, classProperties) {
+        ///<summary>
+        /// Creates Classes through prototypal inheritance.
+        ///</summary>
+        ///<param type="Function" name="SuperClass">Super Class</param>
+        ///<param type="Function" name="Constructor">Constructor</param>
+        ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually only methods)</param>
+        ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
+        ///<returns type="Function" >Class Constructor</return>
+        methods = methods || {};
+
+        var Klass = function () {
+            var self = this;
+            if (!(self instanceof Klass)) {
+                throw new Error("Forgot to use the new operator while trying to instantiate: " + Constructor.toString());
+            }
+            SuperClass.apply(self, []);
+            Constructor.apply(self, arguments);
+        };
+
+        Klass.prototype = new SuperClass();
+        Klass.prototype.constructor = Klass;
+
+        Object.keys(methods).forEach(function (x) {
+            Klass.prototype[x] = prototypeProperties[x];
+        });
+
+        Object.keys(classProperties).forEach(function (x) {
+            Klass[x] = classProperties[x];
+        });
+
+        return Klass;
+    };
+
     (function () {
         var dEval = function (n, src, callback, onerror) {
             var script = document.createElement("script");
@@ -334,6 +368,8 @@
             BASE.namespace = namespace;
             BASE.clone = clone;
             BASE.getObject = getObject;
+            BASE.defineClass = defineClass;
+
         } else {
             BASE = window.BASE = function () { };
             //This really sets it as it should be.
@@ -357,6 +393,11 @@
                     value: getObject,
                     enumerable: false,
                     writable: false
+                },
+                "defineClass": {
+                    value: defineClass,
+                    enumerable: false,
+                    writable:false
                 }
             });
 
