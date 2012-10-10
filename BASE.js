@@ -132,7 +132,6 @@
         ///<param type="Function" name="Constructor">Constructor Of Class</param>
         ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually just methods, because of prototypal oddities)</param>
         ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
-        ///<returns type="Function" >Class Constructor</returns>
         prototypeProperties = prototypeProperties || {};
         classProperties = classProperties || {};
 
@@ -156,7 +155,7 @@
 
         Constructor.prototype.constructor = Constructor;
         Constructor.prototype._super = function () {
-            SuperClass.apply(self, arguments);
+            SuperClass.apply(this, arguments);
         };
 
         return Constructor;
