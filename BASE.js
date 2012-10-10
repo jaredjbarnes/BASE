@@ -129,10 +129,10 @@
         /// Creates Classes through prototypal inheritance.
         ///</summary>
         ///<param type="Function" name="SuperClass">Super Class Constructor</param>
-        ///<param type="Function" name="Constructor">Constructor Of Class</param>
+        ///<param type="Function" name="Constructor">Constructor</param>
         ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually just methods, because of prototypal oddities)</param>
         ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
-        ///<returns type="Function" >Class Constructor</returns>
+        ///<returns type="Function">Class Constructor</returns>
         prototypeProperties = prototypeProperties || {};
         classProperties = classProperties || {};
 
@@ -144,14 +144,14 @@
             }
         }
 
+        for (var sp in SuperClass) {
+            Constructor[sp] = SuperClass[sp];
+        }
+
         for (var cp in classProperties) {
             if (classProperties.hasOwnProperty(cp)) {
                 Constructor[cp] = classProperties[cp];
             }
-        }
-
-        for (var sp in SuperClass) {
-            Constructor[sp] = SuperClass[sp];
         }
 
         Constructor.prototype.constructor = Constructor;
@@ -416,4 +416,5 @@
         }
     })();
     
+
 })();
