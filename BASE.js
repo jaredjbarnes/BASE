@@ -159,6 +159,7 @@
             SuperClass.apply(this, arguments);
         };
 
+
         return Constructor;
     };
    
