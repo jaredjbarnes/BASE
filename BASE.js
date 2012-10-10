@@ -160,6 +160,10 @@
             }
         }
 
+        for (var sp in SuperClass) {
+            Klass[sp] = SuperClass[sp];
+        }
+
         return Klass;
     };
    
