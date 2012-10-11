@@ -124,7 +124,6 @@
         return clone(this, deep);
     };
 
-    var BASEClass = function () { };
     var defineClass = function (SuperClass, Constructor, prototypeProperties, classProperties) {
         ///<summary>
         /// Creates Classes through prototypal inheritance.
@@ -134,34 +133,46 @@
         ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually just methods, because of prototypal oddities)</param>
         ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
         ///<returns type="Function">Class Constructor</returns>
+
+        var Klass = function () {
+            var self = this;
+            if (!(self instanceof arguments.callee)) {
+                throw new Error("Forgot the \"new\" operator while trying to instantiate the object.");
+            }
+
+            self.base = function () {
+                SuperClass.apply(self, arguments);
+            };
+            
+            Constructor.apply(self, arguments);
+        };
+
         prototypeProperties = prototypeProperties || {};
         classProperties = classProperties || {};
-        SuperClass = SuperClass === Object ? BASEClass : SuperClass;
-        Constructor.prototype = new SuperClass();
+
+        Klass.prototype = new SuperClass();
 
         for (var pp in prototypeProperties) {
             if (prototypeProperties.hasOwnProperty(pp)) {
-                Constructor.prototype[pp] = prototypeProperties[pp];
+                Klass.prototype[pp] = prototypeProperties[pp];
             }
         }
 
         for (var sp in SuperClass) {
-            Constructor[sp] = SuperClass[sp];
+            if (prototypeProperties.hasOwnProperty(sp)) {
+                Klass[sp] = SuperClass[sp];
+            }
         }
-
+     
         for (var cp in classProperties) {
             if (classProperties.hasOwnProperty(cp)) {
-                Constructor[cp] = classProperties[cp];
+                Klass[cp] = classProperties[cp];
             }
         }
 
-        Constructor.prototype.constructor = Constructor;
-        Constructor.prototype._super = function () {
-            SuperClass.apply(this, arguments);
-        };
+        Klass.prototype.constructor = Klass;
 
-
-        return Constructor;
+        return Klass;
     };
    
     (function () {
