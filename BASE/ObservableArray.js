@@ -1,3 +1,4 @@
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 
 BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
 	BASE.ObservableArray = function(array){
