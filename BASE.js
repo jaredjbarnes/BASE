@@ -309,7 +309,9 @@
 			if (/\.js$/.test(path)){
 				return path;
 			}
-			
+			if ( path.indexOf(http://)==0 || path.indexOf(https://) === 0 ){
+                             return path + concat("/"+namespace.replace(/\./g, "/")+".js");
+                        }
 			return concat(path, namespace.replace(/\./g, "/")+".js");
         };
 
