@@ -1,15 +1,16 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
 
-BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
+BASE.require(["BASE.EventEmitter"], function(){
 	BASE.ObservableArray = function(array){
 		if (!(this instanceof BASE.ObservableArray)){
 			return new BASE.ObservableArray(array);
 		}
 		
-		Array.call(this);
-		BASE.EventEmitter.call(this);
 		
+		BASE.EventEmitter.call(this);
+		Array.call(this);
+
 		var self = this;
 		if (array){
 			for (var x = 0 ;x < array.length; x++){
@@ -46,7 +47,7 @@ BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
 		};
 		
 		self.splice = function(){
-			var result;
+		    var result;
 			var newItems = Array.prototype.slice.apply(arguments, [2, arguments.length]);
 			var oldItems;
 			
@@ -87,7 +88,7 @@ BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
 		
 		self.concat = function(){
 			var result = self.toArray();
-			return Array.prototype.concat.apply(result, arguments);
+			return new BASE.ObservableArray(Array.prototype.concat.apply(result, arguments));
 		};
 		
 		self.toArray = function(){
@@ -102,3 +103,4 @@ BASE.require(["BASE.EventEmitter","Array.prototype.indexOf"], function(){
 	BASE.ObservableArray.prototype = new Array();
 
 });
+

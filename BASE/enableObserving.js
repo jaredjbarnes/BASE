@@ -1,11 +1,11 @@
-/// <reference path="/js/scripts/Object/keys.js" />
-/// <reference path="/js/scripts/Array/prototype/indexOf.js" />
-/// <reference path="/js/scripts/Array/prototype/forEach.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/keys.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Array/prototype/forEach.js" />
 
 BASE.require(["Array.prototype.indexOf", "Object.keys", "Array.prototype.forEach"], function () {
 
     var camelCase = (function () {
-        var re = /^./i
+        var re = /^./i;
         return function (x) {
             return x.replace(re, function (x) {
                 return x.toUpperCase();
@@ -142,29 +142,16 @@ BASE.require(["Array.prototype.indexOf", "Object.keys", "Array.prototype.forEach
         //This is the object where we store the variable values.
         var variables = {};
 
+
         //Get the property names using Object.keys, then forEach the values.
         Object.keys(instance).forEach(function (x) {
             if (typeof instance[x] !== 'function') {
                 variables[x] = instance[x];
 
-                var getterName = "get" + camelCase(x);
                 var setterName = "set" + camelCase(x);
 
-                var hasGetter = instance[getterName];
                 var hasSetter = instance[setterName];
 
-                //If it has a getter already, then let the getter handle the response.
-                if (hasGetter) {
-
-                    instance[getterName] = function () {
-                        return instance[getterName]();
-                    };
-
-                } else {
-                    instance[getterName] = function () {
-                        return instance[x];
-                    };
-                }
 
                 if (hasSetter) {
 
@@ -194,7 +181,7 @@ BASE.require(["Array.prototype.indexOf", "Object.keys", "Array.prototype.forEach
                         }
                     };
 
-                } else if (!hasGetter && !hasSetter) {
+                } else {
                     instance[setterName] = function (val) {
                         instance[x] = val;
                         //Trigger event
@@ -214,6 +201,8 @@ BASE.require(["Array.prototype.indexOf", "Object.keys", "Array.prototype.forEach
                 }
             }
         });
+
+        return instance;
     };
 
 
