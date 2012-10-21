@@ -144,15 +144,6 @@
                 SuperClass.apply(self, arguments);
             };
 
-            // This allows a self.base.method();
-            for (var x in Klass.prototype) (function (x) {
-                if (typeof Klass.prototype[x] === "function") {
-                    self.base[x] = function () {
-                        Klass.prototype[x].apply(self, arguments);
-                    };
-                }
-            })(x);
-
             Constructor.apply(self, arguments);
         };
 
@@ -160,6 +151,16 @@
         classProperties = classProperties || {};
 
         Klass.prototype = new SuperClass();
+        Klass.prototype.base = {};
+
+        // This allows a self.base.method();
+        for (var x in Klass.prototype) (function (x) {
+            if (Klass.prototype.hasOwnProperty(x) && Klass.prototype[x] === "function") {
+                Klass.prototype.base[x] = function () {
+                    Klass.prototype[x].apply(self, arguments);
+                };
+            }
+        })(x);
 
         for (var pp in prototypeProperties) {
             if (prototypeProperties.hasOwnProperty(pp)) {
