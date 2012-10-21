@@ -146,9 +146,11 @@
 
             // This allows a self.base.method();
             for (var x in Klass.prototype) {
-                self.base[x] = function () {
-                    Klass.prototype[x].apply(self, arguments);
-                };
+                if (typeof Klass.prototype[x] === "function"){
+                    self.base[x] = function () {
+                        Klass.prototype[x].apply(self, arguments);
+                    };
+                }
             }
             
             Constructor.apply(self, arguments);
