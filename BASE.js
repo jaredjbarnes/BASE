@@ -143,7 +143,7 @@
             if (self.constructor === Klass) {
                 self.base = function () {
                     var base = self.base;
-                    self.base = self.base.base;
+                    self.base = self.base.base || function () { };
                     SuperClass.apply(self, arguments);
                     self.base = base;
                 };
@@ -154,7 +154,7 @@
                         var fn = self[x];
                         self.base[x] = function () {
                             var base = self.base;
-                            self.base = self.base.base;
+                            self.base = self.base.base || function () { };
                             var result = fn.apply(self, arguments);
                             self.base = base;
                             return result;
