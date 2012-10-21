@@ -145,12 +145,14 @@
             };
 
             // This allows a self.base.method();
-            for (var x in Klass.prototype) {
-                self.base[x] = function () {
-                    Klass.prototype[x].apply(self, arguments);
-                };
-            }
-            
+            for (var x in Klass.prototype) (function (x) {
+                if (typeof Klass.prototype[x] === "function") {
+                    self.base[x] = function () {
+                        Klass.prototype[x].apply(self, arguments);
+                    };
+                }
+            })(x);
+
             Constructor.apply(self, arguments);
         };
 
@@ -170,7 +172,7 @@
                 Klass[sp] = SuperClass[sp];
             }
         }
-     
+
         for (var cp in classProperties) {
             if (classProperties.hasOwnProperty(cp)) {
                 Klass[cp] = classProperties[cp];
@@ -181,7 +183,7 @@
 
         return Klass;
     };
-   
+
     (function () {
         var dEval = function (n, src, callback, onerror) {
             var script = document.createElement("script");
@@ -292,34 +294,34 @@
         };
 
         var paths = {};
-		var concat = function(){
-			var result = "";
-			for (var x = 0 ; x < arguments.length; x++){
-				result += "/"+arguments[x];
-			}
-			return result.replace(/\/+/g, '/');
-		};
-		
+        var concat = function () {
+            var result = "";
+            for (var x = 0 ; x < arguments.length; x++) {
+                result += "/" + arguments[x];
+            }
+            return result.replace(/\/+/g, '/');
+        };
+
         require.dependencyList = [];
 
         require.setPath = function (namespace, path) {
-			if (namespace && path){
-				var finalPath = path;
-				if (path.indexOf("/") !== 0){
-					finalPath = concat(require.root, path);
-				}
-				 paths[namespace] = finalPath.replace(/\/+/g, '/');
-			}
+            if (namespace && path) {
+                var finalPath = path;
+                if (path.indexOf("/") !== 0) {
+                    finalPath = concat(require.root, path);
+                }
+                paths[namespace] = finalPath.replace(/\/+/g, '/');
+            }
         };
         require.getPath = function (namespace) {
             var path = require.getPrefix(namespace);
-			if (/\.js$/.test(path)){
-				return path;
-			}
-			if ( path.indexOf("http://")==0 || path.indexOf("https://") === 0 ){
-                             return path + concat("/"+namespace.replace(/\./g, "/")+".js");
-                        }
-			return concat(path, namespace.replace(/\./g, "/")+".js");
+            if (/\.js$/.test(path)) {
+                return path;
+            }
+            if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
+                return path + concat("/" + namespace.replace(/\./g, "/") + ".js");
+            }
+            return concat(path, namespace.replace(/\./g, "/") + ".js");
         };
 
         require.getPrefix = function (namespace) {
@@ -338,7 +340,7 @@
                 }
             }
 
-            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./g, "/") ;
+            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./g, "/");
         };
 
         require.root = "";
@@ -423,7 +425,7 @@
                 "defineClass": {
                     value: defineClass,
                     enumerable: false,
-                    writable:false
+                    writable: false
                 }
             });
 
@@ -437,6 +439,6 @@
             });
         }
     })();
-    
+
 
 })();
