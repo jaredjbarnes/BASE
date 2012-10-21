@@ -177,7 +177,7 @@
         }
 
         for (var sp in SuperClass) {
-            if (prototypeProperties.hasOwnProperty(sp)) {
+            if (SuperClass.hasOwnProperty(sp)) {
                 Klass[sp] = SuperClass[sp];
             }
         }
