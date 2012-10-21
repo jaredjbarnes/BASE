@@ -141,13 +141,11 @@
             }
 
             if (self.constructor === Klass) {
-                self.base = function () {
-                    if (SuperClass !== Object) {
-                        SuperClass.apply(self, arguments);
-                    }
-                };
-
                 if (SuperClass !== Object) {
+                    self.base = function () {
+                        SuperClass.apply(self, arguments);
+                    };
+
                     // This allows a self.base.method();
                     for (var x in Klass.prototype) (function (x) {
                         if (typeof Klass.prototype[x] === "function") {
@@ -157,6 +155,8 @@
                             };
                         }
                     })(x);
+                } else {
+                    self.base = function () { };
                 }
             }
             Constructor.apply(self, arguments);
