@@ -140,11 +140,11 @@
                 throw new Error("Forgot the \"new\" operator while trying to instantiate the object.");
             }
 
-            self.base = function () {
-                SuperClass.apply(self, arguments);
-            };
-
             if (self.constructor === Klass) {
+                self.base = function () {
+                    SuperClass.apply(self, arguments);
+                };
+
                 // This allows a self.base.method();
                 for (var x in Klass.prototype) (function (x) {
                     if (typeof Klass.prototype[x] === "function") {
