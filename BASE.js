@@ -149,7 +149,7 @@
                         if (Klass.prototype.hasOwnProperty(x) && typeof Klass.prototype[x] === "function") {
                             var fn = self[x];
                             self.base[x] = function () {
-                                fn.apply(self, arguments);
+                               return fn.apply(self, arguments);
                             };
                         }
                     })(x);
