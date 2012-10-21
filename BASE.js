@@ -142,7 +142,9 @@
 
             if (self.constructor === Klass) {
                 self.base = function () {
-                    SuperClass.apply(self, arguments);
+                    if (SuperClass !== Object) {
+                        SuperClass.apply(self, arguments);
+                    }
                 };
 
                 // This allows a self.base.method();
