@@ -140,7 +140,7 @@
                 throw new Error("Forgot the \"new\" operator while trying to instantiate the object.");
             }
 
-            if (self.constructor === Klass && SuperClass !== Object) {
+            if (self.constructor === Klass) {
                 self.base = function () {
                     console.log(SuperClass === Object);
                     SuperClass.apply(self, arguments);
