@@ -140,24 +140,20 @@
                 throw new Error("Forgot the \"new\" operator while trying to instantiate the object.");
             }
 
-            if (self.constructor === Klass) {
-                if (SuperClass !== Object) {
-                    self.base = function () {
-                        SuperClass.apply(self, arguments);
-                    };
+            if (self.constructor === Klass && SuperClass !== Object) {
+                self.base = function () {
+                    SuperClass.apply(self, arguments);
+                };
 
-                    // This allows a self.base.method();
-                    for (var x in Klass.prototype) (function (x) {
-                        if (typeof Klass.prototype[x] === "function") {
-                            var fn = self[x];
-                            self.base[x] = function () {
-                                return fn.apply(self, arguments);
-                            };
-                        }
-                    })(x);
-                } else {
-                    self.base = function () { };
-                }
+                // This allows a self.base.method();
+                for (var x in Klass.prototype) (function (x) {
+                    if (typeof Klass.prototype[x] === "function") {
+                        var fn = self[x];
+                        self.base[x] = function () {
+                            return fn.apply(self, arguments);
+                        };
+                    }
+                })(x);
             }
             Constructor.apply(self, arguments);
         };
