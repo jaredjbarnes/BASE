@@ -147,15 +147,17 @@
                     }
                 };
 
-                // This allows a self.base.method();
-                for (var x in Klass.prototype) (function (x) {
-                    if (typeof Klass.prototype[x] === "function") {
-                        var fn = self[x];
-                        self.base[x] = function () {
-                            return fn.apply(self, arguments);
-                        };
-                    }
-                })(x);
+                if (SuperClass !== Object) {
+                    // This allows a self.base.method();
+                    for (var x in Klass.prototype) (function (x) {
+                        if (typeof Klass.prototype[x] === "function") {
+                            var fn = self[x];
+                            self.base[x] = function () {
+                                return fn.apply(self, arguments);
+                            };
+                        }
+                    })(x);
+                }
             }
             Constructor.apply(self, arguments);
         };
