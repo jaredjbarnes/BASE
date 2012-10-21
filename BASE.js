@@ -142,8 +142,10 @@
 
             if (self.constructor === Klass) {
                 self.base = function () {
-                    console.log(SuperClass === Object);
+                    var base = self.base;
+                    self.base = self.base.base;
                     SuperClass.apply(self, arguments);
+                    self.base = base;
                 };
 
                 // This allows a self.base.method();
@@ -151,7 +153,11 @@
                     if (typeof Klass.prototype[x] === "function") {
                         var fn = self[x];
                         self.base[x] = function () {
-                            return fn.apply(self, arguments);
+                            var base = self.base;
+                            self.base = self.base.base;
+                            var result = fn.apply(self, arguments);
+                            self.base = base;
+                            return result;
                         };
                     }
                 })(x);
