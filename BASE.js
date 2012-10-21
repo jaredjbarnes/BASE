@@ -145,24 +145,14 @@
             };
 
             // This allows a self.base.method();
-<<<<<<< HEAD
             for (var x in Klass.prototype) (function (x) {
                 if (typeof Klass.prototype[x] === "function") {
-=======
-            for (var x in Klass.prototype) (function(x){
-                if (typeof Klass.prototype[x] === "function"){
->>>>>>> 69a5bd2c1ffa21305ea729614317fbeecc6ab3da
                     self.base[x] = function () {
                         Klass.prototype[x].apply(self, arguments);
                     };
                 }
-<<<<<<< HEAD
             })(x);
 
-=======
-            })();
-            
->>>>>>> 69a5bd2c1ffa21305ea729614317fbeecc6ab3da
             Constructor.apply(self, arguments);
         };
 
