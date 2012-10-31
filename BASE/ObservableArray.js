@@ -20,10 +20,10 @@ BASE.require(["BASE.EventEmitter"], function(){
 		
 		self.push = function(item){
 			var result;
-			
+			var items = Array.prototype.slice.call(arguments);
 			result = Array.prototype.push.apply(self, arguments);
 			var event = new BASE.Event("collectionChanged");
-			event.newItems = [item];
+			event.newItems = items;
 			event.oldItems = [];
 			
 			self.emit(event);
