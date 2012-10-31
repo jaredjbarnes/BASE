@@ -151,7 +151,7 @@
                 // This allows a self.base.method();
                 for (var x in Klass.prototype) (function (x) {
                     if (typeof Klass.prototype[x] === "function") {
-                        var fn = self[x];
+                        var fn = Klass.prototype[x];
                         self.base[x] = function () {
                             var base = self.base;
                             self.base = self.base.base || function () { };
