@@ -1,4 +1,8 @@
-﻿BASE.require(["BASE.EventEmitter", "Array.isArray", "Array.prototype.forEach", "jQuery"], function () {
+﻿/// <reference path="/scripts/BASE.js" />
+/// <reference path="/scripts/BASE/EventEmitter.js" />
+/// <reference path="/scripts/jQuery.js" />
+
+BASE.require(["BASE.EventEmitter", "Array.isArray", "Array.prototype.forEach", "jQuery"], function () {
 
     BASE.UnitTest = function (delegate) {
         if (!(this instanceof BASE.UnitTest)) {
