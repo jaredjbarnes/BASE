@@ -86,7 +86,7 @@ BASE.require(["BASE.EventEmitter", "Array.isArray", "Array.prototype.forEach", "
                 setupUnitTest(window);
 
                 window.BASE.require([namespaceOfTest], function () {
-                    var test = new window.BASE.getObject(namespaceOfTest)();
+                    var test = new (window.BASE.getObject(namespaceOfTest))();
 
                     test.on("error", function (e) {
                         var event = new BASE.Event("error");
