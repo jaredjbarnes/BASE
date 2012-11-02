@@ -43,7 +43,7 @@
         };
 
         self.hasKey = function (key) {
-            if (key.hash) {
+            if (key.hash && hash[key.hash]) {
                 return true;
             }
             return false;
