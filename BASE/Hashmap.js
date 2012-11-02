@@ -22,6 +22,11 @@
         var hash = {};
 
         self.add = function (key, object) {
+            if (typeof key === "string") {
+                hash[key] = object;
+                return;
+            }
+
             if (!key.hash) {
                 key.hash = GUID();
             }
@@ -30,6 +35,10 @@
         };
 
         self.get = function (key) {
+            if (typeof key === "string") {
+                return hash[key] || null;
+            }
+
             if (key.hash && hash[key.hash]) {
                 return hash[key.hash]
             }
@@ -37,12 +46,20 @@
         };
 
         self.remove = function (key) {
+            if (typeof key === "string") {
+                delete hash[key];
+                return;
+            }
             if (key.hash && hash[key.hash]) {
                 delete hash[key.hash];
             }
         };
 
         self.hasKey = function (key) {
+            if (typeof key === "string") {
+                return hash[key] ? true : false;
+            }
+
             if (key.hash && hash[key.hash]) {
                 return true;
             }
