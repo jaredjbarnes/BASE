@@ -85,8 +85,18 @@ BASE.require(["BASE.EventEmitter", "Array.isArray", "Array.prototype.forEach", "
                 window.document.title = namespaceOfTest;
                 setupUnitTest(window);
 
+
                 window.BASE.require([namespaceOfTest], function () {
-                    var test = new (window.BASE.getObject(namespaceOfTest))();
+                    try {
+                        var test = new (window.BASE.getObject(namespaceOfTest))();
+                    } catch (e) {
+                        var event = new BASE.Event("error");
+                        event.message = "Failed to instantiate '" + namespaceOfTest + "'.";
+                        event.details = e.message;
+                        event.testNamespace = namespaceOfTest;
+
+                        self.emit(event);
+                    }
 
                     test.on("error", function (e) {
                         var event = new BASE.Event("error");

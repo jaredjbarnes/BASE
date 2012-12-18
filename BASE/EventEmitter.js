@@ -1,5 +1,5 @@
-﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Event.js" />
+﻿/// <reference path="/scripts/BASE.js" />
+/// <reference path="/scripts/BASE/Event.js" />
 
 BASE.require(["BASE.Event"], function () {
     BASE.EventEmitter = function () {
@@ -15,7 +15,7 @@ BASE.require(["BASE.Event"], function () {
         var Event = BASE.Event;
 
         eventEmitter.emit = function (event) {
-            if (event instanceof Event) {
+
                 var listenerArray = listeners[event.type];
                 var type = event.type;
                 if (listenerArray) {
@@ -32,7 +32,7 @@ BASE.require(["BASE.Event"], function () {
                         }
                     }
                 }
-            }
+            
         };
 
         eventEmitter.removeAllListeners = function () {

@@ -137,7 +137,7 @@
         var Klass = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {
-                throw new Error("Forgot the \"new\" operator while trying to instantiate the object.");
+                throw new Error("Forgot the \"new\" operator while trying to instantiate the object. " + Constructor.toString());
             }
 
             if (self.constructor === Klass) {
@@ -279,7 +279,9 @@
                     url = require.getPath(namespaceArray[u]);
                     dEval(namespaceArray[u], url, onSuccess, (function (n) {
                         return function () {
-                            throw new Error('Error loading resource: ' + n);
+                            while (callbacks.length > 0) {
+                                callbacks.pop()(new Error("Failed to load these dependencies: " + n));
+                            }
                             delete require.pending[n];
                         };
                     })(namespaceArray[u]));
@@ -376,12 +378,12 @@
                 }
             }
             if (sent === received && callbacks.length > 0) {
-                //callbacks.pop()();
                 tries += 1;
-                //console.log(tries);
 
                 if (tries > 1000) {
-                    throw new Error("Failed to load these dependencies: " + require.getUnloaded());
+                    while (callbacks.length > 0) {
+                        callbacks.pop()(new Error("Failed to load these dependencies: " + require.getUnloaded()));
+                    }
                     pending = {};
                 }
                 setTimeout(function () { require.sweep(tries); }, 1);

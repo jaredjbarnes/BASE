@@ -1,4 +1,4 @@
-﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
+﻿/// <reference path="/scripts/BASE.js" />
 
 BASE.Event = function (type) {
     if (!(this instanceof BASE.Event)) {

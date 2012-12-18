@@ -22,6 +22,11 @@
         var hash = {};
 
         self.add = function (key, object) {
+            
+            if (!key) {
+                throw new Error("Cannot add an object with a null or undefined key. object: "+object);
+            }
+
             if (typeof key === "string") {
                 hash[key] = object;
                 return;
