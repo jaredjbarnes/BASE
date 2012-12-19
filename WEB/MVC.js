@@ -2,93 +2,55 @@ BASE.require(["jQuery"], function () {
 
     BASE.namespace("WEB");
 
-    var walkTheDom = function ($elem, condition, callback) {
-        var $children = $elem.children();
+    var asyncWalkTheDom = function (elem, callback) {
+        callback = callback || function () { };
+        setTimeout(function () {
+            var $elem = $(elem);
+            var $children = $elem.children();
 
-        $children.each(function () {
-            walkTheDom($(this), condition, callback);
-        });
+            var length = $children.length;
+            var lamda = function () {
+                length--;
+                if (length <= 0) {
+                    var viewNamespace = $elem.attr("data-view");
+                    if (viewNamespace) {
+                        BASE.require([viewNamespace], function () {
+                            var View = BASE.getObject(viewNamespace);
+                            var view = new View(elem);
+                            elem.view = view;
 
-        if (condition($elem)) {
-            callback.apply($elem[0], []);
-        }
-    };
+                            var controllerNamespace = $elem.attr("data-controller");
+                            if (controllerNamespace) {
+                                BASE.require([controllerNamespace], function () {
+                                    var Controller = BASE.getObject(controllerNamespace);
+                                    var controller = new Controller(view);
+                                    elem.controller = controller;
 
-    var views = function ($root, each) {
-        walkTheDom($root, function ($elem) {
-            if ($elem.attr("data-view")) {
-                return true;
+                                    callback();
+                                });
+                            } else {
+                                callback();
+                            }
+                        });
+                    } else {
+                        callback();
+                    }
+                }
+            };
+            if (length > 0) {
+                $children.each(function () {
+                    asyncWalkTheDom(this, lamda);
+                });
+            } else {
+                lamda();
             }
-            return false;
-        }, each);
+        }, 0);
     };
 
-    var controllers = function ($root, each) {
-        walkTheDom($root, function ($elem) {
-            if ($elem.attr("data-controller")) {
-                return true;
-            }
-            return false;
-        }, each);
-    };
 
     window.WEB.MVC = {
-        applyTo: function (root, callback) {
-            var totalViews = [];
-            var totalControllers = [];
-            callback = callback || function () { };
-
-            views($(root), function () {
-                var $this = $(this);
-                var script = $this.attr("data-view");
-
-                if (!$this[0].view) {
-                    totalViews.push(script)
-                    BASE.require([script], function () {
-                        var Klass = BASE.getObject(script);
-
-                        if (typeof Klass === "function") {
-                            $this[0].view = new Klass($this[0]);
-                            totalViews.pop();
-
-                            if (totalViews.length === 0) {
-                                controllers($(root), function () {
-                                    var $this = $(this);
-                                    var script = $this.attr("data-controller");
-                                    var view = $this[0].view;
-
-                                    if (!$this[0].controller) {
-                                        if (!view) {
-                                            throw new Error("Controller \"" + script + "\" needs to have a \"data-view\" attribute also.");
-                                        }
-
-                                        totalControllers.push(script)
-                                        BASE.require([script], function () {
-                                            var Klass = BASE.getObject(script);
-
-                                            if (typeof Klass === "function") {
-                                                $this[0].controller = new Klass(view, $this[0]);
-                                                totalControllers.pop();
-
-                                                if (totalControllers.length === 0) {
-                                                    callback();
-                                                }
-
-                                            } else {
-                                                throw new Error("\"" + script + "\" needs to be a class.");
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        } else {
-                            throw new Error("\"" + script + "\" needs to be a class.");
-                        }
-                    });
-                }
-            });
-        }
+        applyTo: asyncWalkTheDom
     };
 
-    WEB.MVC.applyTo($("html")[0]);
+    $(function () { WEB.MVC.applyTo($("html")[0]); });
 });
