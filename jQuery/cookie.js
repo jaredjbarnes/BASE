@@ -1,5 +1,5 @@
 /*!
- * jQuery Cookie Plugin
+ * jQuery Cookie Plugin v1.3
  * https://github.com/carhartl/jquery-cookie
  *
  * Copyright 2011, Klaus Hartl
@@ -7,16 +7,25 @@
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.opensource.org/licenses/GPL-2.0
  */
+(function ($, document, undefined) {
 
-BASE.require(["jQuery"], function(){
-    
-    $.cookie = function(key, value, options) {
+    var pluses = /\+/g;
 
-        // key and at least value given, set cookie...
-        if (arguments.length > 1 && (!/Object/.test(Object.prototype.toString.call(value)) || value === null || value === undefined)) {
-            options = $.extend({}, options);
+    function raw(s) {
+        return s;
+    }
 
-            if (value === null || value === undefined) {
+    function decoded(s) {
+        return decodeURIComponent(s.replace(pluses, ' '));
+    }
+
+    var config = $.cookie = function (key, value, options) {
+
+        // write
+        if (value !== undefined) {
+            options = $.extend({}, config.defaults, options);
+
+            if (value === null) {
                 options.expires = -1;
             }
 
@@ -25,28 +34,39 @@ BASE.require(["jQuery"], function(){
                 t.setDate(t.getDate() + days);
             }
 
-            value = String(value);
+            value = config.json ? JSON.stringify(value) : String(value);
 
             return (document.cookie = [
-                encodeURIComponent(key), '=', options.raw ? value : encodeURIComponent(value),
-                options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
-                options.path    ? '; path=' + options.path : '',
-                options.domain  ? '; domain=' + options.domain : '',
-                options.secure  ? '; secure' : ''
+				encodeURIComponent(key), '=', config.raw ? value : encodeURIComponent(value),
+				options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+				options.path ? '; path=' + options.path : '',
+				options.domain ? '; domain=' + options.domain : '',
+				options.secure ? '; secure' : ''
             ].join(''));
         }
 
-        // key and possibly options given, get cookie...
-        options = value || {};
-        var decode = options.raw ? function(s) { return s; } : decodeURIComponent;
-
-        var pairs = document.cookie.split('; ');
-        for (var i = 0, pair; pair = pairs[i] && pairs[i].split('='); i++) {
-            if (decode(pair[0]) === key) return decode(pair[1] || ''); // IE saves cookies with empty string as "c; ", e.g. without "=" as opposed to EOMB, thus pair[1] may be undefined
+        // read
+        var decode = config.raw ? raw : decoded;
+        var cookies = document.cookie.split('; ');
+        for (var i = 0, l = cookies.length; i < l; i++) {
+            var parts = cookies[i].split('=');
+            if (decode(parts.shift()) === key) {
+                var cookie = decode(parts.join('='));
+                return config.json ? JSON.parse(cookie) : cookie;
+            }
         }
+
         return null;
     };
-    
 
+    config.defaults = {};
 
-});
+    $.removeCookie = function (key, options) {
+        if ($.cookie(key) !== null) {
+            $.cookie(key, null, options);
+            return true;
+        }
+        return false;
+    };
+
+})(jQuery, document);
