@@ -110,18 +110,10 @@
         return obj;
     };
 
-    var clonePrototype = function (deep) {
-        ///<summary>
-        ///Returns a clone of the object.
-        ///</summary>
-        ///<param name="[deep=true]" type="Boolean">
-        ///If true, clones nested objects also.
-        ///If false, only references nested objects.
-        ///</param>
-        ///<returns type="Object" >
-        ///Returns a clone of the object.
-        ///</returns>
-        return clone(this, deep);
+    var extend = function (d, b) {
+        function __() { this.constructor = d; }
+        __.prototype = b.prototype;
+        d.prototype = new __();
     };
 
     var defineClass = function (SuperClass, Constructor, prototypeProperties, classProperties) {
@@ -408,6 +400,7 @@
             BASE.clone = clone;
             BASE.getObject = getObject;
             BASE.defineClass = defineClass;
+            BASE.extend = extend;
 
         } else {
             BASE = window.BASE = function () { };
@@ -437,13 +430,9 @@
                     value: defineClass,
                     enumerable: false,
                     writable: false
-                }
-            });
-
-
-            Object.defineProperties(BASE.prototype, {
-                "clone": {
-                    value: clonePrototype,
+                },
+                "extend": {
+                    value: extend,
                     enumerable: false,
                     writable: false
                 }
