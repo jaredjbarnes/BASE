@@ -1,28 +1,4 @@
 ﻿(function () {
-    var __extends = this.__extends || function (d, b) {
-        function __() { this.constructor = d; }
-        __.prototype = b.prototype;
-        d.prototype = new __();
-    };
-    var ObserverEvent = (function () {
-        function ObserverEvent(type) {
-            this.type = type;
-        }
-        return ObserverEvent;
-    })();
-    var ObservePropertyEvent = (function (_super) {
-        __extends(ObservePropertyEvent, _super);
-        function ObservePropertyEvent(type, oldValue, newValue) {
-            _super.call(this, type);
-            this.oldValue = null;
-            this.newValue = null;
-            this.oldValue = oldValue;
-            this.newValue = newValue;
-            this.property = type;
-        }
-        return ObservePropertyEvent;
-    })(ObserverEvent);
-
     BASE.Observer = (function () {
         function Observer() {
             this._globalObservers = [];
