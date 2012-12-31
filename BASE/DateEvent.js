@@ -10,13 +10,13 @@ BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], functi
 				return new BASE.DateEvent(dateRange);
 			}
 			
-			_Super.call(self);
 			var self = this;
+			_Super.call(self);
 			
 			if (dateRange && dateRange instanceof BASE.DateRange){
 				self.dateRange = dateRange;
 			} else {
-				self.dateRange = new Base.DateRange();
+				self.dateRange = new BASE.DateRange();
 			}
 			
 			var _description = "";
