@@ -16,11 +16,11 @@ BASE.require(["BASE.Observer","BASE.Date"], function(){
 			_Super.call(self);
 			
 			var _onStartDateChanged = function(e){
-				var event = new BASE.ObservePropertyEvent("startDateChanged", e.oldValue, e.newValue);
+				var event = new BASE.PropertyChangedEvent("startDateChanged", e.oldValue, e.newValue);
 				self.notify(event);
 			};
 			var _onEndDateChanged = function(e){
-				var event = new BASE.ObservePropertyEvent("endDateChanged", e.oldValue, e.newValue);
+				var event = new BASE.PropertyChangedEvent("endDateChanged", e.oldValue, e.newValue);
 				self.notify(event);
 			};
 			

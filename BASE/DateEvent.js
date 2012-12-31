@@ -31,7 +31,7 @@ BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], functi
 					set: function(value){
 						var oldValue = _title;
 						_title = value;
-						var event = new BASE.ObservePropertyEvent("title", oldValue, value);
+						var event = new BASE.PropertyChangedEvent("title", oldValue, value);
 						self.notify(event);
 					}
 				},
@@ -42,7 +42,7 @@ BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], functi
 					set: function(value){
 						var oldValue = _description;
 						_description = value;
-						var event = new BASE.ObservePropertyEvent("description", oldValue, value);
+						var event = new BASE.PropertyChangedEvent("description", oldValue, value);
 						self.notify(event);
 					}
 				},
@@ -60,7 +60,5 @@ BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], functi
 		
 		return DateEvent;
 	})(BASE.Observer);
-	
-	BASE.DateEvent.prototype = new BASE.EventEmitter();
 	
 });

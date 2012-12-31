@@ -1,13 +1,13 @@
     
 BASE.require(["BASE.ObserverEvent"], function(){
-    BASE.ObservePropertyEvent = (function (_super) {
-        BASE.extend(ObservePropertyEvent, _super);
-        function ObservePropertyEvent(type, oldValue, newValue) {
+    BASE.PropertyChangedEvent = (function (_super) {
+        BASE.extend(PropertyChangedEvent, _super);
+        function PropertyChangedEvent(property, oldValue, newValue) {
             _super.call(this, type);
             this.oldValue = oldValue;
             this.newValue = newValue;
             this.property = type;
         }
-        return ObservePropertyEvent;
+        return PropertyChangedEvent;
     })(BASE.ObserverEvent);
 });

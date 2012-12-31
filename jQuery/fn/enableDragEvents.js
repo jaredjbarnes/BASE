@@ -53,16 +53,16 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
 
                 $elem.bind("mousedown", function () {
                     isDragging = function (e) {
-                        if (e.newValue && mm.node === elem && mm.event && mm.event.pageX) {
+                        if (mm.target === elem) {
                             var region = $elem.region();
-                            offsetX = mm.event.pageX - region.x;
-                            offsetY = mm.event.pageY - region.y;
-                            startX = mm.event.pageX;
-                            startY = mm.event.pageY;
+                            offsetX = mm.jQueryEvent.pageX - region.x;
+                            offsetY = mm.jQueryEvent.pageY - region.y;
+                            startX = mm.jQueryEvent.pageX;
+                            startY = mm.jQueryEvent.pageY;
 
                             var event = new $.Event("dragstart");
-                            event.pageX = mm.event.pageX;
-                            event.pageY = mm.event.pageY;
+                            event.pageX = mm.jQueryEvent.pageX;
+                            event.pageY = mm.jQueryEvent.pageY;
                             event.offsetX = offsetX;
                             event.offsetY = offsetY;
                             event.startX = startX;

@@ -1,120 +1,133 @@
-﻿(function () {
+﻿BASE.require(["BASE.Observer","BASE.PropertyChangedEvent"], function () {
     BASE.namespace("WEB");
-    var Region = WEB.Region = function (t, r, b, l) {
-        this.setRegion(t, r, b, l);
-    };
+    
+    WEB.Region = (function(_Super){
+        var Region = function (t, r, b, l) {
+            var self = this;
+            if (!(self instanceof arguments.callee)){
+                return new Region(t,r,b,l);
+            }
+            
+            _Super.call(self);
+            
+            var regionPinnedTo  = null;
+            var observe = function(e){
+                var offsetY = y + regionPinnedTo.y;
+                var offsetX = x + regionPinnedTo.x;
 
-    WEB.Region.prototype = {
-        contains: function (region) {
-            return (region.left >= this.left &&
-               region.right <= this.right &&
-               region.top >= this.top &&
-               region.bottom <= this.bottom);
-        },
-        getArea: function () {
-            return ((this.bottom - this.top) * (this.right - this.left));
-        },
-        intersect: function (region) {
-            var t = Math.max(this.top, region.top),
-          r = Math.min(this.right, region.right),
-          b = Math.min(this.bottom, region.bottom),
-          l = Math.max(this.left, region.left);
+                self.setRegion(offsetY, (offsetX) + self.width, offsetY + self.height, offsetX);
+            };
+            
+            self.contains = function(region){
+                return (region.left >= self.left &&
+               region.right <= self.right &&
+               region.top >= self.top &&
+               region.bottom <= self.bottom);
+            };
+            self.getArea = function(){
+                return ((self.bottom - self.top) * (self.right - self.left));
+            };
+            self.intersect = function(region){
+                var t = Math.max(self.top, region.top),
+                r = Math.min(self.right, region.right),
+                b = Math.min(self.bottom, region.bottom),
+                l = Math.max(self.left, region.left);
 
-            if (b >= t && r >= l) {
-                return new Region(t, r, b, l);
-            } else {
-                return null;
-            }
-        },
-        setTop: function (val) {
-            if (typeof val === "number" && this.bottom >= val) {
-                this.setRegion(val, this.right, this.bottom, this.left);
-            }
-        },
-        setBottom: function (val) {
-            if (typeof val === "number" && val >= this.top) {
-                this.setRegion(this.top, this.right, val, this.left);
-            }
-        },
-        setRight: function (val) {
-            if (typeof val === "number" && val >= this.left) {
-                this.setRegion(this.top, val, this.bottom, this.left);
-            }
-        },
-        setLeft: function (val) {
-            if (typeof val === "number" && this.right >= val) {
-                this.setRegion(this.top, this.right, this.bottom, val);
-            }
-        },
-        setTopByRegion: function (refRegion) {
-            var difference = (refRegion.top - this.top);
-            this.setRegion(this.top + (difference), this.right, this.bottom + (difference), this.left);
-        },
-        setRightByRegion: function (refRegion) {
-            var difference = (refRegion.right - this.right);
-            this.setRegion(this.top, this.right + (difference), this.bottom, this.left + (difference));
-        },
-        setBottomByRegion: function (refRegion) {
-            var difference = (refRegion.bottom - this.bottom);
-            this.setRegion(this.top + (difference), this.right, this.bottom + (difference), this.left);
-        },
-        setLeftByRegion: function (refRegion) {
-            var difference = (refRegion.left - this.left);
-            this.setRegion(this.top, this.right + (difference), this.bottom, this.left + (difference));
-        },
-        setXYOriginByRegion: function (x, y, refRegion) {
-            var offsetY = y + refRegion.y;
-            var offsetX = x + refRegion.x;
-
-            var newRegion = new WEB.Region(offsetY, (offsetX) + this.width, offsetY + this.height, offsetX);
-            this.setRegionByRegion(newRegion);
-        },
-        setRegionByRegion: function (newRegion) {
-            this.setRegion(newRegion.top, newRegion.right, newRegion.bottom, newRegion.left);
-        },
-        setRegion: function (t, r, b, l) {
-            if (b >= t && r >= l) {
-                this.top = t;
-                this.y = t;
-                this[1] = t;
-                this.right = r;
-                this.bottom = b;
-                this.left = l;
-                this.x = l;
-                this[0] = l;
-                this.width = this.right - this.left;
-                this.height = this.bottom - this.top;
-            } else {
-                throw new Error("Invalid Region Instantiation: top=" + t + ", right=" + r + ", bottom=" + b + ", left=" + l + ".");
-            }
-        },
-        moveToPoint: function (x, y) {
-            this.setRegion(y, x + this.width, y + this.height, y);
-        },
-        union: function (region) {
-            var t = Math.min(this.top, region.top),
-          r = Math.max(this.right, region.right),
-          b = Math.max(this.bottom, region.bottom),
-          l = Math.min(this.left, region.left);
-
-            return new Region(t, r, b, l);
-        },
-        equals: function (region) {
-            return (region.top === this.top && region.right === this.right && region.bottom === this.bottom && region.left === this.left) ? true : false;
-        },
-        toString: function () {
-            return ("Region {" +
-               "top: " + this.top +
-               ", right: " + this.right +
-               ", bottom: " + this.bottom +
-               ", left: " + this.left +
-               ", height: " + this.height +
-               ", width: " + this.width +
+                if (b >= t && r >= l) {
+                    return new Region(t, r, b, l);
+                } else {
+                    return null;
+                }
+            };
+            self.moveTopSideTo = function(val){
+                if (typeof val === "number" && self.bottom >= val) {
+                    self.setRegion(val, self.right, self.bottom, self.left);
+                }    
+            };
+            self.moveRightSideTo = function(val){
+                if (typeof val === "number" && val >= self.left) {
+                    self.setRegion(self.top, val, self.bottom, self.left);
+                }
+            };
+            self.moveBottomSideTo = function(val){
+                if (typeof val === "number" && val >= self.top) {
+                    self.setRegion(self.top, self.right, val, self.left);
+                }    
+            };
+            self.moveLeftSideTo = function(val){
+                if (typeof val === "number" && self.right >= val) {
+                    self.setRegion(self.top, self.right, self.bottom, val);
+                }    
+            };
+            self.setRegionTo = function(region){
+                self.setRegion(region.top, region.right, region.bottom, region.left);
+            };
+            self.setRegion = function(top, right, bottom, left){
+                if (bottom >= top && right >= left) {
+                    this.top = top;
+                    this.y = top;
+                    this[1] = top;
+                    this.right = right;
+                    this.bottom = bottom;
+                    this.left = left;
+                    this.x = left;
+                    this[0] = left;
+                    this.width = this.right - this.left;
+                    this.height = this.bottom - this.top;
+                } else {
+                    throw new Error("Invalid Region Instantiation: top=" + top + ", right=" + right + ", bottom=" + bottom + ", left=" + left + ".");
+                }
+            };
+            self.moveToPoint = function(x,y){
+                self.setRegion(y, x + self.width, y + self.height, x);
+                self.notify();
+            };
+            self.pinToRegion = function(region){
+                self.unPin();
+                regionPinnedTo = region;
+                regionPinnedTo.observe(observe,"x");
+                regionPinnedTo.observe(observe, "y");
+            };
+            self.unPin = function(){
+                if(regionPinnedTo){
+                    regionPinnedTo.unobserve(observe, "x");
+                    regionPinnedTo.unobserve(observe, "y");
+                    regionPinnedTo = null;
+                }
+            };
+            self.union = function(region){
+                var t = Math.min(self.top, region.top),
+                r = Math.max(self.right, region.right),
+                b = Math.max(self.bottom, region.bottom),
+                l = Math.min(self.left, region.left);
+    
+                return new Region(t, r, b, l);    
+            };
+            self.equals = function(region){
+                return (region.top === self.top && region.right === self.right && region.bottom === self.bottom && region.left === self.left) ? true : false;    
+            };
+            self.toString = function(){
+                return ("Region {" +
+               "top: " + self.top +
+               ", right: " + self.right +
+               ", bottom: " + self.bottom +
+               ", left: " + self.left +
+               ", height: " + self.height +
+               ", width: " + self.width +
                "}");
-        },
-        copy: function () {
-            return new WEB.Region(this.top, this.right, this.bottom, this.left);
+            };
+            self.copy = function(){
+                return new WEB.Region(self.top, self.right, self.bottom, self.left);
+            };
+            
+            self.setRegion(t, r, b, l);
+            
+            return self
         }
-    };
+        
+        BASE.extend(Region, _Super);
+        
+        return Region
+    })(BASE.Observer);
 
-})();
+});

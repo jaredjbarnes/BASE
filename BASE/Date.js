@@ -1,7 +1,7 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
 
-BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
+BASE.require(["BASE.Observer","BASE.PropertyChangedEvent"], function () {
 
     var SECOND_IN_MILLISECONDS = 1000;
     var MINUTE_IN_MILLISECONDS = SECOND_IN_MILLISECONDS * 60;
@@ -41,7 +41,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setTime(time);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -62,7 +62,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setSeconds(seconds);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -75,7 +75,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setMinutes(minutes);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -88,7 +88,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setHours(hours);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -101,7 +101,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setDate(date);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -116,7 +116,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setDate(day);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -157,7 +157,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setMonth(month);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
@@ -170,7 +170,7 @@ BASE.require(["BASE.Observer","BASE.ObservePropertyEvent"], function () {
                         _date.setFullYear(year);
                         var newValue = _date.getTime();
                         
-                        var event = new BASE.ObservePropertyEvent("dateChanged", oldValue, newValue);
+                        var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
                         self.notify(event);
                     }
                 },
