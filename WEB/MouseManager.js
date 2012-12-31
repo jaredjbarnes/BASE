@@ -13,12 +13,14 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
             }
             
             var self = this;
-            _Super.call(type);
+            _Super.call(self, type);
             
             self.x = jQueryEvent.pageX;
             self.y = jQueryEvent.pageY;
             self.target = target;
             self.jQueryEvent = jQueryEvent;
+            self.startX = null;
+            self.startY = null;
             
             return self;
         };
@@ -39,16 +41,24 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
             _Super.call(self);
             
             var target = null;
+            var startX = null;
+            var startY = null;
+            var mode = "default";
             var dropRegions = {};
             
             var update = function(type, e){
-                self.notify(new WEB.MouseEvent(type, self.target, e));
+                var event = new WEB.MouseEvent(type, target, e);
+                event.startX = startX;
+                event.startY = startY;
+                self.notify(event);
                 jQueryEvent = null;
             };
             
             var mousedown = function (e) {
                 if (!target){
-                    self.target = e.target;
+                    target = e.target;
+                    startX = e.pageX;
+                    startY = e.pageY;
                     update("dragstart", e);
                     $(document).bind("mousemove", mousemove);
                 }
@@ -59,16 +69,21 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
             };
     
             var mouseup = function (e) {
-                if (self.target){
+                if (target){
                     update("dragend", e);
-                    
-                    self.target = null;
+                    startX = null;
+                    startY = null;
+                    target = null;
                     $(document).unbind("mousemove", mousemove);
                 }
             };
             
             self.addDropRegion = function(mode, region){
                 
+            };
+            
+            self.setMode = function(value){
+                mode = value;
             };
             
             $(document).bind("mousedown", mousedown);

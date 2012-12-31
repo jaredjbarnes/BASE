@@ -1,7 +1,7 @@
 /// <reference path="/scripts/BASE.js" />
 /// <reference path="/scripts/jQuery/mouseManager.js" />
 
-BASE.require(["jQuery", "jQuery.mouseManager"], function () {
+BASE.require(["jQuery", "jQuery.fn.region", "jQuery.mouseManager"], function () {
     jQuery.fn.enableDragEvents = function () {
         return this.each(function () {
             var elem = this;
@@ -10,89 +10,46 @@ BASE.require(["jQuery", "jQuery.mouseManager"], function () {
             if (!$elem.data("dragEventsInitialized")) {
                 $elem.data("dragEventsInitialized", true)
 
-                var mm = jQuery.mouseManager;
+                var mouseManager = jQuery.mouseManager;
                 var offsetX = null;
                 var offsetY = null;
-                var startX = null;
-                var startY = null;
-                var mouseIsDown = null;
-                var isDragging;
 
-                var mousemove = function (e) {
-                    var event = new $.Event("drag");
-                    event.pageX = e.pageX;
-                    event.pageY = e.pageY;
-                    event.offsetX = offsetX;
-                    event.offsetY = offsetY;
-                    event.startX = startX;
-                    event.startY = startY;
-
-                    event.originalEvent = e;
-                    if (e.which > 0) {
-                        $elem.trigger(event);
-                    } else {
-                        $(document).unbind("mousemove", mousemove);
-
-                        var event = new $.Event("dragstop");
-                        event.pageX = e.pageX;
-                        event.pageY = e.pageY;
-                        event.offsetX = offsetX;
-                        event.offsetY = offsetY;
-                        event.startX = startX;
-                        event.startY = startY;
-                        event.originalEvent = mm.event;
-
-                        $elem.trigger(event);
-
-                        offsetX = null;
-                        offsetY = null;
-                        jQuery.mouseManager.unobserve("isDragging", isDragging);
-                    }
-
+                var initialize = function(){
+                    
                 };
-
-                $elem.bind("mousedown", function () {
-                    isDragging = function (e) {
-                        if (mm.target === elem) {
-                            var region = $elem.region();
-                            offsetX = mm.jQueryEvent.pageX - region.x;
-                            offsetY = mm.jQueryEvent.pageY - region.y;
-                            startX = mm.jQueryEvent.pageX;
-                            startY = mm.jQueryEvent.pageY;
-
-                            var event = new $.Event("dragstart");
-                            event.pageX = mm.jQueryEvent.pageX;
-                            event.pageY = mm.jQueryEvent.pageY;
-                            event.offsetX = offsetX;
-                            event.offsetY = offsetY;
-                            event.startX = startX;
-                            event.startY = startY;
-                            event.originalEvent = mm.event;
-
-                            $elem.trigger(event);
-                            $(document).bind("mousemove", mousemove);
-                            jQuery.mouseManager.event.preventDefault();
-                        } else if (!e.newValue && mm.node === elem && mm.event && mm.event.pageX) {
-                            $(document).unbind("mousemove", mousemove);
-
-                            var event = new $.Event("dragstop");
-                            event.pageX = mm.event.pageX;
-                            event.pageY = mm.event.pageY;
-                            event.offsetX = offsetX;
-                            event.offsetY = offsetY;
-                            event.startX = startX;
-                            event.startY = startY;
-                            event.originalEvent = mm.event;
-
-                            $elem.trigger(event);
-
+                
+                var mousedown = function(e){
+                    if ( offsetX === null && e.target === elem){
+                        
+                        $elem.trigger(new $.Event("dragstart"));
+                        
+                        var region = $elem.region();
+                        offsetX = Math.abs(region.x-e.pageX);
+                        offsetY = Math.abs(region.y-e.pageY);
+                        
+                        var drag = function(e){
+                            $elem.offset({top: e.y-offsetY, left: e.x-offsetX});
+                            $elem.trigger(new $.Event("drag"));
+                        };
+                        
+                        var dragend = function(e){
+                            $elem.offset({top: e.y-offsetY, left: e.x-offsetX});
+                            mouseManager.unobserve(drag, "drag");
+                            mouseManager.unobserve(dragend, "dragend");
+                            
                             offsetX = null;
                             offsetY = null;
-                            jQuery.mouseManager.unobserve("isDragging", isDragging);
-                        }
-                    };
-                    jQuery.mouseManager.observe("isDragging", isDragging);
-                });
+                            $elem.trigger(new $.Event("dragend"));
+                        };
+                        
+                        mouseManager.observe(drag, "drag");
+                        mouseManager.observe(dragend, "dragend");
+                        
+                    }    
+                };
+                
+                $elem.bind("mousedown", mousedown);
+                  
             }
         });
     };
