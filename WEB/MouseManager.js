@@ -43,8 +43,6 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
             var target = null;
             var startX = null;
             var startY = null;
-            var mode = "default";
-            var dropRegions = {};
             
             var update = function(type, e){
                 var event = new WEB.MouseEvent(type, target, e);
@@ -76,14 +74,6 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
                     target = null;
                     $(document).unbind("mousemove", mousemove);
                 }
-            };
-            
-            self.addDropRegion = function(mode, region){
-                
-            };
-            
-            self.setMode = function(value){
-                mode = value;
             };
             
             $(document).bind("mousedown", mousedown);
