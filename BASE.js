@@ -317,10 +317,20 @@
             }
         };
         require.getPath = function (namespace) {
-            var path = require.getPrefix(namespace);
-            if (/\.js$/.test(path)) {
+            var prefix = require.getPrefix(namespace);
+            var path;
+            
+            if (prefix){
+                path = paths[prefix];
+                namespace = namespace.replace(prefix,"");
+            } else {
+               path = require.root;
+            }
+            
+            if (/\.js$/.test(paths[prefix])) {
                 return path;
             }
+            
             if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
                 return path + concat("/" + namespace.replace(/\./g, "/") + ".js");
             }
@@ -343,7 +353,7 @@
                 }
             }
 
-            return deepestPrefix === "" ? require.root : deepestPrefix.replace(/\./g, "/");
+            return deepestPrefix === "" ? null : deepestPrefix;
         };
 
         require.root = "";
