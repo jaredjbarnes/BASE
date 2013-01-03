@@ -342,7 +342,7 @@
             var deepestPrefix = '';
 
             if (paths.hasOwnProperty(namespace)) {
-                return paths[namespace];
+                return namespace;
             }
 
             for (prefix in paths) {
