@@ -1,4 +1,4 @@
-(function(){
+(function () {
 
     var ArrayChangedEvent = (function () {
         function ArrayChangedEvent(target, newItems, oldItems) {
@@ -9,11 +9,20 @@
         }
         return ArrayChangedEvent;
     })();
-    
+
     BASE.ObservableArray = function () {
-        Array.apply(this, arguments);
+        var self = this;
+        if (!(self instanceof BASE.ObservableArray)) {
+            self = new BASE.ObservableArray();
+        }
+
+        for (var x = 0 ; x < arguments.length; x++) {
+            self.push(arguments[x]);
+        }
+
+        return self;
     };
-    
+
     BASE.ObservableArray.prototype = new Array();
     BASE.ObservableArray.prototype.push = function () {
         var result;
@@ -48,6 +57,12 @@
         this.notify(event);
         return result;
     };
+    BASE.ObservableArray.prototype.slice = function () {
+        var array = Array.prototype.slice.apply(this, arguments);
+        var result = new BASE.ObservableArray();
+        BASE.ObservableArray.apply(result, array);
+        return result;
+    };
     BASE.ObservableArray.prototype.shift = function () {
         var result;
         result = Array.prototype.shift.apply(this, arguments);
@@ -65,8 +80,9 @@
         return result;
     };
     BASE.ObservableArray.prototype.concat = function () {
-        var result = this.toArray();
-        return new ObservableArray(Array.prototype.concat.apply(result, arguments));
+        var newArray = Array.prototype.concat.apply(this, arguments);
+        var result = new BASE.ObservableArray();
+        return BASE.ObservableArray.apply(result, newArray);
     };
     BASE.ObservableArray.prototype.toArray = function (result) {
         result = result || [];
