@@ -13,8 +13,8 @@
         }
         BASE.Observer.call(self);
 
-        self.getViewById = function (id) {
-            $view = $element.find("#" + id + "[data-view]");
+        self.getViewByDataId = function (id) {
+            $view = $element.find("[data-id='" + id + "'][data-view]");
             return $view[0].view;
         }
 
