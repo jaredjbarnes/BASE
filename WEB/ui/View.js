@@ -2,17 +2,23 @@
 
     BASE.namespace("WEB.ui");
 
-    WEB.ui.View = function (elem) {
-        if (!(this instanceof arguments.callee)) {
-            return new WEB.ui.View(elem);
-        }
+    WEB.ui.View = (function (Super) {
 
-        var self = this;
-        BASE.Observer.call(self);
+        var View = function (elem) {
+            if (!(this instanceof arguments.callee)) {
+                return new View(elem);
+            }
 
-        self.element = elem;
-        return self;
-    };
+            var self = this;
+            Super.call(self);
 
-    WEB.ui.View.prototype = new BASE.Observer();
+            self.element = elem;
+            return self;
+        };
+
+        BASE.extend(View, Super);
+
+        return View;
+    })(BASE.Observer);
+
 });

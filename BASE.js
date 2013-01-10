@@ -310,35 +310,34 @@
         require.setPath = function (namespace, path) {
             if (namespace && path) {
                 var finalPath = path;
-                if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0){
-                    finalPath = finalPath.lastIndexOf("/") === finalPath.length-1 ? finalPath.substr(0, finalPath.length-1) : finalPath;
+                if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
+                    finalPath = finalPath.lastIndexOf("/") === finalPath.length - 1 ? finalPath.substr(0, finalPath.length - 1) : finalPath;
                     paths[namespace] = finalPath;
                     return;
                 }
-                
+
                 if (path.indexOf("/") !== 0) {
                     finalPath = concat(require.root, path);
                 }
 
                 paths[namespace] = finalPath.replace(/\/+/g, '/');
-                
             }
         };
         require.getPath = function (namespace) {
             var prefix = require.getPrefix(namespace);
             var path;
-            
-            if (prefix){
+
+            if (prefix) {
                 path = paths[prefix];
-                namespace = namespace.replace(prefix,"");
+                namespace = namespace.replace(prefix, "");
             } else {
-               path = require.root;
+                path = require.root;
             }
-            
+
             if (/\.js$/.test(paths[prefix])) {
                 return path;
             }
-            
+
             if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
                 return path + concat("/" + namespace.replace(/\./g, "/") + ".js");
             }
