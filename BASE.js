@@ -297,6 +297,7 @@
         };
 
         var paths = {};
+        var files = {};
         var concat = function () {
             var result = "";
             for (var x = 0 ; x < arguments.length; x++) {
@@ -306,6 +307,24 @@
         };
 
         require.dependencyList = [];
+
+        require.setFile = function (namespace, path) {
+            if (namespace && path) {
+                var finalPath = path;
+                if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
+                    finalPath = finalPath.lastIndexOf("/") === finalPath.length - 1 ? finalPath.substr(0, finalPath.length - 1) : finalPath;
+                    files[namespace] = finalPath;
+                    return;
+                }
+
+                if (path.indexOf("/") !== 0) {
+                    finalPath = concat(require.root, path);
+                }
+
+                files[namespace] = finalPath.replace(/\/+/g, '/');
+
+            }
+        };
 
         require.setPath = function (namespace, path) {
             if (namespace && path) {
@@ -321,9 +340,15 @@
                 }
 
                 paths[namespace] = finalPath.replace(/\/+/g, '/');
+
             }
         };
         require.getPath = function (namespace) {
+            //Checks to see if there is a file for this namespace.
+            if (files[namespace]) {
+                return files[namespace];
+            }
+
             var prefix = require.getPrefix(namespace);
             var path;
 
@@ -332,10 +357,6 @@
                 namespace = namespace.replace(prefix, "");
             } else {
                 path = require.root;
-            }
-
-            if (/\.js$/.test(paths[prefix])) {
-                return path;
             }
 
             if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
