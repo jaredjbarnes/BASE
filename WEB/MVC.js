@@ -17,15 +17,15 @@ BASE.require(["jQuery"], function () {
                         BASE.require([viewNamespace], function () {
                             var View = BASE.getObject(viewNamespace);
                             var view = new View(elem);
-                            elem.view = view;
-
+                            //elem.view = view;
+                            $(elem).data("view", view);
                             var controllerNamespace = $elem.attr("data-controller");
                             if (controllerNamespace) {
                                 BASE.require([controllerNamespace], function () {
                                     var Controller = BASE.getObject(controllerNamespace);
                                     var controller = new Controller(view);
-                                    elem.controller = controller;
-
+                                    //elem.controller = controller;
+                                    $(elem).data("controller", controller);
                                     callback();
                                 });
                             } else {
@@ -48,7 +48,7 @@ BASE.require(["jQuery"], function () {
     };
 
 
-    window.WEB.MVC = {
+    WEB.MVC = {
         applyTo: asyncWalkTheDom
     };
 

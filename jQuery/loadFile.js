@@ -3,10 +3,13 @@
 
     jQuery.loadFile = function (url, options, callback) {
         switch (arguments.length) {
-            case 2:
-                callback = options;
-                options = {};
+            case 2: {
+                if (typeof options === "function") {
+                    callback = options;
+                    options = {};
+                }
                 break;
+            }
         }
         callback = typeof callback === "function" ? callback : function () { };
 
@@ -26,7 +29,7 @@
 
         options.success = onSuccess;
         options.error = onFailure;
-        
+
         if (options.fromCache && cache[url]) {
             onSuccess(cache[url]);
         } else {

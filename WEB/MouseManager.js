@@ -27,7 +27,7 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
         
         BASE.extend(MouseEvent, _Super);
         return MouseEvent;
-    })(BASE.ObserverEvent);
+    })(BASE.ObservableEvent);
     
     
     WEB.MouseManager = (function(_Super){
@@ -85,5 +85,5 @@ BASE.require(["jQuery.fn.region", "Array.prototype.forEach"], function () {
         BASE.extend(MouseManager, _Super);
         
         return MouseManager;
-    })(BASE.Observer);
+    })(BASE.Observable);
 });

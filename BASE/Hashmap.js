@@ -1,5 +1,4 @@
-﻿/// <reference path="/scripts/BASE.js" />
-(function () {
+﻿(function () {
     function GUID() {
         var S4 = function () {
             return Math.floor(
