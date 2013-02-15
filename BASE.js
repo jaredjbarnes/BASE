@@ -238,7 +238,18 @@
             var namespaceArray = dependencies;
             callback = callback || function () { };
 
+
+            // Make sure its an array.
             namespaceArray = Object.prototype.toString.call(namespaceArray) === '[object Array]' ? namespaceArray : [namespaceArray];
+
+            // Clean list of anything thats not a string.
+            for (var x = 0; x < namespaceArray.length; x++) {
+                if (!namespaceArray[x] || typeof namespaceArray[x] !== "string") {
+                    namespaceArray.splice(x, 1);
+                    x--;
+                }
+            }
+
             callback.dependencies = namespaceArray.slice(0);
             require.dependencyList = require.dependencyList.concat(namespaceArray);
 
@@ -250,12 +261,6 @@
                     require.pending[namespaceArray[x]] = namespaceArray[x];
                 }
             }
-
-            //Start: This is for vb studio intellisense.
-            //This will cause errors if code is executed with this.
-            //console.Error("Still in vb studio intellisense mode. Remove the code below this line, if executing code.");
-            //callback();
-            //End: This is for vb studio intellisense.
 
             callbacks.push(callback);
 
