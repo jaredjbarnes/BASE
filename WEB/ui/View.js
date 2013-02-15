@@ -15,7 +15,44 @@
             self.element = elem || document.createElement("div");
             var $element = $(self.element);
 
-            self.loadView = function (viewUrl, options) {
+            Object.defineProperties(self, {
+                "parentView": {
+                    get: function () {
+                        var $parent = $element.parents("[data-view]");
+                        if ($parent.length > 0) {
+                            return $parent.first().data("view");
+                        } else {
+                            return null;
+                        }
+                    }
+                },
+                "subviews": {
+                    get: function () {
+                        var views = [];
+                        var $children = $element.find("[data-view]");
+                        if ($children.length > 0) {
+                            var $siblings = $children.first().siblings();
+
+                            $siblings.add($children.first()).each(function () {
+                                var $this = $(this);
+                                var view = $this.data("view");
+                                if (view && view instanceof WEB.ui.View) {
+                                    views.push(view);
+                                } else {
+                                    view = $this.find("[data-view]").first().data("view");
+                                    if (view && view instanceof WEB.ui.View) {
+                                        views.push(view);
+                                    }
+                                }
+
+                            });
+                        }
+                        return views;
+                    }
+                }
+            });
+
+            self.loadSubview = function (viewUrl, options) {
                 options = options || {};
                 var beforeAppend = options.beforeAppend || function () { };
                 var afterAppend = options.afterAppend || function () { };
@@ -26,14 +63,31 @@
                         WEB.MVC.applyTo($elem[0], function () {
                             view = $elem.data("view");
                             beforeAppend(view);
-                            $elem.appendTo(self.element);
-                            afterAppend(view);
+                            self.addSubview(view, function () {
+                                afterAppend(view);
+                            });
                         });
                     },
                     error: function (e) {
                         throw new Error("Couldn't load view at \"" + viewUrl + "\".");
                     }
                 });
+            };
+
+            self.addSubview = function (view, callback) {
+                callback = callback || function () { };
+                $(view.element).appendTo(self.element);
+                setTimeout(function () {
+                    callback();
+                }, 0);
+            };
+
+            self.removeSubview = function (view, callback) {
+                callback = callback || function () { };
+                $(self.element).remove();
+                setTimeout(function () {
+                    callback();
+                }, 0);
             };
 
             self.getViewByDataId = function (id) {

@@ -16,8 +16,6 @@
             var $element = $(view.element);
             Super.call(self);
 
-            var _controllers = new BASE.ObservableArray();
-
             self.getViewByDataId = function (id) {
                 return self.view.getViewByDataId(id);
             }
@@ -35,81 +33,90 @@
                 return $controller.length > 0 ? $controller.data("controller") : null;
             };
 
-
-            self.pushController = function (controller, callback) {
+            self.addChildController = function (controller, callback) {
                 callback = callback || function () { };
-                self.controllers.add(controller);
-                controller.parent = self;
-                $(controller.view.element).appendTo(view.element);
-                setTimeout(function () {
+                self.view.addSubview(controller.view, function () {
+                    controller.parent = self;
+                    self.controllers.add(controller);
                     callback();
-                }, 0);
+                });
             };
 
-            self.popController = function (callback) {
+            self.removeChildController = function (controller, callback) {
                 callback = callback || function () { };
-                var controller = self.controllers.pop();
-                controller.parent = null;
-                $(controller.view.element).remove();
-                setTimeout(function () {
+                self.view.removeSubview(controller.view, function () {
+                    self.controllers.remove(controller);
+                    controller.parent = null;
                     callback();
-                }, 0);
+                });
             };
 
-            self.loadView = function (viewUrl, options) {
-                self.view.loadView(viewUrl, options);
-            };
-
-            self.loadController = function (controllerNamespace, viewUrl, options) {
+            self.loadChildController = function (controllerUrl, options) {
                 options = options || {};
                 var beforeAppend = options.beforeAppend || function () { };
                 var afterAppend = options.afterAppend || function () { };
-                var synchronizer = new BASE.Synchronizer();
-                var view = null;
-                var Controller = null;
 
-                synchronizer.add(function (callback) {
-                    BASE.require([controllerNamespace], function () {
-                        Controller = BASE.getObject(controllerNamespace);
-                        callback();
-                    });
-                });
+                jQuery.loadFile(controllerUrl, {
+                    success: function (html) {
+                        var $module = $(html);
+                        WEB.MVC.applyTo($module[0], function () {
+                            var controller = $module.data("controller");
+                            var view = $module.data("view");
 
-                synchronizer.add(function (callback) {
-                    $.loadFile(viewUrl, {
-                        success: function (html) {
-                            var $elem = $(html);
-                            WEB.MVC.applyTo($elem[0], function () {
-                                view = $elem.data("view");
-                                callback();
+                            beforeAppend(controller);
+                            self.addChildController(controller, function () {
+                                afterAppend(controller);
                             });
-                        }
-                    });
-                }, function () {
-                    beforeAppend(view);
-                    $elem.appendTo(self.view.element);
-                    afterAppend(view);
-                    var controller = new Controller(view);
-                    self.controllers.add(controller);
-                    callback(controller);
+                        });
+                    },
+                    error: function () {
+                        throw new Error("Couldn't find controller at \"" + controllerUrl + "\".");
+                    }
                 });
             };
 
 
             Object.defineProperties(self, {
-                controllers: {
+                childControllers: {
                     get: function () {
-                        return _controllers;
+                        var controllers = [];
+                        var $children = $element.find("[data-controller]");
+                        if ($children.length > 0) {
+                            var $siblings = $children.first().siblings();
+
+                            $siblings.add($children.first()).each(function () {
+                                var $this = $(this);
+                                var controller = $this.data("controller");
+                                if (controller && controller instanceof WEB.ui.Controller) {
+                                    controllers.push(controller);
+                                } else {
+                                    controller = $this.find("[data-controller]").first().data("controller");
+                                    if (controller && controller instanceof WEB.ui.Controller) {
+                                        controllers.push(controller);
+                                    }
+                                }
+
+                            });
+                        }
+                        return controllers;
                     }
                 },
                 view: {
                     get: function () {
                         return view;
                     }
+                },
+                parentController: {
+                    get: function () {
+                        var $parent = $element.parents("[data-controller]");
+                        if ($parent.length > 0) {
+                            return $parent.first().data("controller");
+                        } else {
+                            return null;
+                        }
+                    }
                 }
             });
-
-            self.parent = null;
 
             return self;
         };

@@ -3,28 +3,36 @@ BASE.require(["jQuery"], function () {
     BASE.namespace("WEB");
 
     var asyncWalkTheDom = function (elem, callback) {
+        var $elem = $(elem);
+
+        // This ensures that a view is attached to a controller.
+        $elem.find("[data-controller]").add($elem).each(function () {
+            var $this = $(this);
+            if (!$this.data("view")) {
+                $this.data("view", "WEB.ui.View");
+            }
+        });
+
         callback = callback || function () { };
         setTimeout(function () {
-            var $elem = $(elem);
+
             var $children = $elem.children();
 
             var length = $children.length;
             var lamda = function () {
                 length--;
                 if (length <= 0) {
-                    var viewNamespace = $elem.attr("data-view");
-                    if (viewNamespace) {
+                    var viewNamespace = $elem.data("view");
+                    if (typeof viewNamespace === "string") {
                         BASE.require([viewNamespace], function () {
                             var View = BASE.getObject(viewNamespace);
                             var view = new View(elem);
-                            //elem.view = view;
                             $(elem).data("view", view);
-                            var controllerNamespace = $elem.attr("data-controller");
-                            if (controllerNamespace) {
+                            var controllerNamespace = $elem.data("controller");
+                            if (typeof controllerNamespace === "string") {
                                 BASE.require([controllerNamespace], function () {
                                     var Controller = BASE.getObject(controllerNamespace);
                                     var controller = new Controller(view);
-                                    //elem.controller = controller;
                                     $(elem).data("controller", controller);
                                     callback();
                                 });
