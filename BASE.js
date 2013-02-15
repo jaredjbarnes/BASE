@@ -39,49 +39,57 @@
     };
 
     var isObject = function (namespace) {
-        var a = namespace.split('.');
-        var length = a.length;
-        var tmpObj;
+        if (typeof namespace === "string") {
+            var a = namespace.split('.');
+            var length = a.length;
+            var tmpObj;
 
-        for (var x = 0; x < length; x++) {
-            if (x === 0) {
-                if (typeof window[a[0]] === 'undefined') {
-                    return false
+            for (var x = 0; x < length; x++) {
+                if (x === 0) {
+                    if (typeof window[a[0]] === 'undefined') {
+                        return false
+                    } else {
+                        tmpObj = window[a[0]];
+                    }
                 } else {
-                    tmpObj = window[a[0]];
-                }
-            } else {
-                if (typeof tmpObj[a[x]] === 'undefined') {
-                    return false;
-                } else {
-                    tmpObj = tmpObj[a[x]];
+                    if (typeof tmpObj[a[x]] === 'undefined') {
+                        return false;
+                    } else {
+                        tmpObj = tmpObj[a[x]];
+                    }
                 }
             }
+            return true;
+        } else {
+            return false;
         }
-        return true;
     };
 
     var getObject = function (namespace) {
-        var a = namespace.split('.');
-        var length = a.length;
-        var tmpObj;
+        if (typeof namespace === "string") {
+            var a = namespace.split('.');
+            var length = a.length;
+            var tmpObj;
 
-        for (var x = 0; x < length; x++) {
-            if (x === 0) {
-                if (typeof window[a[0]] === 'undefined') {
-                    return undefined;
+            for (var x = 0; x < length; x++) {
+                if (x === 0) {
+                    if (typeof window[a[0]] === 'undefined') {
+                        return undefined;
+                    } else {
+                        tmpObj = window[a[0]];
+                    }
                 } else {
-                    tmpObj = window[a[0]];
-                }
-            } else {
-                if (typeof tmpObj[a[x]] === 'undefined') {
-                    return undefined;
-                } else {
-                    tmpObj = tmpObj[a[x]];
+                    if (typeof tmpObj[a[x]] === 'undefined') {
+                        return undefined;
+                    } else {
+                        tmpObj = tmpObj[a[x]];
+                    }
                 }
             }
+            return tmpObj;
+        } else {
+            return undefined;
         }
-        return tmpObj;
     };
 
     var clone = function (object, deep) {

@@ -38,11 +38,26 @@
                 if (_workers.length === 0) {
                     return;
                 }
-                _workers.forEach(function (func) {
-                    func(_callback);
-                });
+                if (this.synchronizeWorkers) {
+                    var forEach = function (x) {
+                        if (x < _workers.length) {
+                            _workers[x](function () {
+                                forEach(x + 1);
+                            });
+                        } else {
+                            onComplete();
+                        }
+                    };
+
+                    forEach(0);
+                } else {
+                    _workers.forEach(function (func) {
+                        func(_callback);
+                    });
+                }
             };
 
+            this.synchronizeWorkers = true;
 
             return self;
         };
