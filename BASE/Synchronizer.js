@@ -57,7 +57,7 @@
                 }
             };
 
-            this.synchronizeWorkers = true;
+            this.synchronizeWorkers = false;
 
             return self;
         };

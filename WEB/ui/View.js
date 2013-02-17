@@ -29,24 +29,12 @@
                 "subviews": {
                     get: function () {
                         var views = [];
-                        var $children = $element.find("[data-view]");
-                        if ($children.length > 0) {
-                            var $siblings = $children.first().siblings();
-
-                            $siblings.add($children.first()).each(function () {
-                                var $this = $(this);
-                                var view = $this.data("view");
-                                if (view && view instanceof WEB.ui.View) {
-                                    views.push(view);
-                                } else {
-                                    view = $this.find("[data-view]").first().data("view");
-                                    if (view && view instanceof WEB.ui.View) {
-                                        views.push(view);
-                                    }
-                                }
-
-                            });
-                        }
+                        var $children = $element.find("[data-view]").each(function () {
+                            var $this = $(this);
+                            if ($this.parents("[data-view]")[0] !== $element[0]) {
+                                views.push($this.data("view"));
+                            }
+                        });
                         return views;
                     }
                 }

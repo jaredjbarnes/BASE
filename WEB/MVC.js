@@ -12,33 +12,25 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                 walkTheDom($(this));
             });
 
-            var viewNamespace = $elem.data("view");
+            var viewNamespace = $elem.data("view") || "WEB.ui.View";
             var controllerNamespace = $elem.data("controller");
             var controllerUrl = $elem.data("loadcontroller");
             var viewUrl = $elem.data("loadview");
 
             if (viewNamespace || controllerNamespace || controllerUrl || viewUrl) {
-                synchronizer.add(function (callback) {
+                var View;
+                var Controller;
+                var $loadedView;
+                var $loadedController;
 
+                synchronizer.add(function (callback) {
                     var innerSynchronizer = new BASE.Synchronizer();
 
                     innerSynchronizer.add(function (callback) {
                         if (viewNamespace || controllerNamespace) {
                             BASE.require([viewNamespace, controllerNamespace], function () {
-                                var View = BASE.getObject(viewNamespace || "WEB.ui.View");
-                                var Controller = BASE.getObject(controllerNamespace);
-                                var view;
-                                var controller;
-
-                                if (View) {
-                                    view = new View($elem[0]);
-                                    $elem.data("view", view);
-                                }
-
-                                if (Controller) {
-                                    controller = new Controller(view);
-                                    $elem.data("controller", controller);
-                                }
+                                View = BASE.getObject(viewNamespace);
+                                Controller = BASE.getObject(controllerNamespace);
                                 callback();
                             });
                         } else {
@@ -46,22 +38,12 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                         }
                     });
 
-
                     innerSynchronizer.add(function (callback) {
                         if (controllerUrl) {
                             jQuery.loadFile(controllerUrl, {
                                 success: function (html) {
-                                    var $module = $(html);
-                                    WEB.MVC.applyTo($module[0], function () {
-                                        var attributes = $elem.prop("attributes");
-
-                                        for (var x = 0 ; x < attributes.length; x++) {
-                                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
-                                                $module.attr(attributes[x].name, attributes[x].value);
-                                            }
-                                        }
-
-                                        $elem.replaceWith($module);
+                                    $loadedController = $(html);
+                                    WEB.MVC.applyTo($loadedController[0], function () {
                                         callback();
                                     });
                                 },
@@ -78,17 +60,8 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                         if (viewUrl && !controllerUrl) {
                             jQuery.loadFile(viewUrl, {
                                 success: function (html) {
-                                    var $module = $(html);
-                                    WEB.MVC.applyTo($module[0], function () {
-                                        var attributes = $elem.prop("attributes");
-
-                                        for (var x = 0 ; x < attributes.length; x++) {
-                                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
-                                                $module.attr(attributes[x].name, attributes[x].value);
-                                            }
-                                        }
-
-                                        $elem.replaceWith($module);
+                                    $loadedView = $(html);
+                                    WEB.MVC.applyTo($loadedView[0], function () {
                                         callback();
                                     });
                                 },
@@ -104,6 +77,44 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                     innerSynchronizer.start(function () {
                         callback();
                     });
+                }, function () {
+                    var view;
+                    var controller;
+
+                    if (View) {
+                        view = new View($elem[0]);
+                        $elem.data("view", view);
+                        $elem.attr("data-view", viewNamespace);
+                    }
+
+                    if (Controller) {
+                        controller = new Controller(view);
+                        $elem.data("controller", controller);
+                    }
+
+                    if ($loadedController) {
+                        var attributes = $elem.prop("attributes");
+
+                        for (var x = 0 ; x < attributes.length; x++) {
+                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
+                                $loadedController.attr(attributes[x].name, attributes[x].value);
+                            }
+                        }
+
+                        $elem.replaceWith($loadedController);
+                    }
+
+                    if ($loadedView) {
+                        var attributes = $elem.prop("attributes");
+
+                        for (var x = 0 ; x < attributes.length; x++) {
+                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
+                                $loadedView.attr(attributes[x].name, attributes[x].value);
+                            }
+                        }
+
+                        $elem.replaceWith($loadedView);
+                    }
                 });
             }
         };

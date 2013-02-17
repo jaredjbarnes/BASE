@@ -71,15 +71,19 @@
 
                 $elem.loadModule(url, {
                     beforeAppend: function (loadedElement) {
-                        if (!$(loadedElement).data("view")) {
+                        var $loadedElement = $(loadedElement);
+                        var view = $loadedElement.data("view");
+                        if (!$loadedElement.data("view")) {
                             throw new Error("Expected a view on the loaded element: " + url);
                         }
-                        beforeAppend(loadedElement);
+                        beforeAppend(view);
                         prepareElementToAppend($(loadedElement));
                     },
                     afterAppend: function (loadedElement) {
-                        animateElementIn($(loadedElement), function () {
-                            afterAppend(loadedElement);
+                        var $loadedElement = $(loadedElement);
+                        var view = $loadedElement.data("view");
+                        animateElementIn($loadedElement, function () {
+                            afterAppend(view);
                         });
                     }
                 });

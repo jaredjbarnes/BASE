@@ -80,24 +80,12 @@
                 childControllers: {
                     get: function () {
                         var controllers = [];
-                        var $children = $element.find("[data-controller]");
-                        if ($children.length > 0) {
-                            var $siblings = $children.first().siblings();
-
-                            $siblings.add($children.first()).each(function () {
-                                var $this = $(this);
-                                var controller = $this.data("controller");
-                                if (controller && controller instanceof WEB.ui.Controller) {
-                                    controllers.push(controller);
-                                } else {
-                                    controller = $this.find("[data-controller]").first().data("controller");
-                                    if (controller && controller instanceof WEB.ui.Controller) {
-                                        controllers.push(controller);
-                                    }
-                                }
-
-                            });
-                        }
+                        var $children = $element.find("[data-controller]").each(function () {
+                            var $this = $(this);
+                            if ($this.parents("[data-controller]")[0] !== $element[0]) {
+                                controllers.push($this.data("controller"));
+                            }
+                        });
                         return controllers;
                     }
                 },
