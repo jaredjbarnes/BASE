@@ -99,7 +99,9 @@
 
             self.notify = function (event) {
                 defaultNotify.call(self, event);
-                self.parentView.notify(event);
+                if (self.parentView) {
+                    self.parentView.notify(event);
+                }
             };
 
             self.notifySubviews = function (event) {

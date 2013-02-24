@@ -1,5 +1,46 @@
-//Scopes variables
 (function () {
+
+    if (!Array.prototype.hasOwnProperty("indexOf")) {
+        Array.prototype.indexOf = function (searchElement, fromIndex) {
+            var i = fromIndex || 0;
+            var length = this.length;
+
+            while (i < length) {
+                if (this.hasOwnProperty(i) && this[i] === searchElement) {
+                    return i;
+                }
+                i += 1;
+            }
+            return -1;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("forEach")) {
+        Array.prototype.forEach = function (fn, thisp) {
+            var i;
+            var length = this.length;
+
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i)) {
+                    fn.call(thisp, this[i], i, this);
+                }
+            }
+        };
+    }
+
+    if (!Object.hasOwnProperty("keys")) {
+        Object.keys = function (object) {
+            var name;
+            var result = [];
+            for (name in object) {
+                if (Object.prototype.hasOwnProperty.call(object, name)) {
+                    result.push(name);
+                }
+            }
+
+            return result;
+        };
+    }
 
     var namespace = function (namespace) {
         ///<summary>
@@ -39,30 +80,8 @@
     };
 
     var isObject = function (namespace) {
-        if (typeof namespace === "string") {
-            var a = namespace.split('.');
-            var length = a.length;
-            var tmpObj;
-
-            for (var x = 0; x < length; x++) {
-                if (x === 0) {
-                    if (typeof window[a[0]] === 'undefined') {
-                        return false
-                    } else {
-                        tmpObj = window[a[0]];
-                    }
-                } else {
-                    if (typeof tmpObj[a[x]] === 'undefined') {
-                        return false;
-                    } else {
-                        tmpObj = tmpObj[a[x]];
-                    }
-                }
-            }
-            return true;
-        } else {
-            return false;
-        }
+        var obj = getObject(namespace);
+        return obj ? true : false;
     };
 
     var getObject = function (namespace) {
@@ -120,113 +139,163 @@
 
     var extend = function (d, b) {
         function __() { this.constructor = d; }
+        if (!b) { console.log(d) }
         __.prototype = b.prototype;
         d.prototype = new __();
     };
 
-    var defineClass = function (SuperClass, Constructor, prototypeProperties, classProperties) {
-        ///<summary>
-        /// Creates Classes through prototypal inheritance.
-        ///</summary>
-        ///<param type="Function" name="SuperClass">Super Class Constructor</param>
-        ///<param type="Function" name="Constructor">Constructor</param>
-        ///<param type="Object" name="prototypeProperties" optional="true">Prototype Properties (Usually just methods, because of prototypal oddities)</param>
-        ///<param type="Object" name="classProperties" optional="true">Class Properties</param>
-        ///<returns type="Function">Class Constructor</returns>
+    var Synchronizer = function () {
+        var self = this;
+        if (!(self instanceof arguments.callee)) {
+            return new Synchronizer();
+        }
 
-        var Klass = function () {
-            var self = this;
-            if (!(self instanceof arguments.callee)) {
-                throw new Error("Forgot the \"new\" operator while trying to instantiate the object. " + Constructor.toString());
+        Object.call(self);
+
+        var _completed = 0;
+        var onComplete = function () { };
+
+        var _workers = [];
+        var _callbacks = [];
+
+        self.add = function (worker, callback) {
+            _workers.push(worker);
+            _callbacks.push(callback || function () { });
+        };
+        self.remove = function (worker) {
+            var index = _workers.indexOf(worker);
+            _workers.splice(index, 1);
+            _callbacks.splice(index, 1);
+        };
+        self.start = function (callback) {
+            onComplete = callback;
+            if (_workers.length === 0) {
+                return;
             }
-
-            if (self.constructor === Klass) {
-                self.base = function () {
-                    var base = self.base;
-                    self.base = self.base.base || function () { };
-                    SuperClass.apply(self, arguments);
-                    self.base = base;
-                };
-
-                // This allows a self.base.method();
-                for (var x in Klass.prototype) (function (x) {
-                    if (typeof Klass.prototype[x] === "function") {
-                        var fn = Klass.prototype[x];
-                        self.base[x] = function () {
-                            var base = self.base;
-                            self.base = self.base.base || function () { };
-                            var result = fn.apply(self, arguments);
-                            self.base = base;
-                            return result;
-                        };
+            var copy = _workers.slice();
+            copy.forEach(function (func) {
+                func(function () {
+                    var index = _workers.indexOf(func);
+                    if (index >= 0) {
+                        _workers.splice(index, 1);
                     }
-                })(x);
-            }
-            Constructor.apply(self, arguments);
+
+                    if (_workers.length === 0) {
+                        _callbacks.forEach(function (callback) {
+                            callback();
+                        });
+                        callback();
+                    }
+                });
+            });
         };
 
-        prototypeProperties = prototypeProperties || {};
-        classProperties = classProperties || {};
-
-        Klass.prototype = new SuperClass();
-
-        for (var pp in prototypeProperties) {
-            if (prototypeProperties.hasOwnProperty(pp)) {
-                Klass.prototype[pp] = prototypeProperties[pp];
-            }
-        }
-
-        for (var sp in SuperClass) {
-            if (SuperClass.hasOwnProperty(sp)) {
-                Klass[sp] = SuperClass[sp];
-            }
-        }
-
-        for (var cp in classProperties) {
-            if (classProperties.hasOwnProperty(cp)) {
-                Klass[cp] = classProperties[cp];
-            }
-        }
-
-        Klass.prototype.constructor = Klass;
-
-        return Klass;
+        return self;
     };
 
-    (function () {
-        var dEval = function (n, src, callback, onerror) {
-            var script = document.createElement("script");
 
-            script.onload = function () {
-                if (!script.onloadDone) {
-                    script.onloadDone = true;
-                    if (require.pending[n]) {
-                        callback(n);
+
+    var require = (function () {
+
+        var scriptManager = (function () {
+            var observers = {};
+            var loading = {};
+
+            var scriptManager = {
+                load: function (namespace) {
+                    var self = scriptManager;
+                    if (!loading[namespace]) {
+                        self.notify();
+                        loading[namespace] = true;
+
+                        var script = document.createElement("script");
+                        var src = require.getPath(namespace);
+
+                        script.onload = function () {
+                            if (!script.onloadDone) {
+                                script.onloadDone = true;
+                                if (loading[namespace]) {
+                                    self.loaded(namespace);
+                                }
+                            }
+                        };
+
+                        script.onerror = function () {
+                            throw new Error("Failed to load: \"" + namespace + "\".");
+                        };
+
+                        script.onreadystatechange = function () {
+                            if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
+                                if (loading[namespace]) {
+                                    self.loaded(namespace);
+                                }
+                            }
+                        }
+
+                        script.src = src;
+                        document.getElementsByTagName('head')[0].appendChild(script);
                     }
+                },
+                loaded: function (namespace) {
+                    var self = this;
+                    self.notify();
+                },
+                observe: function (callback, namespace) {
+                    var self = scriptManager;
+
+                    var wrapperCallback = function () {
+                        self.unobserve(wrapperCallback, namespace);
+                        callback();
+                    };
+
+                    if (!observers[namespace]) {
+                        observers[namespace] = [];
+                    }
+
+                    observers[namespace].push(wrapperCallback);
+
+
+                },
+                unobserve: function (callback, namespace) {
+                    var self = scriptManager;
+                    if (observers[namespace]) {
+                        var callbacks = observers[namespace];
+                        var index = callbacks.indexOf(callback);
+                        if (index >= 0) {
+                            callbacks.splice(index, 1);
+                        }
+                    }
+                },
+                notify: function () {
+                    var self = this;
+                    Object.keys(observers).forEach(function (namespace) {
+                        var callbacks = observers[namespace] ? observers[namespace].slice() : [];
+                        if (isObject(namespace) && callbacks.length > 0) {
+                            callbacks.forEach(function (callback) {
+                                callback();
+                                self.notify();
+                            });
+                        }
+                    });
+                },
+                getPending: function () {
+                    var pending = [];
+                    Object.keys(loading).forEach(function (namespace) {
+                        if (!isObject(namespace)) {
+                            pending.push(namespace);
+                        }
+                    });
+                    return pending;
+                },
+                isPending: function (namespace) {
+                    return loading[namespace] && !isObject(namespace) ? true : false;
+                },
+                getObservers: function () {
+                    return observers;
                 }
             };
-
-            script.onerror = function () {
-                onerror();
-            };
-
-            script.onreadystatechange = function () {
-                if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
-                    if (require.pending[n]) {
-                        callback(n);
-                    }
-                }
-            }
-
-
-            script.src = src;
-            document.getElementsByTagName('head')[0].appendChild(script);
-        };
-
-
-        var sent = 1;
-        var received = 1;
-        var callbacks = [];
+            return scriptManager;
+        }());
 
         var require = function (dependencies, callback) {
             ///<summary>
@@ -241,72 +310,32 @@
             ///</param>
             ///<returns type="undefined" />
 
-            //Makes sure that all sweeping is done before making another request.
-            require.sweep();
-            var namespaceArray = dependencies;
-            callback = callback || function () { };
+            scriptManager.notify();
 
+            var cleanedDependencies = [];
 
-            // Make sure its an array.
-            namespaceArray = Object.prototype.toString.call(namespaceArray) === '[object Array]' ? namespaceArray : [namespaceArray];
-
-            // Clean list of anything thats not a string.
-            for (var x = 0; x < namespaceArray.length; x++) {
-                if (!namespaceArray[x] || typeof namespaceArray[x] !== "string") {
-                    namespaceArray.splice(x, 1);
-                    x--;
+            dependencies.forEach(function (namespace) {
+                if (!namespace) {
+                    return;
                 }
-            }
+                cleanedDependencies.push(namespace);
+            });
 
-            callback.dependencies = namespaceArray.slice(0);
-            require.dependencyList = require.dependencyList.concat(namespaceArray);
+            var synchronizer = new Synchronizer();
 
-            for (var x = 0; x < namespaceArray.length; x++) {
-                if (isObject(namespaceArray[x]) || require.pending[namespaceArray[x]]) {
-                    namespaceArray.splice(x, 1);
-                    x--;
-                } else {
-                    require.pending[namespaceArray[x]] = namespaceArray[x];
-                }
-            }
+            cleanedDependencies.forEach(function (namespace) {
+                synchronizer.add(function (callback) {
+                    scriptManager.observe(function () {
+                        callback();
+                    }, namespace);
 
-            callbacks.push(callback);
+                    scriptManager.load(namespace);
+                });
+            });
 
-            if (namespaceArray.length > 0) {
-                var onSuccess = function (n) {
-                    received++;
-                    delete require.pending[n];
-                    require.sweep();
-                };
-
-                for (var u = 0; u < namespaceArray.length; u++) {
-                    sent++;
-                    url = require.getPath(namespaceArray[u]);
-                    dEval(namespaceArray[u], url, onSuccess, (function (n) {
-                        return function () {
-                            while (callbacks.length > 0) {
-                                callbacks.pop()(new Error("Failed to load these dependencies: " + n));
-                            }
-                            delete require.pending[n];
-                        };
-                    })(namespaceArray[u]));
-                }
-
-            } else {
-                sent++;
-                setTimeout(function () {
-                    received++;
-                    require.sweep();
-                }, 0);
-            }
-
-            if (location.href) {
-                return;
-            }
-
-            //This is for vs-doc to work.
-            callback();
-
+            synchronizer.start(function () {
+                callback();
+            });
         };
 
         var paths = {};
@@ -319,7 +348,7 @@
             return result.replace(/\/+/g, '/');
         };
 
-        require.dependencyList = [];
+        require.scriptManager = scriptManager;
 
         require.setFile = function (namespace, path) {
             if (namespace && path) {
@@ -356,6 +385,7 @@
 
             }
         };
+
         require.getPath = function (namespace) {
             //Checks to see if there is a file for this namespace.
             if (files[namespace]) {
@@ -397,99 +427,56 @@
             return deepestPrefix === "" ? null : deepestPrefix;
         };
 
-        require.root = "";
-        require.pending = {};
-        require.enableDebugging = false;
-        require.sweep = function (tries) {
-            tries = tries || 0;
-            var dependencies;
-            var c;
-            for (var x = 0; x < callbacks.length; x++) {
-                dependencies = callbacks[x].dependencies;
+        return require;
 
-                for (var d = 0; d < dependencies.length; d++) {
-                    if (isObject(dependencies[d])) {
-                        dependencies.splice(d, 1);
-                        d--;
-                    }
-                }
+    }());
 
-                if (dependencies.length === 0) {
-                    c = callbacks.splice(x, 1);
-                    x--;
-                    c[0]();
-                }
+    window.BASE = {};
+
+    if (!Object.defineProperty || !Object.defineProperties) {
+        //So IE 6-8 works. 
+        window.BASE.require = require;
+        window.BASE.namespace = namespace;
+        window.BASE.clone = clone;
+        window.BASE.getObject = getObject;
+        window.BASE.isObject = isObject;
+        window.BASE.defineClass = defineClass;
+        window.BASE.extend = extend;
+
+    } else {
+        //This really sets it as it should be.
+        Object.defineProperties(window.BASE, {
+            "require": {
+                value: require,
+                enumerable: false,
+                writable: false
+            },
+            "namespace": {
+                value: namespace,
+                enumerable: false,
+                writable: false
+            },
+            "clone": {
+                value: clone,
+                enumerable: false,
+                writable: false
+            },
+            "getObject": {
+                value: getObject,
+                enumerable: false,
+                writable: false
+            },
+            "isObject": {
+                value: isObject,
+                enumerable: false,
+                writable: false
+            },
+            "extend": {
+                value: extend,
+                enumerable: false,
+                writable: false
             }
-            if (sent === received && callbacks.length > 0) {
-                tries += 1;
-
-                if (tries > 1000) {
-                    while (callbacks.length > 0) {
-                        callbacks.pop()(new Error("Failed to load these dependencies: " + require.getUnloaded()));
-                    }
-                    pending = {};
-                }
-                setTimeout(function () { require.sweep(tries); }, 1);
-            }
-        };
-
-        require.getUnloaded = function () {
-            var ret = [];
-            for (var x = 0; x < callbacks.length; x++) {
-                ret.concat(callbacks[x]);
-            }
-            return ret;
-        };
-
-        var BASE;
-
-        if (!Object.defineProperty || !Object.defineProperties) {
-            //So IE 7-8 works. 
-            BASE = window.BASE = {};
-            BASE.require = require;
-            BASE.namespace = namespace;
-            BASE.clone = clone;
-            BASE.getObject = getObject;
-            BASE.defineClass = defineClass;
-            BASE.extend = extend;
-
-        } else {
-            BASE = window.BASE = function () { };
-            //This really sets it as it should be.
-            Object.defineProperties(BASE, {
-                "require": {
-                    value: require,
-                    enumerable: false,
-                    writable: false
-                },
-                "namespace": {
-                    value: namespace,
-                    enumerable: false,
-                    writable: false
-                },
-                "clone": {
-                    value: clone,
-                    enumerable: false,
-                    writable: false
-                },
-                "getObject": {
-                    value: getObject,
-                    enumerable: false,
-                    writable: false
-                },
-                "defineClass": {
-                    value: defineClass,
-                    enumerable: false,
-                    writable: false
-                },
-                "extend": {
-                    value: extend,
-                    enumerable: false,
-                    writable: false
-                }
-            });
-        }
-    })();
-
+        });
+    }
 
 })();
