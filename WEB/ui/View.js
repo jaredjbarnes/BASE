@@ -1,6 +1,10 @@
-﻿BASE.require(["BASE.Observable"], function () {
+﻿BASE.require(["BASE.Observable", "jQuery", "jQuery.fn.region"], function () {
 
     BASE.namespace("WEB.ui");
+
+    $(window).bind("resize", function () {
+        $("[data-view]").first().data("view").notifySubviews(new BASE.ObservableEvent("resize"));
+    });
 
     WEB.ui.View = (function (Super) {
 
@@ -31,14 +35,43 @@
                         var views = [];
                         var $children = $element.find("[data-view]").each(function () {
                             var $this = $(this);
-                            if ($this.parents("[data-view]")[0] !== $element[0]) {
+                            if ($this.parents("[data-view]")[0] === $element[0]) {
                                 views.push($this.data("view"));
                             }
                         });
                         return views;
                     }
+                },
+                "width": {
+                    get: function () {
+                        return parseInt($element.css("width"), 10);
+                    },
+                    set: function (val) {
+                        if (typeof val === "number") {
+                            $element.css("width", val + "px");
+                        }
+                    }
+                },
+                "height": {
+                    get: function () {
+                        return parseInt($element.css("height"), 10);
+                    },
+                    set: function (val) {
+                        if (typeof val === "number") {
+                            $element.css("height", val + "px");
+                        }
+                    }
+                },
+                "region": {
+                    get: function () {
+                        return $element.region();
+                    }
                 }
             });
+
+            self.onResize = function (callback) {
+                self.observe(callback, "resize");
+            };
 
             self.loadSubview = function (viewUrl, options) {
                 options = options || {};
@@ -49,7 +82,7 @@
                     success: function (html) {
                         var $elem = $(html);
                         WEB.MVC.applyTo($elem[0], function () {
-                            view = $elem.data("view");
+                            var view = $elem.data("view");
                             beforeAppend(view);
                             self.addSubview(view, function () {
                                 afterAppend(view);
@@ -59,6 +92,20 @@
                     error: function (e) {
                         throw new Error("Couldn't load view at \"" + viewUrl + "\".");
                     }
+                });
+            };
+
+            var defaultNotify = self.notify;
+
+            self.notify = function (event) {
+                defaultNotify.call(self, event);
+                self.parentView.notify(event);
+            };
+
+            self.notifySubviews = function (event) {
+                defaultNotify.call(self, event);
+                self.subviews.forEach(function (view) {
+                    view.notifySubviews(event);
                 });
             };
 

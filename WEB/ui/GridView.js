@@ -36,7 +36,7 @@
                 }, 1000, "easeOutExpo", callback);
             };
 
-            self.add = function (view, callback) {
+            self.addSubview = function (view, callback) {
                 var element = view.element;
                 var $element = $(element);
 
@@ -45,7 +45,7 @@
                 animateElementIn(callback);
             };
 
-            self.remove = function (view, callback) {
+            self.removeSubview = function (view, callback) {
                 callback = callback || function () { };
                 var index = _views.indexOf(view);
 
@@ -62,31 +62,6 @@
                 } else {
                     callback();
                 }
-            };
-
-            self.loadView = function (url, options) {
-                options = options || {};
-                var beforeAppend = options.beforeAppend || function () { };
-                var afterAppend = options.afterAppend || function () { };
-
-                $elem.loadModule(url, {
-                    beforeAppend: function (loadedElement) {
-                        var $loadedElement = $(loadedElement);
-                        var view = $loadedElement.data("view");
-                        if (!$loadedElement.data("view")) {
-                            throw new Error("Expected a view on the loaded element: " + url);
-                        }
-                        beforeAppend(view);
-                        prepareElementToAppend($(loadedElement));
-                    },
-                    afterAppend: function (loadedElement) {
-                        var $loadedElement = $(loadedElement);
-                        var view = $loadedElement.data("view");
-                        animateElementIn($loadedElement, function () {
-                            afterAppend(view);
-                        });
-                    }
-                });
             };
 
             Object.defineProperties(self, {
@@ -106,7 +81,6 @@
                 }
             });
 
-            window.parent.grid = self;
 
             return self;
         };

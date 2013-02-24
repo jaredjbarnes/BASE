@@ -82,7 +82,7 @@
                         var controllers = [];
                         var $children = $element.find("[data-controller]").each(function () {
                             var $this = $(this);
-                            if ($this.parents("[data-controller]")[0] !== $element[0]) {
+                            if ($this.parents("[data-controller]")[0] === $element[0]) {
                                 controllers.push($this.data("controller"));
                             }
                         });

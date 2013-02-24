@@ -12,10 +12,11 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                 walkTheDom($(this));
             });
 
-            var viewNamespace = $elem.data("view") || "WEB.ui.View";
+
             var controllerNamespace = $elem.data("controller");
-            var controllerUrl = $elem.data("loadcontroller");
-            var viewUrl = $elem.data("loadview");
+            var viewNamespace = controllerNamespace && !$elem.data("view") ? "WEB.ui.View" : $elem.data("view");
+            var controllerUrl = $elem.data("load-controller");
+            var viewUrl = $elem.data("load-view");
 
             if (viewNamespace || controllerNamespace || controllerUrl || viewUrl) {
                 var View;
@@ -43,6 +44,17 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                             jQuery.loadFile(controllerUrl, {
                                 success: function (html) {
                                     $loadedController = $(html);
+                                    var attributes = $elem.prop("attributes");
+
+                                    for (var x = 0 ; x < attributes.length; x++) {
+                                        if (attributes[x].name !== "data-view" &&
+                                         attributes[x].name !== "data-controller" &&
+                                         attributes[x].name !== "data-load-view" &&
+                                         attributes[x].name !== "data-load-controller") {
+                                            $loadedController.attr(attributes[x].name, attributes[x].value);
+                                        }
+                                    }
+
                                     WEB.MVC.applyTo($loadedController[0], function () {
                                         callback();
                                     });
@@ -61,6 +73,17 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                             jQuery.loadFile(viewUrl, {
                                 success: function (html) {
                                     $loadedView = $(html);
+                                    var attributes = $elem.prop("attributes");
+
+                                    for (var x = 0 ; x < attributes.length; x++) {
+                                        if (attributes[x].name !== "data-view" &&
+                                         attributes[x].name !== "data-controller" &&
+                                         attributes[x].name !== "data-load-view" &&
+                                         attributes[x].name !== "data-load-controller") {
+                                            $loadedView.attr(attributes[x].name, attributes[x].value);
+                                        }
+                                    }
+
                                     WEB.MVC.applyTo($loadedView[0], function () {
                                         callback();
                                     });
@@ -85,6 +108,23 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                         view = new View($elem[0]);
                         $elem.data("view", view);
                         $elem.attr("data-view", viewNamespace);
+
+                        // data-set support
+                        var attributes = $elem.prop("attributes");
+                        var attributeName;
+                        var attributeValue;
+                        for (var x = 0 ; x < attributes.length; x++) {
+                            attributeName = attributes[x].name;
+                            attributeValue = attributes[x].value;
+                            var index = attributeName.indexOf("data-set-");
+                            if (index >= 0) {
+                                var property = attributeName.replace("data-set-", "");
+                                if (typeof view[property] !== "function") {
+                                    view[property] = attributeValue;
+                                }
+                            }
+                        }
+
                     }
 
                     if (Controller) {
@@ -92,29 +132,15 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                         $elem.data("controller", controller);
                     }
 
+
                     if ($loadedController) {
-                        var attributes = $elem.prop("attributes");
-
-                        for (var x = 0 ; x < attributes.length; x++) {
-                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
-                                $loadedController.attr(attributes[x].name, attributes[x].value);
-                            }
-                        }
-
                         $elem.replaceWith($loadedController);
                     }
 
                     if ($loadedView) {
-                        var attributes = $elem.prop("attributes");
-
-                        for (var x = 0 ; x < attributes.length; x++) {
-                            if (attributes[x].name !== "data-view" && attributes[x].name !== "data-controller") {
-                                $loadedView.attr(attributes[x].name, attributes[x].value);
-                            }
-                        }
-
                         $elem.replaceWith($loadedView);
                     }
+
                 });
             }
         };
