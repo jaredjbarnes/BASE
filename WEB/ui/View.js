@@ -64,6 +64,8 @@
                 },
                 "region": {
                     get: function () {
+                        //This forces a redraw
+                        $element.css("left");
                         return $element.region();
                     }
                 }

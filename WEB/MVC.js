@@ -1,5 +1,32 @@
 BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
 
+    var parseCSS = function (input) {
+        // nuke the comments
+        var commentStart = input.search(/\/\*/);
+        while (commentStart > -1) {
+            input = input.substr(0, commentStart) + input.substr(input.search(/\*\//) + 2);
+            commentStart = input.search(/\/\*/);
+        }
+
+        input = input.trim();
+        var parsed = {};
+        var sections = input.split("}");
+        sections.pop(); // remove the empty string at the end of the array
+        // loop through the sections
+        for (i in sections) {
+            var parts = sections[i].split("{");
+            var selector = parts[0].trim();
+            var rulesets = parts[1].trim().split(";");
+            rulesets.pop(); //remove the empty string at the end of the array
+            parsed[selector] = {};
+            for (j in rulesets) {
+                var ruleset = rulesets[j].split(":");
+                parsed[selector][ruleset[0]] = ruleset[1];
+            }
+        }
+        return parsed;
+    };
+
     BASE.namespace("WEB");
 
     var asyncWalkTheDom = function (elem, callback) {

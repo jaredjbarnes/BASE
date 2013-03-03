@@ -15,7 +15,7 @@
                 "clear": "both"
             });
 
-            var _margin = $elem.data("margin") ? parseInt($elem.data("margin")) : 10;
+            var _margin = typeof $elem.data("margin") !== "undefined" ? parseInt($elem.data("margin")) : 10;
             var _views = [];
 
             var prepareElementToAppend = function ($element) {
@@ -42,7 +42,7 @@
 
                 prepareElementToAppend($element);
                 $element.appendTo($elem);
-                animateElementIn(callback);
+                animateElementIn($element, callback);
             };
 
             self.removeSubview = function (view, callback) {

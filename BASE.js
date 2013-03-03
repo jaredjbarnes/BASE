@@ -204,8 +204,8 @@
             var scriptManager = {
                 load: function (namespace) {
                     var self = scriptManager;
+                    self.notify();
                     if (!loading[namespace]) {
-                        self.notify();
                         loading[namespace] = true;
 
                         var script = document.createElement("script");
@@ -253,8 +253,6 @@
                     }
 
                     observers[namespace].push(wrapperCallback);
-
-
                 },
                 unobserve: function (callback, namespace) {
                     var self = scriptManager;

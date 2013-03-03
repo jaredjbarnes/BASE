@@ -36,6 +36,7 @@
                 Object.seal(_callbacks);
                 onComplete = callback;
                 if (_workers.length === 0) {
+                    callback();
                     return;
                 }
                 if (this.synchronizeWorkers) {
