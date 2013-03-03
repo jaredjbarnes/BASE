@@ -1,9 +1,9 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/DateRange.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/ObservableArray.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Observer.js" />
+/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Observable.js" />
 
-BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], function(){
+BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observable"], function(){
 	BASE.DateEvent = (function(_Super){
 		var DateEvent =  function(dateRange){
 			if (!(this instanceof BASE.DateEvent)){
@@ -59,6 +59,6 @@ BASE.require(["BASE.DateRange", "BASE.ObservableArray", "BASE.Observer"], functi
 		BASE.extend(DateEvent, _Super);
 		
 		return DateEvent;
-	})(BASE.Observer);
+	})(BASE.Observable);
 	
 });

@@ -1,7 +1,4 @@
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
-
-BASE.require(["BASE.Observer", "BASE.PropertyChangedEvent"], function () {
+BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
 
     var SECOND_IN_MILLISECONDS = 1000;
     var MINUTE_IN_MILLISECONDS = SECOND_IN_MILLISECONDS * 60;
@@ -402,7 +399,7 @@ BASE.require(["BASE.Observer", "BASE.PropertyChangedEvent"], function () {
         BASE.extend(_Date, _Super);
 
         return _Date;
-    })(BASE.Observer);
+    })(BASE.Observable);
 
 
     BASE.Date.SECOND_IN_MILLISECONDS = SECOND_IN_MILLISECONDS;

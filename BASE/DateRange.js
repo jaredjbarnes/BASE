@@ -2,7 +2,7 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Date.js" />
 
-BASE.require(["BASE.Observer","BASE.Date"], function(){
+BASE.require(["BASE.Observable","BASE.Date"], function(){
 	
 	BASE.DateRange = (function(_Super){
 		var DateRange = function(startDate, endDate){
@@ -124,6 +124,6 @@ BASE.require(["BASE.Observer","BASE.Date"], function(){
 		BASE.extend(DateRange, _Super);
 		
 		return DateRange;
-	})(BASE.Observer);
+	})(BASE.Observable);
 
 });

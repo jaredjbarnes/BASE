@@ -205,7 +205,7 @@
                 load: function (namespace) {
                     var self = scriptManager;
                     self.notify();
-                    if (!loading[namespace]) {
+                    if (!loading[namespace] && !isObject(namespace)) {
                         loading[namespace] = true;
 
                         var script = document.createElement("script");
