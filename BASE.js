@@ -170,6 +170,7 @@
         self.start = function (callback) {
             onComplete = callback;
             if (_workers.length === 0) {
+                callback();
                 return;
             }
             var copy = _workers.slice();
@@ -194,119 +195,132 @@
     };
 
 
+    var scriptManager = (function () {
+        var observers = {};
+        var loading = {};
 
-    var require = (function () {
+        var scriptManager = {
+            load: function (namespace, path) {
+                var self = scriptManager;
+                self.notify();
+                if (!loading[namespace] && !isObject(namespace)) {
+                    loading[namespace] = true;
 
-        var scriptManager = (function () {
-            var observers = {};
-            var loading = {};
+                    var script = document.createElement("script");
+                    var src = path || require.getPath(namespace);
 
-            var scriptManager = {
-                load: function (namespace) {
-                    var self = scriptManager;
-                    self.notify();
-                    if (!loading[namespace] && !isObject(namespace)) {
-                        loading[namespace] = true;
-
-                        var script = document.createElement("script");
-                        var src = require.getPath(namespace);
-
-                        script.onload = function () {
-                            if (!script.onloadDone) {
-                                script.onloadDone = true;
-                                if (loading[namespace]) {
-                                    self.loaded(namespace);
-                                }
-                            }
-                        };
-
-                        script.onerror = function () {
-                            throw new Error("Failed to load: \"" + namespace + "\".");
-                        };
-
-                        script.onreadystatechange = function () {
-                            if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
-                                if (loading[namespace]) {
-                                    self.loaded(namespace);
-                                }
+                    script.onload = function () {
+                        if (!script.onloadDone) {
+                            script.onloadDone = true;
+                            if (loading[namespace]) {
+                                self.loaded(namespace);
                             }
                         }
-
-                        script.src = src;
-                        document.getElementsByTagName('head')[0].appendChild(script);
-                    }
-                },
-                loaded: function (namespace) {
-                    var self = this;
-                    self.notify();
-                },
-                observe: function (callback, namespace) {
-                    var self = scriptManager;
-
-                    var wrapperCallback = function () {
-                        self.unobserve(wrapperCallback, namespace);
-                        callback();
                     };
 
-                    if (!observers[namespace]) {
-                        observers[namespace] = [];
+                    script.onerror = function () {
+                        throw new Error("Failed to load: \"" + namespace + "\".");
+                    };
+
+                    script.onreadystatechange = function () {
+                        if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
+                            if (loading[namespace]) {
+                                self.loaded(namespace);
+                            }
+                        }
                     }
 
-                    observers[namespace].push(wrapperCallback);
-                },
-                unobserve: function (callback, namespace) {
-                    var self = scriptManager;
-                    if (observers[namespace]) {
-                        var callbacks = observers[namespace];
-                        var index = callbacks.indexOf(callback);
-                        if (index >= 0) {
-                            callbacks.splice(index, 1);
-                        }
-                    }
-                },
-                notify: function () {
-                    var self = this;
-                    Object.keys(observers).forEach(function (namespace) {
-                        var callbacks = observers[namespace] ? observers[namespace].slice() : [];
-                        if (isObject(namespace) && callbacks.length > 0) {
-                            callbacks.forEach(function (callback) {
-                                callback();
-                                self.notify();
-                            });
-                        }
-                    });
-                },
-                getPending: function () {
-                    var pending = [];
-                    Object.keys(loading).forEach(function (namespace) {
-                        if (!isObject(namespace)) {
-                            pending.push(namespace);
-                        }
-                    });
-                    return pending;
-                },
-                isPending: function (namespace) {
-                    return loading[namespace] && !isObject(namespace) ? true : false;
-                },
-                getObservers: function () {
-                    return observers;
+                    script.src = src;
+                    document.getElementsByTagName('head')[0].appendChild(script);
                 }
-            };
-            return scriptManager;
-        }());
+            },
+            loaded: function (namespace) {
+                var self = this;
+                self.notify();
+            },
+            observe: function (callback, namespace) {
+                var self = scriptManager;
 
-        var require = function (dependencies, callback) {
-            ///<summary>
-            ///An on demand script loader. e.g. (["jQuery","Object.prototype.enableObserving"], function(){ //invoked after dependencies are loaded.})
-            ///</summary>
-            ///<param name="dependencies" type="Array">
-            ///An Array of dependencies needed to be loaded before callback is invoked.
-            ///e.g ["jQuery","Object.prototype.enableObserving"]
-            ///</param>
-            ///<param name="callback" type="Function">
-            ///This will only be invoked if all dependencies are loaded.
-            ///</param>
-            ///<returns type="undefined" />
+                var wrapperCallback = function () {
+                    self.unobserve(wrapperCallback, namespace);
+                    callback();
+                };
+
+                if (!observers[namespace]) {
+                    observers[namespace] = [];
+                }
+
+                observers[namespace].push(wrapperCallback);
+            },
+            unobserve: function (callback, namespace) {
+                var self = scriptManager;
+                if (observers[namespace]) {
+                    var callbacks = observers[namespace];
+                    var index = callbacks.indexOf(callback);
+                    if (index >= 0) {
+                        callbacks.splice(index, 1);
+                    }
+                }
+            },
+            notify: function () {
+                var self = this;
+                Object.keys(observers).forEach(function (namespace) {
+                    var callbacks = observers[namespace] ? observers[namespace].slice() : [];
+                    if (isObject(namespace) && callbacks.length > 0) {
+                        callbacks.forEach(function (callback) {
+                            callback();
+                            self.notify();
+                        });
+                    }
+                });
+            },
+            getPending: function () {
+                var pending = [];
+                Object.keys(loading).forEach(function (namespace) {
+                    if (!isObject(namespace)) {
+                        pending.push(namespace);
+                    }
+                });
+                return pending;
+            },
+            isPending: function (namespace) {
+                return loading[namespace] && !isObject(namespace) ? true : false;
+            },
+            getObservers: function () {
+                return observers;
+            }
+        };
+        return scriptManager;
+    }());
+
+
+    var Loader = function (options) {
+        options = options || {};
+        options.paths = options.paths || {};
+        options.files = options.files || {};
+        options.root = options.root || "";
+        var self = this;
+
+        if (!(self instanceof Loader)) {
+            return new Loader(options);
+        }
+
+        var root;
+        var paths = options.paths;
+        var files = options.files;
+        var concat = function () {
+            var result = "";
+            for (var x = 0 ; x < arguments.length; x++) {
+                result += "/" + arguments[x];
+            }
+            return result.replace(/\/+/g, '/');
+        };
+
+        self.scriptManager = scriptManager;
+
+        self.load = function (dependencies, callback, error) {
+            callback = callback || function () { };
+            error = error || function () { };
 
             scriptManager.notify();
 
@@ -327,28 +341,17 @@
                         callback();
                     }, namespace);
 
-                    scriptManager.load(namespace);
+                    scriptManager.load(namespace, self.getPath(namespace));
                 });
             });
 
             synchronizer.start(function () {
                 callback();
             });
-        };
 
-        var paths = {};
-        var files = {};
-        var concat = function () {
-            var result = "";
-            for (var x = 0 ; x < arguments.length; x++) {
-                result += "/" + arguments[x];
-            }
-            return result.replace(/\/+/g, '/');
-        };
+        }
 
-        require.scriptManager = scriptManager;
-
-        require.setFile = function (namespace, path) {
+        self.setFile = function (namespace, path) {
             if (namespace && path) {
                 var finalPath = path;
                 if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
@@ -358,7 +361,7 @@
                 }
 
                 if (path.indexOf("/") !== 0) {
-                    finalPath = concat(require.root, path);
+                    finalPath = concat(root, path);
                 }
 
                 files[namespace] = finalPath.replace(/\/+/g, '/');
@@ -366,7 +369,7 @@
             }
         };
 
-        require.setPath = function (namespace, path) {
+        self.setPath = function (namespace, path) {
             if (namespace && path) {
                 var finalPath = path;
                 if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
@@ -376,7 +379,7 @@
                 }
 
                 if (path.indexOf("/") !== 0) {
-                    finalPath = concat(require.root, path);
+                    finalPath = concat(root, path);
                 }
 
                 paths[namespace] = finalPath.replace(/\/+/g, '/');
@@ -384,20 +387,20 @@
             }
         };
 
-        require.getPath = function (namespace) {
+        self.getPath = function (namespace) {
             //Checks to see if there is a file for this namespace.
             if (files[namespace]) {
                 return files[namespace];
             }
 
-            var prefix = require.getPrefix(namespace);
+            var prefix = self.getPrefix(namespace);
             var path;
 
             if (prefix) {
                 path = paths[prefix];
                 namespace = namespace.replace(prefix, "");
             } else {
-                path = require.root;
+                path = root;
             }
 
             if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
@@ -406,7 +409,7 @@
             return concat(path, namespace.replace(/\./g, "/") + ".js");
         };
 
-        require.getPrefix = function (namespace) {
+        self.getPrefix = function (namespace) {
             var prefix;
             var deepestPrefix = '';
 
@@ -425,6 +428,50 @@
             return deepestPrefix === "" ? null : deepestPrefix;
         };
 
+        self.getRoot = function (newRoot) {
+            return root;
+        };
+
+        self.setRoot = function (newRoot) {
+            var index = newRoot.lastIndexOf("/");
+            if (index === newRoot.length - 1) {
+                newRoot = newRoot.substr(0, newRoot.length - 1);
+            }
+
+            root = newRoot;
+        };
+
+        self.setRoot(options.root);
+
+        return self;
+    };
+
+
+    var require = (function () {
+        var loader = new Loader();
+        var require = function (dependencies, callback) {
+            ///<summary>
+            ///An on demand script loader. e.g. (["jQuery","Object.prototype.enableObserving"], function(){ //invoked after dependencies are loaded.})
+            ///</summary>
+            ///<param name="dependencies" type="Array">
+            ///An Array of dependencies needed to be loaded before callback is invoked.
+            ///e.g ["jQuery","Object.prototype.enableObserving"]
+            ///</param>
+            ///<param name="callback" type="Function">
+            ///This will only be invoked if all dependencies are loaded.
+            ///</param>
+            ///<returns type="undefined" />
+
+            loader.load(dependencies, callback);
+        };
+
+        require.setFile = loader.setFile;
+        require.setPath = loader.setPath;
+        require.getPath = loader.getPath;
+        require.getPrefix = loader.getPrefix;
+        require.scriptManager = loader.scriptManager;
+        require.setRoot = loader.setRoot;
+        require.getRoot = loader.getRoot;
         return require;
 
     }());
@@ -440,6 +487,7 @@
         window.BASE.isObject = isObject;
         window.BASE.defineClass = defineClass;
         window.BASE.extend = extend;
+        window.BASE.Loader = Loader;
 
     } else {
         //This really sets it as it should be.
@@ -471,6 +519,11 @@
             },
             "extend": {
                 value: extend,
+                enumerable: false,
+                writable: false
+            },
+            "Loader": {
+                value: Loader,
                 enumerable: false,
                 writable: false
             }
