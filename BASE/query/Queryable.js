@@ -1,7 +1,7 @@
-﻿BASE.require(["BASE.Observable", "BASE.Expression"], function () {
-    BASE.namespace("BASE");
+﻿BASE.require(["BASE.Observable", "BASE.query.Expression"], function () {
+    BASE.namespace("BASE.query");
 
-    BASE.Queryable = (function (Super) {
+    BASE.query.Queryable = (function (Super) {
         var Queryable = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -14,7 +14,7 @@
             var _orderByExpression = null;
             var _skipExpression = null;
             var _takeExpression = null;
-            var Expression = BASE.Expression;
+            var Expression = BASE.query.Expression;
 
             Object.defineProperties(self, {
                 "whereExpression": {
@@ -38,6 +38,12 @@
                     }
                 }
             });
+
+            self.methods = {
+                "toGuid": function (value) {
+                    return Expression.guid(Expression.constant(value));
+                }
+            };
 
             self.where = function () {
                 _whereExpression = Expression.where.apply(Expression, arguments);

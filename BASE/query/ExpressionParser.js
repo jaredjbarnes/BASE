@@ -1,7 +1,7 @@
-﻿BASE.require(["BASE.Observable", "BASE.Expression"], function () {
-    BASE.namespace("BASE");
+﻿BASE.require(["BASE.Observable", "BASE.query.Expression"], function () {
+    BASE.namespace("BASE.query");
 
-    BASE.ExpressionParser = (function (Super) {
+    BASE.query.ExpressionParser = (function (Super) {
         var ExpressionParser = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {

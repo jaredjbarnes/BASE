@@ -1,5 +1,5 @@
 ﻿BASE.require(["BASE.Observable"], function () {
-    BASE.namespace("BASE");
+    BASE.namespace("BASE.query");
 
     var Ascending = function (namespace) {
         var self = this;
@@ -50,7 +50,7 @@
         };
     };
 
-    BASE.ArrayInterpreter = (function (Super) {
+    BASE.query.ArrayInterpreter = (function (Super) {
         var ArrayInterpreter = function (localArray) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -177,6 +177,31 @@
             return results;
         };
 
+
+        ArrayInterpreter.prototype["string"] = function (value) {
+            return value;
+        };
+
+        ArrayInterpreter.prototype["null"] = function (value) {
+            return value;
+        };
+
+        ArrayInterpreter.prototype["undefined"] = function (value) {
+            return value;
+        };
+
+        ArrayInterpreter.prototype["number"] = function (value) {
+            return value;
+        };
+
+        ArrayInterpreter.prototype["object"] = function (value) {
+            return value;
+        };
+
+        ArrayInterpreter.prototype["array"] = function (value) {
+            return value;
+        };
+
         ArrayInterpreter.prototype["equal"] = function (left, right) {
             var results = [];
             var self = this;
@@ -209,7 +234,7 @@
             for (var x = 0 ; x < value && self.filteredArray.length > 0; x++) {
                 self.filteredArray.shift();
             }
-            return self.filteredArray ;
+            return self.filteredArray;
         };
 
         ArrayInterpreter.prototype["take"] = function (value) {

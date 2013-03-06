@@ -1,6 +1,7 @@
-﻿BASE.require(["BASE.Observable", "BASE.Queryable", "BASE.ExpressionBuilder"], function () {
+﻿BASE.require(["BASE.Observable", "BASE.query.Queryable", "BASE.query.ExpressionBuilder"], function () {
+    BASE.namespace("BASE.query");
 
-    BASE.Query = (function () {
+    BASE.query.Query = (function () {
         var Query = function (filter) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -10,8 +11,8 @@
             self.getExpressions = function (Type) {
                 var expressions = [];
 
-                var builder = new BASE.ExpressionBuilder(Type);
-                var queryable = new BASE.Queryable();
+                var builder = new BASE.query.ExpressionBuilder(Type);
+                var queryable = new BASE.query.Queryable();
 
                 try {
                     filter.call(queryable, builder);

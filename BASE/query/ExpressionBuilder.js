@@ -1,7 +1,7 @@
-﻿BASE.require(["BASE.Observable", "BASE.Expression"], function () {
-    BASE.namespace("BASE");
+﻿BASE.require(["BASE.Observable", "BASE.query.Expression"], function () {
+    BASE.namespace("BASE.query");
 
-    BASE.ExpressionBuilder = (function (Super) {
+    BASE.query.ExpressionBuilder = (function (Super) {
         var ExpressionBuilder = function (Type, namespace) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -10,41 +10,59 @@
 
             Super.call(self);
 
-            var Expression = BASE.Expression;
+            var Expression = BASE.query.Expression;
+
+            var findExpressionType = function (value) {
+                if (value instanceof BASE.query.Expression) {
+                    return value;
+                } if (typeof value === "string") {
+                    return Expression.string(Expression.constant(value));
+                } else if (typeof value === "number") {
+                    return Expression.number(Expression.constant(value));
+                } else if (typeof value === null) {
+                    return Expression["null"](Expression.constant(value));
+                } else if (typeof value === undefined) {
+                    return Expression["undefined"](Expression.constant(value));
+                } else if (Array.isArray(value)) {
+                    returnExpression.array(Expression.constant(value));
+                } else {
+                    return Expression.object(Expression.constant(value));
+                }
+            }
 
             self.equals = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.equal(property, constant);
             };
 
             self.notEqualTo = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.notEqual(property, constant);
             };
 
             self.greaterThan = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.greaterThan(property, constant);
             };
 
             self.lessThan = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.lessThan(property, constant);
             };
 
             self.greaterThanOrEqualTo = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.greaterThanOrEqual(property, constant);
             };
 
             self.lessThanOrEqualTo = function (value) {
                 var property = Expression.property(namespace);
-                var constant = Expression.constant(value);
+                var constant = findExpressionType(value);
                 return Expression.lessThanOrEqual(property, constant);
             };
 

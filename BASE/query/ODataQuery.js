@@ -1,5 +1,7 @@
-﻿BASE.require(["BASE.Query", "BASE.ExpressionParser", "BASE.ODataInterpreter"], function () {
-    BASE.ODataQuery = (function (Super) {
+﻿BASE.require(["BASE.query.Query", "BASE.query.ExpressionParser", "BASE.query.ODataInterpreter"], function () {
+    BASE.namespace("BASE.query");
+
+    BASE.query.ODataQuery = (function (Super) {
         var ODataQuery = function (filter) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -15,8 +17,8 @@
         ODataQuery.prototype.toString = function (Type) {
             var self = this;
             var expressions = self.getExpressions(Type);
-            var parser = new BASE.ExpressionParser();
-            parser.interpreter = new BASE.ODataInterpreter();
+            var parser = new BASE.query.ExpressionParser();
+            parser.interpreter = new BASE.query.ODataInterpreter();
 
             var where = parser.parse(expressions.where);
             var orderBy = parser.parse(expressions.orderBy);
@@ -34,6 +36,6 @@
         ODataQuery.prototype.run = ODataQuery.prototype.toString;
 
         return ODataQuery;
-    }(BASE.Query));
+    }(BASE.query.Query));
 
 });

@@ -1,7 +1,16 @@
 ﻿BASE.require(["BASE.Observable"], function () {
-    BASE.namespace("BASE");
+    BASE.namespace("BASE.query");
 
-    BASE.ODataInterpreter = (function (Super) {
+    var toServiceNamespace = function (value) {
+        var array = value.split(".");
+        var newArray = [];
+        array.forEach(function (name) {
+            newArray.push(name.substr(0, 1).toUpperCase() + name.substring(1));
+        });
+        return newArray.join(".");
+    }
+
+    BASE.query.ODataInterpreter = (function (Super) {
         var ODataInterpreter = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {
@@ -15,11 +24,11 @@
         BASE.extend(ODataInterpreter, Super);
 
         ODataInterpreter.prototype["ascending"] = function (namespace) {
-            return namespace + " asc";
+            return toServiceNamespace(namespace) + " asc";
         };
 
         ODataInterpreter.prototype["descending"] = function (namespace) {
-            return namespace + " desc";
+            return toServiceNamespace(namespace) + " desc";
         };
 
         ODataInterpreter.prototype["orderBy"] = function () {
@@ -37,8 +46,8 @@
         };
 
         ODataInterpreter.prototype["where"] = function () {
-            var result = "?$filter=";
-            return result += self.parsers["and"].apply(self.parsers, arguments);
+            var self = this;
+            return self["and"].apply(self.parsers, arguments);
         };
 
         ODataInterpreter.prototype["and"] = function () {
@@ -77,37 +86,53 @@
 
         ODataInterpreter.prototype["equal"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " eq " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " eq " + right + ")";
+        };
+
+        ODataInterpreter.prototype["guid"] = function (value) {
+            return "guid '" + value + "'";
+        };
+
+        ODataInterpreter.prototype["null"] = function (value) {
+            return "null";
+        };
+
+        ODataInterpreter.prototype["string"] = function (value) {
+            return "'" + value + "'";
+        };
+
+        ODataInterpreter.prototype["number"] = function (value) {
+            return value.toString();
         };
 
         ODataInterpreter.prototype["notEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " ne " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " ne " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["greaterThan"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " gt " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " gt " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["lessThan"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " lt " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " lt " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["greaterThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " ge " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " ge " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["lessThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " le " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " le " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["not"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " not " + boundary + right + boundary + ")";
+            return "(" + toServiceNamespace(left) + " not " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["skip"] = function (value) {
