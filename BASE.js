@@ -84,7 +84,8 @@
         return obj ? true : false;
     };
 
-    var getObject = function (namespace) {
+    var getObject = function (namespace, scope) {
+        scope = scope || window;
         if (typeof namespace === "string") {
             var a = namespace.split('.');
             var length = a.length;
@@ -92,10 +93,10 @@
 
             for (var x = 0; x < length; x++) {
                 if (x === 0) {
-                    if (typeof window[a[0]] === 'undefined') {
+                    if (typeof scope[a[0]] === 'undefined') {
                         return undefined;
                     } else {
-                        tmpObj = window[a[0]];
+                        tmpObj = scope[a[0]];
                     }
                 } else {
                     if (typeof tmpObj[a[x]] === 'undefined') {

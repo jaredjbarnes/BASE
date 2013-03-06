@@ -13,8 +13,11 @@
                 var builder = new BASE.ExpressionBuilder(Type);
                 var queryable = new BASE.Queryable();
 
-                filter.call(queryable, builder);
-
+                try {
+                    filter.call(queryable, builder);
+                } catch(e){
+                    throw new Error("Invalid where clause.");
+                }
                 return {
                     "where": queryable.whereExpression,
                     "orderBy": queryable.orderByExpression,

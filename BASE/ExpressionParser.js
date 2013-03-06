@@ -9,18 +9,12 @@
             }
 
             Super.call(self);
-            var _parsers = {};
-            Object.defineProperties(self, {
-                "parsers": {
-                    configurable: true,
-                    enumerable: true,
-                    get: function () {
-                        return _parsers;
-                    }
-                }
-            });
+            self.interpreter = {};
 
             self.parse = function (expression) {
+                if (!expression) {
+                    return null;
+                }
                 var children = [];
 
                 expression.children.forEach(function (expression) {
@@ -31,9 +25,12 @@
                     }
                 });
 
-                var func = self.parsers[expression.nodeName] || function () { };
+                var func = self.interpreter[expression.nodeName];
+                if (!func) {
+                    throw new Error("The parser doesn't support the \"" + expression.nodeName + "\" expression.");
+                }
 
-                return func.apply(self, children);
+                return func.apply(self.interpreter, children);
             };
 
             return self;

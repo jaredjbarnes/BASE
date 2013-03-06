@@ -48,6 +48,10 @@
                 return Expression.lessThanOrEqual(property, constant);
             };
 
+            self.not = function (expression) {
+                // ????
+            };
+
             var mapping;
             if (typeof Type === "function") {
                 mapping = new Type();
@@ -62,7 +66,11 @@
                         if (mapping[property] === null) {
                             ChildType = Object;
                         } else {
-                            ChildType = mapping[property].constructor;
+                            if (typeof Type === "function") {
+                                ChildType = mapping[property].constructor;
+                            } else {
+                                mapping[property];
+                            }
                         }
 
                         var expressionBuilder = new ExpressionBuilder(ChildType, (namespace ? (namespace + ".") : "") + property);

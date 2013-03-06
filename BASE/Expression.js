@@ -127,6 +127,14 @@
             return expression;
         };
 
+        Expression.where = function () {
+            var expression = new OperationExpression("where");
+            Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+                expression.children.push(arg);
+            });
+            return expression;
+        };
+
         Expression.greaterThan = function () {
             var expression = new OperationExpression("greaterThan");
             Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
