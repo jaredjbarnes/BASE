@@ -102,6 +102,25 @@
     BASE.query.OperationExpression = OperationExpression;
     BASE.PropertyExpression = ValueExpression;
 
+
+    Expression.getExpressionType = function (value) {
+        if (value instanceof BASE.query.Expression) {
+            return value;
+        } if (typeof value === "string") {
+            return Expression.string(Expression.constant(value));
+        } else if (typeof value === "number") {
+            return Expression.number(Expression.constant(value));
+        } else if (typeof value === null) {
+            return Expression["null"](Expression.constant(value));
+        } else if (typeof value === undefined) {
+            return Expression["undefined"](Expression.constant(value));
+        } else if (Array.isArray(value)) {
+            returnExpression.array(Expression.constant(value));
+        } else {
+            return Expression.object(Expression.constant(value));
+        }
+    };
+
     Expression.property = function (value) {
         return new ValueExpression("property", value);
     };
@@ -223,6 +242,14 @@
 
     Expression.guid = function () {
         var expression = new OperationExpression("guid");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.load = function () {
+        var expression = new OperationExpression("load");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });

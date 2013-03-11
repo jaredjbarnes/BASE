@@ -57,6 +57,14 @@
                     }, 500, "easeOutExpo", function () {
                         $element.remove();
 
+                        var event = new BASE.ObservableEvent("viewRemoved");
+                        event.view = view;
+                        view.notify(event);
+
+                        var sEvent = new BASE.ObservableEvent("subviewRemoved");
+                        sEvent.view = view;
+                        self.notify(sEvent);
+
                         callback();
                     });
                 } else {

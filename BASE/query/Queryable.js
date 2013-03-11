@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.query.Expression"], function () {
+﻿BASE.require(["BASE.Observable", "BASE.query.Expression", "BASE.Hashmap"], function () {
     BASE.namespace("BASE.query");
 
     BASE.query.Queryable = (function (Super) {
@@ -14,39 +14,24 @@
             var _orderByExpression = null;
             var _skipExpression = null;
             var _takeExpression = null;
+            var _provider = null;
+            var _expressions = [];
             var Expression = BASE.query.Expression;
 
             Object.defineProperties(self, {
-                "whereExpression": {
+                "expression": {
                     get: function () {
-                        return _whereExpression;
-                    }
-                },
-                "orderByExpression": {
-                    get: function () {
-                        return _orderByExpression;
-                    }
-                },
-                "skipExpression": {
-                    get: function () {
-                        return _skipExpression;
-                    }
-                },
-                "takeExpression": {
-                    get: function () {
-                        return _takeExpression;
+                        return Expression.and.apply(Expression, _expressions);
                     }
                 }
             });
 
-            self.methods = {
-                "toGuid": function (value) {
-                    return Expression.guid(Expression.constant(value));
-                }
+            self.toGuid = function (value) {
+                return Expression.guid(Expression.constant(value));
             };
 
             self.where = function () {
-                _whereExpression = Expression.where.apply(Expression, arguments);
+                _expressions.push(Expression.where.apply(Expression, arguments));
                 return this;
             };
             self.and = function () {
@@ -65,7 +50,7 @@
                     }
                 });
 
-                _orderByExpression = Expression.orderBy.apply(Expression, ascendingAndDescending);
+                _expressions.push(Expression.orderBy.apply(Expression, ascendingAndDescending));
                 return this;
             };
             self.descending = function (expression) {
@@ -75,11 +60,17 @@
                 return Expression.ascending.call(Expression, Expression.constant(expression.toString()));
             };
             self.take = function (value) {
-                _takeExpression = Expression.take.call(Expression, Expression.constant(value));
+                _expressions.push(Expression.take.call(Expression, Expression.constant(value)));
                 return this;
             };
             self.skip = function (value) {
-                _skipExpression = Expression.skip.call(Expression, Expression.constant(value));
+                _expressions.push(Expression.skip.call(Expression, Expression.constant(value)));
+                return this;
+            };
+            self.load = function (namespace, id) {
+                var nConstant = Expression.constant(namespace.toString());
+                var idConstant = Expression.constant(id);
+                _expressions.push(Expression.load(nConstant, idConstant));
                 return this;
             };
 

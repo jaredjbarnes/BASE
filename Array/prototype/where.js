@@ -1,12 +1,14 @@
-﻿BASE.require(["BASE.query.ArrayQuery"], function () {
+﻿BASE.require(["BASE.query.ArrayProvider"], function () {
     Object.defineProperties(Array.prototype, {
         "where": {
             enumerable: false,
             configurable: false,
-            value:function (Type, filter) {
+            value: function (Type, filter) {
                 var self = this;
-                var query = new BASE.query.ArrayQuery(filter);
-                return query.run(Type, self);
+                var provider = new BASE.query.ArrayProvider(Type, self);
+                var providerResults = provider.execute(filter);
+
+                return providerResults.interpreter.filteredArray;
             }
         }
     });

@@ -24,7 +24,13 @@
                     get: function () {
                         var $parent = $element.parents("[data-view]");
                         if ($parent.length > 0) {
-                            return $parent.first().data("view");
+                            var parentView = $parent.first().data("view");
+                            if (parentView instanceof WEB.ui.View) {
+                                return parentView;
+                            } else {
+                                return null;
+                            }
+                            return
                         } else {
                             return null;
                         }
@@ -123,7 +129,18 @@
 
             self.removeSubview = function (view, callback) {
                 callback = callback || function () { };
-                $(self.element).remove();
+                $(view.element).remove();
+
+                var event = new BASE.ObservableEvent("viewRemoved");
+                event.view = view;
+                self.notify(event);
+
+                view.notify(event);
+
+                var sEvent = new BASE.ObservableEvent("subviewRemoved");
+                sEvent.view = view;
+                defaultNotify.call(self, sEvent);
+
                 setTimeout(function () {
                     callback();
                 }, 0);
@@ -136,6 +153,12 @@
             self.getViewByQuery = function (query) {
                 var $view = $element.find(query + "[data-view]");
                 return $view.length > 0 ? $view.data("view") : null;
+            };
+
+            self.remove = function (callback) {
+                if (self.parentView) {
+                    self.parentView.removeSubview(self, callback);
+                }
             };
 
             return self;

@@ -182,6 +182,10 @@
             return value;
         };
 
+        ArrayInterpreter.prototype["guid"] = function (value) {
+            return value;
+        };
+
         ArrayInterpreter.prototype["null"] = function (value) {
             return value;
         };

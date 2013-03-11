@@ -18,6 +18,7 @@
             }
 
             Super.call(self);
+            self.toServiceNamespace = toServiceNamespace;
             return self;
         };
 
@@ -90,7 +91,7 @@
         };
 
         ODataInterpreter.prototype["guid"] = function (value) {
-            return "guid '" + value + "'";
+            return "guid'" + value.replace("'", "''") + "'";
         };
 
         ODataInterpreter.prototype["null"] = function (value) {
@@ -98,12 +99,16 @@
         };
 
         ODataInterpreter.prototype["string"] = function (value) {
-            return "'" + value + "'";
+            return "'" + value.replace("'", "''") + "'";
         };
 
         ODataInterpreter.prototype["number"] = function (value) {
             return value.toString();
         };
+
+        ODataInterpreter.prototype["array"] = function (value) {
+
+        }
 
         ODataInterpreter.prototype["notEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";

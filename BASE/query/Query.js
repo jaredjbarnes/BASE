@@ -1,30 +1,43 @@
-﻿BASE.require(["BASE.Observable", "BASE.query.Queryable", "BASE.query.ExpressionBuilder"], function () {
+﻿BASE.require(["BASE.Observable", "BASE.query.Queryable", "BASE.query.ExpressionBuilder", "BASE.query.ExpressionParser"], function () {
     BASE.namespace("BASE.query");
 
     BASE.query.Query = (function () {
-        var Query = function (filter) {
+        var Query = function (filter, builder, queryable) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
                 return new Query(filter);
             }
 
-            self.getExpressions = function (Type) {
-                var expressions = [];
+            var _builder = builder;
+            var _queryable = queryable;
 
-                var builder = new BASE.query.ExpressionBuilder(Type);
-                var queryable = new BASE.query.Queryable();
+            Object.defineProperties(self, {
+                builder: {
+                    get: function () {
+                        return _builder;
+                    },
+                    set: function (builder) {
+                        _builder = builder;
+                    }
+                },
+                queryable: {
+                    get: function () {
+                        return _queryable;
+                    },
+                    set: function (queryable) {
+                        _queryable = queryable;
+                    }
+                }
+            });
 
+            self.run = function (Type) {
                 try {
-                    filter.call(queryable, builder);
-                } catch(e){
+                    filter.call(self.queryable, self.builder);
+                } catch (e) {
                     throw new Error("Invalid where clause.");
                 }
-                return {
-                    "where": queryable.whereExpression,
-                    "orderBy": queryable.orderByExpression,
-                    "take": queryable.takeExpression,
-                    "skip": queryable.skipExpression
-                }
+
+                return queryable;
             };
         };
 

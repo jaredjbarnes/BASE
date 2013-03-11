@@ -20,10 +20,19 @@
             };
 
             self.add = function (key1, key2, value) {
-                setup(key1, key2);
+                if (arguments.length === 3) {
+                    setup(key1, key2);
 
-                var key2Hash = nestedHash.get(key1);
-                key2Hash.add(key2, value);
+                    var key2Hash = nestedHash.get(key1);
+                    key2Hash.add(key2, value);
+                } else {
+                    if (key2 instanceof BASE.Hashmap) {
+                        nestedHash.add(key1, key2);
+                    } else {
+                        throw new Error("Invalid parameters.");
+                    }
+                }
+
             };
 
             self.get = function (key1, key2) {
