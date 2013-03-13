@@ -77,6 +77,11 @@
                 }
             });
 
+            self.css = function () {
+                $element.css.apply($element, arguments);
+                return self;
+            };
+
             self.onResize = function (callback) {
                 self.observe(callback, "resize");
             };

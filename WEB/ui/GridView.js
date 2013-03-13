@@ -15,6 +15,14 @@
                 "clear": "both"
             });
 
+            var $clearChild = $("<div style=\"clear:both;\"></div>");
+
+            if ($elem.children().last().length > 0) {
+                $elem.children().last().after($clearChild)
+            } else {
+                $elem.append($clearChild);
+            }
+
             var _margin = typeof $elem.data("margin") !== "undefined" ? parseInt($elem.data("margin")) : 10;
             var _views = [];
 
@@ -41,7 +49,7 @@
                 var $element = $(element);
 
                 prepareElementToAppend($element);
-                $element.appendTo($elem);
+                $clearChild.before($element);
                 animateElementIn($element, callback);
             };
 

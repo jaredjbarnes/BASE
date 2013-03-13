@@ -195,6 +195,8 @@
         return self;
     };
 
+    var dependencyList = [];
+    var dependencyHash = {};
 
     var scriptManager = (function () {
         var observers = {};
@@ -268,6 +270,10 @@
                 Object.keys(observers).forEach(function (namespace) {
                     var callbacks = observers[namespace] ? observers[namespace].slice() : [];
                     if (isObject(namespace) && callbacks.length > 0) {
+                        if (!dependencyHash[namespace]) {
+                            dependencyList.push(namespace);
+                            dependencyHash[namespace] = true;
+                        }
                         callbacks.forEach(function (callback) {
                             callback();
                             self.notify();
@@ -473,6 +479,7 @@
         require.scriptManager = loader.scriptManager;
         require.setRoot = loader.setRoot;
         require.getRoot = loader.getRoot;
+        require.dependencyList = dependencyList;
         return require;
 
     }());

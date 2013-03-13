@@ -3,7 +3,7 @@
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Array/prototype/forEach.js" />
 /// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/keys.js" />
 
-BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
+BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys", "BASE.Synchronizer"], function () {
 
     BASE.require.compile = function () {
         ///<summary>
@@ -13,31 +13,33 @@ BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys"], function () {
         ///Returns undefined, and open a new tab with the compiled file.
         ///</returns>
         var dependencies = BASE.require.dependencyList;
-        var compilation = [];
-        var hash = {};
+        var compilationHash = {};
+        var synchronizer = new BASE.Synchronizer();
 
-        dependencies.forEach(function (value) {
-            hash[value] = value;
+        dependencies.forEach(function (namespace) {
+            if (namespace !== "BASE.require.compile") {
+                synchronizer.add(function (callback) {
+                    $.ajax({
+                        url: BASE.require.getPath(namespace),
+                        type: "GET",
+                        dataType: "text",
+                        complete: function (xhr) {
+                            var data = xhr.responseText;
+                            compilationHash[namespace] = "/*FILE: " + namespace + " START*/\n" + data + "\n/*FILE: " + namespace + " END*/\n";
+                            callback();
+                        }
+                    });
+                });
+            }
         });
-        //Remove the require.compile from hash.
-        delete hash["BASE.require.compile"]
 
-        var urlList = Object.keys(hash);
-        urlList.forEach(function (url) {
-            $.ajax({
-                url: BASE.require.getPath(url),
-                type: "GET",
-                dataType: "text",
-                complete: function (xhr) {
-                    var data = xhr.responseText;
-
-                    compilation.push("/*FILE: " + url + " START*/\n" + data + "\n/*FILE: " + url + " END*/\n");
-                    if (compilation.length === urlList.length) {
-                        var encoded = encodeURI(compilation.join("\n"));
-                        location.href = "data:application/javascript;charset=utf-8," + encoded;
-                    }
-                }
+        synchronizer.start(function () {
+            var compilation = [];
+            dependencies.forEach(function (namespace) {
+                compilation.push(compilationHash[namespace]);
             });
+            var encoded = encodeURI(compilation.join("\n"));
+            location.href = "data:application/javascript;charset=utf-8," + encoded;
         });
     };
 });

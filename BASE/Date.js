@@ -6,22 +6,22 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
     var DAY_IN_MILLISECONDS = HOUR_IN_MILLISECONDS * 24;
     var WEEK_IN_MILLISECONDS = DAY_IN_MILLISECONDS * 7;
     var YEAR_IN_MILLISECONDS = WEEK_IN_MILLISECONDS * 52;
-/*
- * Date Format 1.2.3
- * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
- * MIT license
- *
- * Includes enhancements by Scott Trenda <scott.trenda.net>
- * and Kris Kowal <cixar.com/~kris.kowal/>
- *
- * Accepts a date, a mask, or a date and a mask.
- * Returns a formatted version of the given date.
- * The date defaults to the current date/time.
- * The mask defaults to dateFormat.masks.default.
- */
+    /*
+     * Date Format 1.2.3
+     * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
+     * MIT license
+     *
+     * Includes enhancements by Scott Trenda <scott.trenda.net>
+     * and Kris Kowal <cixar.com/~kris.kowal/>
+     *
+     * Accepts a date, a mask, or a date and a mask.
+     * Returns a formatted version of the given date.
+     * The date defaults to the current date/time.
+     * The mask defaults to dateFormat.masks.default.
+     */
 
     var dateFormat = function () {
-        var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
+        var token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
             timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
             timezoneClip = /[^-+\dA-Z]/g,
             pad = function (val, len) {
@@ -53,7 +53,7 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
                 utc = true;
             }
 
-            var	_ = utc ? "getUTC" : "get",
+            var _ = utc ? "getUTC" : "get",
                 d = date[_ + "Date"](),
                 D = date[_ + "Day"](),
                 m = date[_ + "Month"](),
@@ -64,33 +64,33 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
                 L = date[_ + "Milliseconds"](),
                 o = utc ? 0 : date.getTimezoneOffset(),
                 flags = {
-                    d:    d,
-                    dd:   pad(d),
-                    ddd:  dF.i18n.dayNames[D],
+                    d: d,
+                    dd: pad(d),
+                    ddd: dF.i18n.dayNames[D],
                     dddd: dF.i18n.dayNames[D + 7],
-                    m:    m + 1,
-                    mm:   pad(m + 1),
-                    mmm:  dF.i18n.monthNames[m],
+                    m: m + 1,
+                    mm: pad(m + 1),
+                    mmm: dF.i18n.monthNames[m],
                     mmmm: dF.i18n.monthNames[m + 12],
-                    yy:   String(y).slice(2),
+                    yy: String(y).slice(2),
                     yyyy: y,
-                    h:    H % 12 || 12,
-                    hh:   pad(H % 12 || 12),
-                    H:    H,
-                    HH:   pad(H),
-                    M:    M,
-                    MM:   pad(M),
-                    s:    s,
-                    ss:   pad(s),
-                    l:    pad(L, 3),
-                    L:    pad(L > 99 ? Math.round(L / 10) : L),
-                    t:    H < 12 ? "a"  : "p",
-                    tt:   H < 12 ? "am" : "pm",
-                    T:    H < 12 ? "A"  : "P",
-                    TT:   H < 12 ? "AM" : "PM",
-                    Z:    utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
-                    o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
-                    S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
+                    h: H % 12 || 12,
+                    hh: pad(H % 12 || 12),
+                    H: H,
+                    HH: pad(H),
+                    M: M,
+                    MM: pad(M),
+                    s: s,
+                    ss: pad(s),
+                    l: pad(L, 3),
+                    L: pad(L > 99 ? Math.round(L / 10) : L),
+                    t: H < 12 ? "a" : "p",
+                    tt: H < 12 ? "am" : "pm",
+                    T: H < 12 ? "A" : "P",
+                    TT: H < 12 ? "AM" : "PM",
+                    Z: utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
+                    o: (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+                    S: ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
                 };
 
             return mask.replace(token, function ($0) {
@@ -101,17 +101,17 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
 
     // Some common format strings
     dateFormat.masks = {
-        "default":      "ddd mmm dd yyyy HH:MM:ss",
-        shortDate:      "m/d/yy",
-        mediumDate:     "mmm d, yyyy",
-        longDate:       "mmmm d, yyyy",
-        fullDate:       "dddd, mmmm d, yyyy",
-        shortTime:      "h:MM TT",
-        mediumTime:     "h:MM:ss TT",
-        longTime:       "h:MM:ss TT Z",
-        isoDate:        "yyyy-mm-dd",
-        isoTime:        "HH:MM:ss",
-        isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
+        "default": "ddd mmm dd yyyy HH:MM:ss",
+        shortDate: "m/d/yy",
+        mediumDate: "mmm d, yyyy",
+        longDate: "mmmm d, yyyy",
+        fullDate: "dddd, mmmm d, yyyy",
+        shortTime: "h:MM TT",
+        mediumTime: "h:MM:ss TT",
+        longTime: "h:MM:ss TT Z",
+        isoDate: "yyyy-mm-dd",
+        isoTime: "HH:MM:ss",
+        isoDateTime: "yyyy-mm-dd'T'HH:MM:ss",
         isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
     };
 
@@ -237,41 +237,13 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
                         self.notify(event);
                     }
                 },
-                "week": {
-                    get: function () {
-                        var date = new Date(_date.getTime());
-                        date.setMonth(0);
-                        date.setDate(1);
-
-                        var now = _date.getTime();
-                        var then = date.getTime();
-
-                        return Math.floor((now - then) / WEEK_IN_MILLISECONDS);
-                    },
-                    set: function (week) {
-                        if (week < 51) {
-                            var fromDate = new Date(_date.getTime());
-                            fromDate.setMonth(0);
-                            fromDate.setDate(1);
-
-                            var toDate = new Date(fromDate.getTime() + (week * WEEK_IN_MILLISECONDS));
-
-                            var oldValue = _date.getTime();
-                            _date.setTime(toDate.getTime());
-                            var newValue = _date.getTime();
-
-                            var event = new BASE.Event("dateChanged", oldValue, newValue);
-                            self.notify(event);
-                        }
-                    }
-                },
                 "month": {
                     get: function () {
                         return _date.getMonth() + 1;
                     },
                     set: function (month) {
                         var oldValue = _date.getTime();
-                        _date.setMonth(month);
+                        _date.setMonth(month - 1);
                         var newValue = _date.getTime();
 
                         var event = new BASE.PropertyChangedEvent("dateChanged", oldValue, newValue);
@@ -304,82 +276,33 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
             });
 
             self.addMilliseconds = function (milliseconds) {
-                var result = self.milliseconds + milliseconds;
-
-                if (result >= 1000) {
-                    var remainder = result % 1000;
-                    var seconds = Math.floor(result / 1000);
-
-                    self.addSeconds(seconds);
-                    result = remainder;
-                }
-                self.milliseconds = result;
+                _date.setTime(_date.getTime() = milliseconds);
             };
             self.addSeconds = function (seconds) {
-                var result = self.seconds + seconds;
-                if (result >= 60) {
-                    var remainder = result % 60;
-                    var minutes = Math.floor(result / 60);
-
-                    self.addMinutes(minutes);
-                    result = remainder;
-                }
-                self.seconds = result;
+                _date.setTime(_date.getTime() + (seconds * SECOND_IN_MILLISECONDS));
             };
             self.addMinutes = function (minutes) {
-                var result = self.minutes + minutes;
-                if (result >= 60) {
-                    var remainder = result % 60;
-                    var hours = Math.floor(result / 60);
-
-                    self.addHours(hours);
-                    result = remainder;
-                }
-                self.minutes = result;
+                _date.setTime(_date.getTime() + (minutes * MINUTE_IN_MILLISECONDS));
             };
             self.addHours = function (hours) {
-                var result = self.hours + hours;
-                if (result >= 24) {
-                    var remainder = result % 24;
-                    var days = Math.floor(result / 24);
-
-                    self.addDays(days);
-                    result = remainder;
-                }
-                self.hours = result;
+                _date.setTime(_date.getTime() + (hours * HOUR_IN_MILLISECONDS));
             };
             self.addDays = function (days) {
-                var result = self.day + days;
-                if (result >= 7) {
-                    var remainder = result % 7;
-                    var weeks = Math.floor(result / 7);
-
-                    self.addWeeks(weeks);
-                    result = remainder;
-                }
-                self.day = result;
+                _date.setTime(_date.getTime() + (days * DAY_IN_MILLISECONDS));
             };
             self.addWeeks = function (weeks) {
-                var result = self.week + weeks;
-                if (result >= 52) {
-                    var remainder = result % 52;
-                    var years = Math.floor(result / 52);
-
-                    self.addYears(years);
-                    result = remainder;
-                }
-                self.week = result;
+                _date.setTime(_date.getTime() + (weeks * WEEK_IN_MILLISECONDS));
             };
             self.addMonths = function (months) {
-                var result = (self.month + 1) + months;
-                if (result >= 12) {
+                var result = self.month + months;
+                if (result > 12) {
                     var remainder = result % 12;
                     var years = Math.floor(result / 12);
 
                     self.addYears(years);
                     result = remainder;
                 }
-                self.month = result - 1;
+                self.month = result;
             };
             self.addYears = function (years) {
                 self.year = self.year + years;

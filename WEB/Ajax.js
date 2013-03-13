@@ -23,7 +23,6 @@
             xhr.onreadystatechange = function (event) {
                 if (xhr.readyState == 4) {
                     if (xhr.status < 300 && xhr.status >= 200) {
-                        console.log(url, xhr.type, xhr.status);
                         try {
                             var data = JSON.parse(xhr.responseText);
                         } catch (e) {
@@ -36,7 +35,7 @@
                     }
                 }
             }
-            xhr.open(settings.type, url, true);
+            xhr.open(settings.type, encodeURI(url), true);
             Object.keys(settings.headers).forEach(function (key) {
                 xhr.setRequestHeader(key, settings.headers[key]);
             });
