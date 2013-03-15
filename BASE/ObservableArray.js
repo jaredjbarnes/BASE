@@ -122,5 +122,12 @@
             this.splice(index, 1);
         }
     };
+    BASE.ObservableArray.prototype.load = function (options) {
+        options = options || {};
+        options.success = options.success || function () { };
+        setTimeout(function () {
+            options.success([]);
+        }, 0);
+    };
 
 })();

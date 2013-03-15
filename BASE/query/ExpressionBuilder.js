@@ -50,6 +50,22 @@
                 return Expression.lessThanOrEqual(property, constant);
             };
 
+            self.substring = function (value) {
+                return Expression.equal(Expression.substring(Expression.property(namespace)), Expression.getExpressionType(value));
+            };
+
+            self.substringOf = function (value) {
+                return Expression.equal(Expression.substringOf(Expression.property(namespace), Expression.string(value)), Expression.getExpressionType(true));
+            };
+
+            self.startsWith = function (value) {
+                return Expression.startsWith(Expression.property(namespace), Expression.string(value));
+            }
+
+            self.endsWith = function (value) {
+                return Expression.endsWith(Expression.property(namespace), Expression.string(value));
+            }
+
             self.not = function (expression) {
                 // ????
             };

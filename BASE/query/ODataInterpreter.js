@@ -25,11 +25,11 @@
         BASE.extend(ODataInterpreter, Super);
 
         ODataInterpreter.prototype["ascending"] = function (namespace) {
-            return toServiceNamespace(namespace) + " asc";
+            return namespace + " asc";
         };
 
         ODataInterpreter.prototype["descending"] = function (namespace) {
-            return toServiceNamespace(namespace) + " desc";
+            return namespace + " desc";
         };
 
         ODataInterpreter.prototype["orderBy"] = function () {
@@ -60,9 +60,14 @@
                     result.push(" and ");
                 }
             });
-            result.unshift("(");
-            result.push(")");
-            return result.join("");
+
+            var joined = result.join("");
+
+            if (joined === "") {
+                return "";
+            }
+
+            return "(" + joined + ")";
         };
 
         ODataInterpreter.prototype["or"] = function () {
@@ -74,9 +79,14 @@
                     result.push(" or ");
                 }
             });
-            result.unshift("(");
-            result.push(")");
-            return result.join("");
+
+            var joined = result.join("");
+
+            if (joined === "") {
+                return "";
+            }
+
+            return "(" + joined + ")";
         };
 
         //todo: maybe map the operator to the odata operater here
@@ -87,11 +97,35 @@
 
         ODataInterpreter.prototype["equal"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " eq " + right + ")";
+            return "(" + left + " eq " + right + ")";
+        };
+
+        ODataInterpreter.prototype["constant"] = function (expression) {
+            return expression.value;
+        };
+
+        ODataInterpreter.prototype["property"] = function (expression) {
+            return toServiceNamespace(expression.value);
         };
 
         ODataInterpreter.prototype["guid"] = function (value) {
             return "guid'" + value.replace("'", "''") + "'";
+        };
+
+        ODataInterpreter.prototype["substring"] = function (namespace, startAt, endAt) {
+            return "substring(" + namespace + " "(startAt ? "," + startAt : "," + 0) + " " + (endAt ? "," + endAt : "") + ")";
+        };
+
+        ODataInterpreter.prototype["substringOf"] = function (namespace, value) {
+            return "substringof(" + value + "," + namespace + ")";
+        };
+
+        ODataInterpreter.prototype["startsWith"] = function (namespace, value) {
+            return "startswith(" + namespace + "," + value + ")";
+        };
+
+        ODataInterpreter.prototype["endsWith"] = function (namespace, value) {
+            return "endswith(" + namespace + "," + value + ")";
         };
 
         ODataInterpreter.prototype["null"] = function (value) {
@@ -106,38 +140,42 @@
             return value.toString();
         };
 
-        ODataInterpreter.prototype["array"] = function (value) {
+        ODataInterpreter.prototype["boolean"] = function (value) {
+            return value.toString();
+        };
+
+        ODataInterpreter.prototype["array"] = function (expression) {
 
         }
 
         ODataInterpreter.prototype["notEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " ne " + boundary + right + boundary + ")";
+            return "(" + left + " ne " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["greaterThan"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " gt " + boundary + right + boundary + ")";
+            return "(" + left + " gt " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["lessThan"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " lt " + boundary + right + boundary + ")";
+            return "(" + left + " lt " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["greaterThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " ge " + boundary + right + boundary + ")";
+            return "(" + left + " ge " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["lessThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " le " + boundary + right + boundary + ")";
+            return "(" + left + " le " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["not"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + toServiceNamespace(left) + " not " + boundary + right + boundary + ")";
+            return "(" + left + " not " + boundary + right + boundary + ")";
         };
 
         ODataInterpreter.prototype["skip"] = function (value) {

@@ -38,6 +38,7 @@
             };
 
             var animateElementIn = function ($element, callback) {
+                callback = callback || function () { };
                 $element.animate({
                     opacity: 1,
                     left: "0px"
@@ -50,7 +51,8 @@
 
                 prepareElementToAppend($element);
                 $clearChild.before($element);
-                animateElementIn($element, callback);
+                setTimeout(callback, 0);
+                animateElementIn($element);
             };
 
             self.removeSubview = function (view, callback) {
@@ -62,7 +64,7 @@
                     var $element = $(view.element);
                     $element.animate({
                         opacity: 0
-                    }, 500, "easeOutExpo", function () {
+                    }, 0, "easeOutExpo", function () {
                         $element.remove();
 
                         var event = new BASE.ObservableEvent("viewRemoved");

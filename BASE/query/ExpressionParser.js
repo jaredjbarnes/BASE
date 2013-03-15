@@ -19,7 +19,7 @@
 
                 expression.children.forEach(function (expression) {
                     if (!expression.children) {
-                        children.push(expression.value);
+                        children.push(expression);
                     } else {
                         children.push(self.parse(expression));
                     }
@@ -30,6 +30,15 @@
                     throw new Error("The parser doesn't support the \"" + expression.nodeName + "\" expression.");
                 }
 
+                children.forEach(function (child, index) {
+                    if (child instanceof BASE.query.Expression) {
+                        var func = self.interpreter[child.nodeName];
+                        if (!func) {
+                            throw new Error("The parser doesn't support the \"" + child.nodeName + "\" expression.");
+                        }
+                        children[index] = func.call(self.interpreter, child);
+                    }
+                });
                 return func.apply(self.interpreter, children);
             };
 

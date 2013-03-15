@@ -54,10 +54,10 @@
                 return this;
             };
             self.descending = function (expression) {
-                return Expression.descending.call(Expression, Expression.constant(expression.toString()));
+                return Expression.descending.call(Expression, Expression.property(expression.toString()));
             };
             self.ascending = function (expression) {
-                return Expression.ascending.call(Expression, Expression.constant(expression.toString()));
+                return Expression.ascending.call(Expression, Expression.property(expression.toString()));
             };
             self.take = function (value) {
                 _expressions.push(Expression.take.call(Expression, Expression.constant(value)));

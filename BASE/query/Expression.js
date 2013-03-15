@@ -110,6 +110,8 @@
             return Expression.string(Expression.constant(value));
         } else if (typeof value === "number") {
             return Expression.number(Expression.constant(value));
+        } else if (typeof value === "boolean") {
+            return Expression.boolean(Expression.constant(value));
         } else if (typeof value === null) {
             return Expression["null"](Expression.constant(value));
         } else if (typeof value === undefined) {
@@ -248,6 +250,22 @@
         return expression;
     };
 
+    Expression.substring = function () {
+        var expression = new OperationExpression("substring");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.substringOf = function () {
+        var expression = new OperationExpression("substringOf");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
     Expression.load = function () {
         var expression = new OperationExpression("load");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
@@ -258,6 +276,14 @@
 
     Expression.number = function () {
         var expression = new OperationExpression("number");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.boolean = function () {
+        var expression = new OperationExpression("boolean");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });
@@ -304,4 +330,19 @@
         return expression;
     };
 
+    Expression.startsWith = function () {
+        var expression = new OperationExpression("startsWith");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.endsWith = function () {
+        var expression = new OperationExpression("endsWith");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
 });

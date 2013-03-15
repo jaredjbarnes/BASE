@@ -29,6 +29,8 @@
             }
         };
 
+        self.error = function () { };
+
     };
 
 }());
