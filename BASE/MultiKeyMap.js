@@ -1,5 +1,5 @@
 ﻿BASE.require(["BASE.Hashmap"], function () {
-    BASE.namespace("LEAVITT.entities");
+    BASE.namespace("BASE.data");
 
     BASE.MultiKeyMap = (function (Super) {
 

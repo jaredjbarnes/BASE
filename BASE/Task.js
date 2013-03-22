@@ -24,10 +24,25 @@
 
             self.whenAll = function (callback) {
                 self.observe(callback, "whenAll");
+                return self;
             };
 
             self.whenAny = function (callback) {
                 self.observe(callback, "whenAny");
+                return self;
+            };
+
+            var _notify = function (future) {
+                completedFutures.push(future);
+                var event = new BASE.ObservableEvent("whenAny");
+                event.future = future;
+                self.notify(event);
+
+                if (completedFutures.length === futures.length) {
+                    var event = new BASE.ObservableEvent("whenAll");
+                    event.futures = futures;
+                    self.notify(event);
+                }
             };
 
             self.start = function () {
@@ -35,28 +50,14 @@
                     futures.forEach(function (future) {
                         var value = future.value;
                         var error = future.error;
-                        if (typeof future.value !== "undefined" || typeof future.error !== "undefined") {
+                        if (typeof future.value !== "undefined" || typeof future.errorObject !== "undefined") {
                             setTimeout(function () {
-                                completedFutures.push(future);
-                                if (completedFutures.length === futures.length) {
-                                    var event = new BASE.ObservableEvent("whenAll");
-                                    event.futures = futures;
-                                    self.notify(event);
-                                }
+                                _notify(future);
                             }, 0);
                         } else {
-                            future.observe(function (value) {
-                                completedFutures.push(future);
-
-                                var event = new BASE.ObservableEvent("whenAny");
-                                event.future = future;
-                                self.notify(event);
-
-                                if (completedFutures.length === futures.length) {
-                                    var event = new BASE.ObservableEvent("whenAll");
-                                    event.futures = futures;
-                                    self.notify(event);
-                                }
+                            future.observe(function observer(value) {
+                                future.unobserve(observer, "complete");
+                                _notify(future);
                             }, "complete");
                         }
 

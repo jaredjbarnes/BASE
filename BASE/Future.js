@@ -20,7 +20,7 @@
                         return _value;
                     }
                 },
-                "error": {
+                "errorObject": {
                     get: function () {
                         return _error;
                     }
@@ -39,7 +39,7 @@
                 if (error) {
                     self.observe(function wrapper() {
                         self.unobserve(wrapper, "error");
-                        error(_value);
+                        error(_error);
                     }, "error");
                 }
 
@@ -48,16 +48,16 @@
                         hasResponse = true;
                         _state = _loadedState;
                         _value = value;
-                        self.notify(new BASE.ObservableEvent("complete"));
                         self.notify(new BASE.ObservableEvent("success"));
+                        self.notify(new BASE.ObservableEvent("complete"));
                     }
                 }, function (err) {
                     if (typeof _value === "undefined") {
                         hasResponse = true;
                         _state = _errorState;
                         _error = err;
-                        self.notify(new BASE.ObservableEvent("complete"));
                         self.notify(new BASE.ObservableEvent("error"));
+                        self.notify(new BASE.ObservableEvent("complete"));
                     }
                 });
             };

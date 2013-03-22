@@ -275,8 +275,11 @@
                         }
                         callbacks.forEach(function (callback) {
                             callback();
-                            self.notify();
                         });
+
+                        self.notify();
+
+                        observers[namespace] = [];
                     }
                 });
             },

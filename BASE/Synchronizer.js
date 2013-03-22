@@ -1,4 +1,7 @@
 ﻿BASE.require(["BASE.Observable"], function () {
+
+    // DEPRECATED!!!
+
     BASE.Synchronizer = (function (Super) {
         var Synchronizer = function () {
             var self = this;
