@@ -313,7 +313,7 @@ BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
             }
 
             self.toString = function (format) {
-                return dateFormat(self._date, format);
+                return dateFormat(_date, format);
             };
 
             return self;

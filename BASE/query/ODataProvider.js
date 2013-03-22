@@ -1,6 +1,6 @@
 ﻿BASE.require([
     "BASE.query.Provider",
-    "BASE.query.ODataInterpreter",
+    "BASE.query.ODataQueryBuilder",
 ], function () {
     BASE.namespace("BASE.query");
 
@@ -12,8 +12,8 @@
             }
 
             Super.call(self, Type);
-            self.createInterpreter = function () {
-                return new BASE.query.ODataInterpreter();
+            self.createQueryBuilder = function () {
+                return new BASE.query.ODataQueryBuilder();
             };
         };
 

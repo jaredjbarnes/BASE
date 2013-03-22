@@ -8,7 +8,7 @@
                 var provider = new BASE.query.ArrayProvider(Type, self);
                 var providerResults = provider.execute(filter);
 
-                return providerResults.interpreter.filteredArray;
+                return providerResults.queryBuilder.filteredArray;
             }
         }
     });

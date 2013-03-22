@@ -140,7 +140,6 @@
 
     var extend = function (d, b) {
         function __() { this.constructor = d; }
-        if (!b) { console.log(d) }
         __.prototype = b.prototype;
         d.prototype = new __();
     };
@@ -493,7 +492,6 @@
         window.BASE.clone = clone;
         window.BASE.getObject = getObject;
         window.BASE.isObject = isObject;
-        window.BASE.defineClass = defineClass;
         window.BASE.extend = extend;
         window.BASE.Loader = Loader;
 

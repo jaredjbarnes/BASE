@@ -9,7 +9,7 @@
             }
 
             Super.call(self);
-            self.interpreter = {};
+            self.queryBuilder = {};
 
             self.parse = function (expression) {
                 if (!expression) {
@@ -25,21 +25,21 @@
                     }
                 });
 
-                var func = self.interpreter[expression.nodeName];
+                var func = self.queryBuilder[expression.nodeName];
                 if (!func) {
                     throw new Error("The parser doesn't support the \"" + expression.nodeName + "\" expression.");
                 }
 
                 children.forEach(function (child, index) {
                     if (child instanceof BASE.query.Expression) {
-                        var func = self.interpreter[child.nodeName];
+                        var func = self.queryBuilder[child.nodeName];
                         if (!func) {
                             throw new Error("The parser doesn't support the \"" + child.nodeName + "\" expression.");
                         }
-                        children[index] = func.call(self.interpreter, child);
+                        children[index] = func.call(self.queryBuilder, child);
                     }
                 });
-                return func.apply(self.interpreter, children);
+                return func.apply(self.queryBuilder, children);
             };
 
             return self;

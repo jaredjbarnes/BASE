@@ -3,7 +3,8 @@
     BASE.namespace("WEB.ui");
 
     $(window).bind("resize", function () {
-        $("[data-view]").first().data("view").notifySubviews(new BASE.ObservableEvent("resize"));
+        var view = $("[data-view]").first().data("view");
+        view.notifySubviews(new BASE.ObservableEvent("resize"));
     });
 
     WEB.ui.View = (function (Super) {
@@ -25,7 +26,7 @@
                         var $parent = $element.parents("[data-view]");
                         if ($parent.length > 0) {
                             var parentView = $parent.first().data("view");
-                            if (parentView instanceof WEB.ui.View) {
+                            if (parentView instanceof View) {
                                 return parentView;
                             } else {
                                 return null;

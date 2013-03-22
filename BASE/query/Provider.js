@@ -15,14 +15,14 @@
 
             Super.call(self);
 
-            var _Interpreter = Object;
+            var _QueryBuilder = Object;
             var _Builder = BASE.query.ExpressionBuilder;
             var _Queryable = BASE.query.Queryable;
 
-            self.createInterpreter = function () {
-                return new _Interpreter();
+            self.createQueryBuilder = function () {
+                return new _QueryBuilder();
             };
-            self.createBuilder = function () {
+            self.createExpressionBuilder = function () {
                 return new _Builder(Type);
             };
             self.createQueryable = function () {
@@ -30,12 +30,13 @@
             };
 
             self.execute = function (filter) {
-                var builder = self.createBuilder();
+                var builder = self.createExpressionBuilder();
                 var queryable = self.createQueryable();
                 var query = new BASE.query.Query(filter, builder, queryable);
-                var queryable = query.run(Type);
+                query.run(Type);
+
                 var parser = new BASE.query.ExpressionParser();
-                parser.interpreter = self.createInterpreter();
+                parser.queryBuilder = self.createQueryBuilder();
                 var expressions = [];
 
                 queryable.expression.children.forEach(function (expression) {
@@ -44,7 +45,7 @@
 
                 return {
                     expressions: expressions,
-                    interpreter: parser.interpreter,
+                    queryBuilder: parser.queryBuilder,
                     builder: builder,
                     queryable: queryable
                 };

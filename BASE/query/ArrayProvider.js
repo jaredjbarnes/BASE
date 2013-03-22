@@ -1,6 +1,6 @@
 ﻿BASE.require([
     "BASE.query.Provider",
-    "BASE.query.ArrayInterpreter"
+    "BASE.query.ArrayQueryBuilder"
 ], function () {
     BASE.namespace("LEAVITT.query");
 
@@ -12,8 +12,8 @@
             }
 
             Super.call(self, Type);
-            self.createInterpreter = function () {
-                return new BASE.query.ArrayInterpreter(array);
+            self.createQueryBuilder = function () {
+                return new BASE.query.ArrayQueryBuilder(array);
             };
             
         };

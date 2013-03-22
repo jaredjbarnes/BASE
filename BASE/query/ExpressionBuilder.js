@@ -89,7 +89,7 @@
                             if (typeof Type === "function") {
                                 ChildType = mapping[property].constructor;
                             } else {
-                                mapping[property];
+                                ChildType = mapping[property];
                             }
                         }
 

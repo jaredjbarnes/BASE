@@ -1,9 +1,13 @@
 ﻿(function () {
     BASE.Observable = (function () {
         function Observable() {
-            this._globalObservers = [];
-            this._typeObservers = {
-            };
+            var self = this;
+            if (!(self instanceof arguments.callee)) {
+                return new Observable();
+            }
+            self._globalObservers = [];
+            self._typeObservers = {};
+            return this;
         }
         Observable.prototype.observe = function (callback, type) {
             var callback;
@@ -19,6 +23,7 @@
                 callback = arguments[0];
                 this._globalObservers.push(callback);
             }
+            return this;
         };
         Observable.prototype.unobserve = function (callback, type) {
             var callback;
@@ -40,6 +45,8 @@
                     this._globalObservers.splice(index, 1);
                 }
             }
+
+            return this;
         };
         Observable.prototype.notify = function (event) {
             var self = this;
@@ -54,6 +61,7 @@
             typeObservers.forEach(function (observer) {
                 observer.call(self, event);
             });
+            return this;
         };
         return Observable;
     })();

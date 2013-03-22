@@ -50,11 +50,11 @@
         };
     };
 
-    BASE.query.ArrayInterpreter = (function (Super) {
-        var ArrayInterpreter = function (localArray) {
+    BASE.query.ArrayQueryBuilder = (function (Super) {
+        var ArrayQueryBuilder = function (localArray) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
-                return new ArrayInterpreter();
+                return new ArrayQueryBuilder();
             }
 
             Super.call(self);
@@ -64,17 +64,17 @@
             return self;
         };
 
-        BASE.extend(ArrayInterpreter, Super);
+        BASE.extend(ArrayQueryBuilder, Super);
 
-        ArrayInterpreter.prototype["ascending"] = function (namespace) {
+        ArrayQueryBuilder.prototype["ascending"] = function (namespace) {
             return new Ascending(namespace);
         };
 
-        ArrayInterpreter.prototype["descending"] = function (namespace) {
+        ArrayQueryBuilder.prototype["descending"] = function (namespace) {
             return new Descending(namespace);
         };
 
-        ArrayInterpreter.prototype["greaterThan"] = function (left, right) {
+        ArrayQueryBuilder.prototype["greaterThan"] = function (left, right) {
             var results = [];
             var self = this;
             self.localArray.forEach(function (item) {
@@ -86,7 +86,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["lessThan"] = function (left, right) {
+        ArrayQueryBuilder.prototype["lessThan"] = function (left, right) {
             var results = [];
             var self = this;
             self.localArray.forEach(function (item) {
@@ -98,7 +98,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["greaterThanOrEqual"] = function (left, right) {
+        ArrayQueryBuilder.prototype["greaterThanOrEqual"] = function (left, right) {
             var results = [];
             var self = this;
             self.localArray.forEach(function (item) {
@@ -110,7 +110,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["lessThanOrEqual"] = function (left, right) {
+        ArrayQueryBuilder.prototype["lessThanOrEqual"] = function (left, right) {
             var results = [];
             var self = this;
             self.localArray.forEach(function (item) {
@@ -122,7 +122,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["orderBy"] = function () {
+        ArrayQueryBuilder.prototype["orderBy"] = function () {
             var self = this;
             var orderByCriterions = Array.prototype.slice.call(arguments, 0);
 
@@ -142,7 +142,7 @@
             return self.filteredArray;
         };
 
-        ArrayInterpreter.prototype["and"] = function () {
+        ArrayQueryBuilder.prototype["and"] = function () {
             var results = [];
             var children = Array.prototype.slice.call(arguments, 0);
             children[0].forEach(function (item, index) {
@@ -158,12 +158,12 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["where"] = function () {
+        ArrayQueryBuilder.prototype["where"] = function () {
             var self = this;
-            self.filteredArray = ArrayInterpreter.prototype["and"].apply(self, arguments);
+            self.filteredArray = ArrayQueryBuilder.prototype["and"].apply(self, arguments);
         };
 
-        ArrayInterpreter.prototype["or"] = function () {
+        ArrayQueryBuilder.prototype["or"] = function () {
             var results = [];
             var children = Array.prototype.slice.call(arguments, 0);
             var match = children.forEach(function (array, index) {
@@ -178,35 +178,43 @@
         };
 
 
-        ArrayInterpreter.prototype["string"] = function (value) {
+        ArrayQueryBuilder.prototype["string"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["guid"] = function (value) {
+        ArrayQueryBuilder.prototype["constant"] = function (expression) {
+            return expression.value;
+        };
+
+        ArrayQueryBuilder.prototype["property"] = function (expression) {
+            return expression.value;
+        };
+
+        ArrayQueryBuilder.prototype["guid"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["null"] = function (value) {
+        ArrayQueryBuilder.prototype["null"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["undefined"] = function (value) {
+        ArrayQueryBuilder.prototype["undefined"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["number"] = function (value) {
+        ArrayQueryBuilder.prototype["number"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["object"] = function (value) {
+        ArrayQueryBuilder.prototype["object"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["array"] = function (value) {
+        ArrayQueryBuilder.prototype["array"] = function (value) {
             return value;
         };
 
-        ArrayInterpreter.prototype["equal"] = function (left, right) {
+        ArrayQueryBuilder.prototype["equal"] = function (left, right) {
             var results = [];
             var self = this;
             self.localArray.forEach(function (item) {
@@ -218,7 +226,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["notEqual"] = function (left, right) {
+        ArrayQueryBuilder.prototype["notEqual"] = function (left, right) {
             var self = this;
 
             var results = [];
@@ -232,7 +240,7 @@
             return results;
         };
 
-        ArrayInterpreter.prototype["skip"] = function (value) {
+        ArrayQueryBuilder.prototype["skip"] = function (value) {
             var self = this;
 
             for (var x = 0 ; x < value && self.filteredArray.length > 0; x++) {
@@ -241,7 +249,7 @@
             return self.filteredArray;
         };
 
-        ArrayInterpreter.prototype["take"] = function (value) {
+        ArrayQueryBuilder.prototype["take"] = function (value) {
             var self = this;
             var newFilteredArray = [];
             value = value < self.filteredArray.length ? value : self.filteredArray.length;
@@ -251,6 +259,6 @@
             return self.filteredArray = newFilteredArray;
         };
 
-        return ArrayInterpreter;
+        return ArrayQueryBuilder;
     }(BASE.Observable));
 });
