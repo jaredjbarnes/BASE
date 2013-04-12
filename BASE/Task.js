@@ -2,7 +2,7 @@
     BASE.Task = (function (Super) {
 
         // A Task takes any Observable that fires events 
-        // of "complete" (Once) with "success" or "error" (Once)
+        // of "complete" (Once).
         var Future = BASE.Future;
 
         var Task = function () {
@@ -15,10 +15,25 @@
 
             var futures = Array.prototype.slice.call(arguments, 0);
             var completedFutures = [];
+            var _started = false;
 
             futures.forEach(function (future, index) {
                 if (typeof future === "function") {
                     futures[index] = new Future(future);
+                }
+            });
+
+            Object.defineProperties(self, {
+                "value": {
+                    get: function () {
+                        if (!_started) {
+                            self.start();
+                            return undefined;
+                        } else {
+                            return futures;
+                        }
+
+                    }
                 }
             });
 
@@ -32,6 +47,14 @@
                 return self;
             };
 
+            self.add = function () {
+                if (completedFutures.length === 0) {
+                    futures.push.apply(futures, arguments);
+                } else {
+                    throw new Error("Cannot add to a task when it has already finished.");
+                }
+            };
+
             var _notify = function (future) {
                 completedFutures.push(future);
                 var event = new BASE.ObservableEvent("whenAny");
@@ -42,30 +65,46 @@
                     var event = new BASE.ObservableEvent("whenAll");
                     event.futures = futures;
                     self.notify(event);
+
+                    var completeEvent = new BASE.ObservableEvent("complete");
+                    completeEvent.futures = futures;
+                    self.notify(completeEvent);
+
+                    futures = [];
+                    completedFutures = [];
                 }
             };
 
             self.start = function () {
-                if (futures.length > 0) {
-                    futures.forEach(function (future) {
-                        var value = future.value;
-                        var error = future.error;
-                        if (typeof future.value !== "undefined" || typeof future.errorObject !== "undefined") {
-                            setTimeout(function () {
-                                _notify(future);
-                            }, 0);
-                        } else {
-                            future.observe(function observer(value) {
-                                future.unobserve(observer, "complete");
-                                _notify(future);
-                            }, "complete");
-                        }
+                if (_started === false) {
+                    if (futures.length > 0) {
+                        _started = true;
+                        futures.forEach(function (future) {
+                            var value = future.value;
+                            var error = future.errorObject;
+                            if (typeof value !== "undefined" || typeof error !== "undefined") {
+                                setTimeout(function () {
+                                    _notify(future);
+                                }, 0);
+                            } else {
+                                future.observe(function observer(value) {
+                                    future.unobserve(observer, "complete");
+                                    _notify(future);
+                                }, "complete");
+                            }
 
-                    });
-                } else {
-                    var event = new BASE.ObservableEvent("whenAll");
-                    event.futures = futures;
-                    self.notify(event);
+                        });
+                    } else {
+                        setTimeout(function () {
+                            var event = new BASE.ObservableEvent("whenAll");
+                            event.futures = futures;
+                            self.notify(event);
+
+                            var completeEvent = new BASE.ObservableEvent("complete");
+                            completeEvent.futures = futures;
+                            self.notify(completeEvent);
+                        }, 0);
+                    }
                 }
                 return self;
             };

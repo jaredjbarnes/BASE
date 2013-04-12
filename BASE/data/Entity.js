@@ -1,4 +1,7 @@
-﻿BASE.require(["BASE.Observable"], function () {
+﻿BASE.require([
+    "BASE.Observable",
+    "BASE.Future"
+], function () {
     BASE.namespace("BASE.data");
     BASE.data.Entity = (function (Super) {
         function Entity() {
@@ -42,28 +45,30 @@
                 }
             });
 
-            self.load = function (options) {
-                options = options || {};
-                options.success = options.success || function () { };
-                options.error = options.error || function () { };
-
-                if (!self.id) {
-                    options.success();
-                    return;
-                }
-                if (self.__dataContext) {
-                    self.__dataContext.loadEntities({
-                        Type: self.constructor,
-                        filter: function (entity) {
-                            this.where(entity.id.equals(this.toGuid(self.id)));
-                        },
-                        success: options.success,
-                        error: options.error
-                    });
-                } else {
-                    console.log(this);
-                    throw new Error("Entity isn't part of a context.");
-                }
+            self.load = function () {
+                return new BASE.Future(function (setValue, setError) {
+                    if (!self.id) {
+                        setValue(self);
+                        return;
+                    }
+                    if (self.__dataContext) {
+                        self.__dataContext.loadEntities({
+                            Type: self.constructor,
+                            filter: function (entity) {
+                                this.where(entity.id.equals(this.toGuid(self.id)));
+                            },
+                            success: function () {
+                                setValue(self);
+                            },
+                            error: function (err) {
+                                setError(err);
+                            }
+                        });
+                    } else {
+                        console.log(this);
+                        throw new Error("Entity isn't part of a context.");
+                    }
+                });
             };
 
         }

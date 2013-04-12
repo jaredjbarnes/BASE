@@ -62,17 +62,19 @@
                     return null;
                 }
 
-                var value = hash[key];
+                var value = null;
                 if (typeof key === "string") {
                     value = hash[key];
                     delete hash[key];
-                    return value;
+                    return value || null;
                 }
                 if (key._hash && hash[key._hash]) {
                     value = hash[key._hash];
                     delete hash[key._hash];
                     return value;
                 }
+
+                return value;
             };
 
             self.hasKey = function (key) {
@@ -93,6 +95,15 @@
             self.getKeys = function () {
                 return Object.keys(hash);
             };
+
+            self.copy = function () {
+                var copy = new Hashmap();
+                self.getKeys().forEach(function (key) {
+                    copy.add(key, self.get(key));
+                });
+                return copy;
+            };
+
             return self;
         };
 

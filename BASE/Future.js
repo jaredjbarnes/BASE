@@ -16,7 +16,9 @@
             Object.defineProperties(self, {
                 "value": {
                     get: function () {
-                        self.then();
+                        if (typeof _value === "undefined") {
+                            self.then();
+                        }
                         return _value;
                     }
                 },
@@ -60,6 +62,8 @@
                         self.notify(new BASE.ObservableEvent("complete"));
                     }
                 });
+                // Reassign get value as to not call the retreive function twice.
+                getValue = function () { };
             };
 
             var _loadedState = function (success, error) {

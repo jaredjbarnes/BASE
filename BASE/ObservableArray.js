@@ -1,4 +1,4 @@
-(function () {
+BASE.require(["BASE.Future"], function () {
 
     var ArrayChangedEvent = (function () {
         function ArrayChangedEvent(target, newItems, oldItems) {
@@ -122,12 +122,18 @@
             this.splice(index, 1);
         }
     };
-    BASE.ObservableArray.prototype.load = function (options) {
-        options = options || {};
-        options.success = options.success || function () { };
-        setTimeout(function () {
-            options.success([]);
-        }, 0);
+    BASE.ObservableArray.prototype.load = function () {
+        return new BASE.Future(function (setValue, setError) {
+            setValue([]);
+        });
     };
 
-})();
+    BASE.ObservableArray.fromArray = function (array) {
+        var observableArray = new BASE.ObservableArray();
+        array.forEach(function (item) {
+            observableArray.push(item);
+        });
+        return observableArray;
+    };
+
+});

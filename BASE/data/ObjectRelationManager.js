@@ -32,55 +32,62 @@
                 var manyToMany = relationships.manyToMany || [];
 
                 oneToOne.forEach(function (relationship) {
-                    _typeToPropertyRelationships.add(relationship.Type, relationship.hasOne, relationship);
-                    _typeToPropertyRelationships.add(relationship.ofType, relationship.withOne, relationship);
-
-                    oneToOneRelationships.add(relationship.Type, relationship.hasOne, relationship);
-                    oneToOneRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    // This if allows for one sided relationships. Example Apps.accessPermission is a OneToMany, that the Permission object doesn't care about.
+                    if (relationship.hasOne) {
+                        _typeToPropertyRelationships.add(relationship.Type, relationship.hasOne, relationship);
+                        oneToOneRelationships.add(relationship.Type, relationship.hasOne, relationship);
+                    }
+                    if (relationship.withOne) {
+                        _typeToPropertyRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                        oneToOneRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    }
                 });
 
                 manyToMany.forEach(function (relationship) {
+                    if (relationship.hasMany) {
+                        var leftRelationship = {
+                            Type: relationship.Type,
+                            hasKey: relationship.hasKey,
+                            hasMany: relationship.hasMany + "To" + relationship.withMany,
+                            ofType: relationship.usingMappingType,
+                            withKey: "id",
+                            withForeignKey: relationship.withForeignKey,
+                            withOne: relationship.withMany,
+                        };
+                        oneToMany.push(leftRelationship);
+                        _typeToPropertyRelationships.add(relationship.Type, relationship.hasMany, relationship);
+                        manyToManyRelationships.add(relationship.Type, relationship.hasMany, relationship);
 
-                    var leftRelationship = {
-                        Type: relationship.Type,
-                        hasKey: relationship.hasKey,
-                        hasMany: relationship.hasMany + "To" + relationship.withMany,
-                        ofType: relationship.usingMappingType,
-                        withKey: "id",
-                        withForeignKey: relationship.withForeignKey,
-                        withOne: relationship.withMany,
-                    };
+                    }
 
-                    var rightRelationship = {
-                        Type: relationship.ofType,
-                        hasKey: relationship.withKey,
-                        hasMany: relationship.hasMany + "To" + relationship.withMany,
-                        ofType: relationship.usingMappingType,
-                        withKey: "id",
-                        withForeignKey: relationship.hasForeignKey,
-                        withOne: relationship.hasMany,
-                    };
+                    if (relationship.withMany) {
+                        var rightRelationship = {
+                            Type: relationship.ofType,
+                            hasKey: relationship.withKey,
+                            hasMany: relationship.hasMany + "To" + relationship.withMany,
+                            ofType: relationship.usingMappingType,
+                            withKey: "id",
+                            withForeignKey: relationship.hasForeignKey,
+                            withOne: relationship.hasMany,
+                        };
 
-                    oneToMany.push(leftRelationship);
-                    oneToMany.push(rightRelationship);
+                        oneToMany.push(rightRelationship);
+                        _typeToPropertyRelationships.add(relationship.ofType, relationship.withMany, relationship);
+                        manyToManyRelationships.add(relationship.ofType, relationship.withMany, relationship);
+                    }
 
-                    _typeToPropertyRelationships.add(relationship.Type, relationship.hasMany, relationship);
-                    _typeToPropertyRelationships.add(relationship.ofType, relationship.withMany, relationship);
-
-                    manyToManyRelationships.add(relationship.Type, relationship.hasMany, relationship);
-                    manyToManyRelationships.add(relationship.ofType, relationship.withMany, relationship);
                 });
 
                 oneToMany.forEach(function (relationship) {
-                    _typeToPropertyRelationships.add(relationship.Type, relationship.hasMany, relationship);
-                    _typeToPropertyRelationships.add(relationship.ofType, relationship.withOne, relationship);
-
-                    oneToManyRelationships.add(relationship.Type, relationship.hasMany, relationship);
-                    oneToManyRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    if (relationship.hasMany) {
+                        _typeToPropertyRelationships.add(relationship.Type, relationship.hasMany, relationship);
+                        oneToManyRelationships.add(relationship.Type, relationship.hasMany, relationship);
+                    }
+                    if (relationship.withOne) {
+                        _typeToPropertyRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                        oneToManyRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    }
                 });
-
-
-
 
             }(relationships));
 
@@ -125,19 +132,23 @@
                             var observeOneToOneSource = function (e) {
                                 var oldTarget = e.oldValue || {};
                                 if (trackedEntities.hasKey(oldTarget)) {
-                                    oldTarget[relationship.withOne] = null;
+                                    if (relationship.withOne) {
+                                        oldTarget[relationship.withOne] = null;
+                                    }
                                     oldTarget[relationship.withForeignKey] = null;
                                 }
 
                                 var newTarget = e.newValue;
                                 if (newTarget) {
-                                    newTarget[relationship.withOne] = entity;
+                                    if (relationship.withOne) {
+                                        newTarget[relationship.withOne] = entity;
+                                    }
                                     newTarget[relationship.withForeignKey] = entity[relationship.hasKey];
 
                                     if (entity[relationship.hasKey] === null) {
                                         var observeKey = function () {
                                             entity.unobserve(observeKey, relationship.hasKey);
-                                            if (newTarget[relationship.withOne] === entity) {
+                                            if (newTarget[relationship.withOne] === entity || typeof relationship.withOne === "undefined") {
                                                 newTarget[relationship.withForeignKey] = entity[relationship.hasKey];
                                             }
                                         };
@@ -167,28 +178,38 @@
                             entity.observe(observeOneToOneSource, relationship.hasOne);
 
                         } else {
-                            var observeOneToOneTarget = function (e) {
-                                var oldSource = e.oldValue || {};
-                                if (trackedEntities.hasKey(oldSource)) {
-                                    oldSource[relationship.hasOne] = null;
-                                }
-                                var newSource = e.newValue;
-                                if (newSource) {
-                                    newSource[relationship.hasOne] = entity;
-                                    self.track(newSource);
-                                }
-                            };
+                            if (relationship.hasOne) {
+                                var observeOneToOneTarget = function (e) {
+                                    var oldSource = e.oldValue || {};
+                                    if (trackedEntities.hasKey(oldSource)) {
+                                        oldSource[relationship.hasOne] = null;
+                                    }
+                                    var newSource = e.newValue;
+                                    if (newSource) {
+                                        newSource[relationship.hasOne] = entity;
+                                        self.track(newSource);
+                                    }
 
-                            // Initial set
-                            observeOneToOneTarget({
-                                property: relationship.withOne,
-                                source: entity,
-                                oldValue: null,
-                                newValue: entity[relationship.withOne]
-                            });
+                                    if ((entity[relationship.withOne] === newSource || typeof relationship.withOne === "undefined")) {
+                                        if (newSource === null) {
+                                            entity[relationship.withForeignKey] = null;
+                                        } else {
+                                            entity[relationship.withForeignKey] = newSource[relationship.hasKey];
+                                        }
+                                    }
+                                };
 
-                            oneToOneObservers.add(Type, relationship.withOne, observeOneToOneTarget);
-                            entity.observe(observeOneToOneTarget, relationship.withOne);
+                                // Initial set
+                                observeOneToOneTarget({
+                                    property: relationship.withOne,
+                                    source: entity,
+                                    oldValue: null,
+                                    newValue: entity[relationship.withOne]
+                                });
+
+                                oneToOneObservers.add(Type, relationship.withOne, observeOneToOneTarget);
+                                entity.observe(observeOneToOneTarget, relationship.withOne);
+                            }
                         }
                     });
 
@@ -199,19 +220,23 @@
 
                                 e.oldItems.forEach(function (target) {
                                     if (trackedEntities.hasKey(target)) {
-                                        target[relationship.withOne] = null;
+                                        if (relationship.withOne) {
+                                            target[relationship.withOne] = null;
+                                        }
                                         target[relationship.withForeignKey] = null;
                                     }
                                 });
 
                                 e.newItems.forEach(function (target) {
-                                    target[relationship.withOne] = entity;
+                                    if (relationship.withOne) {
+                                        target[relationship.withOne] = entity;
+                                    }
                                     target[relationship.withForeignKey] = entity[relationship.hasKey];
 
                                     if (entity[relationship.hasKey] === null) {
                                         var observeKey = function () {
                                             entity.unobserve(observeKey, relationship.hasKey);
-                                            if (target[relationship.withOne] === entity) {
+                                            if (target[relationship.withOne] === entity || typeof relationship.withOne === "undefined") {
                                                 target[relationship.withForeignKey] = entity[relationship.hasKey];
                                             }
                                         };
@@ -252,20 +277,29 @@
                             var observeOneToManyTarget = function (e) {
                                 var oldSource = e.oldValue;
                                 if (oldSource &&
-                                    trackedEntities.hasKey(oldSource)) {
+                                    trackedEntities.hasKey(oldSource) && relationship.hasMany) {
                                     var index = oldSource[relationship.hasMany].indexOf(entity);
                                     if (index >= 0) {
                                         oldSource[relationship.hasMany].splice(index, 1);
                                     }
                                 }
                                 var newSource = e.newValue;
-                                if (newSource) {
+                                if (newSource && relationship.hasMany) {
                                     var index = newSource[relationship.hasMany].indexOf(entity);
                                     if (index < 0) {
                                         newSource[relationship.hasMany].push(entity);
                                     }
                                     self.track(e.newValue);
                                 }
+
+                                if ((entity[relationship.withOne] === newSource || typeof relationship.withOne === "undefined")) {
+                                    if (newSource === null) {
+                                        entity[relationship.withForeignKey] = null;
+                                    } else {
+                                        entity[relationship.withForeignKey] = newSource[relationship.hasKey];
+                                    }
+                                }
+
                             };
 
                             observeOneToManyTarget({
@@ -277,14 +311,13 @@
 
                             oneToManyObservers.add(Type, relationship.withOne, observeOneToManyTarget);
                             entity.observe(observeOneToManyTarget, relationship.withOne);
-
                         }
                     });
 
                     manyToMany.forEach(function (key) {
                         var relationship = manyToManyRelationships.get(Type, key);
 
-                        if (relationship.Type === Type) {
+                        if (relationship.Type === Type && relationship.withMany) {
                             var observeManyToManySource = function (e) {
 
                                 e.oldItems.forEach(function (target) {
@@ -350,48 +383,50 @@
                             entity[relationship.hasMany].observe(arrayObserver);
 
                         } else {
-                            var observeManyToManyTarget = function (e) {
-                                e.oldItems.forEach(function (source) {
-                                    if (trackedEntities.hasKey(source)) {
-                                        var index = source[relationship.hasMany].indexOf(entity);
-                                        if (index >= 0) {
-                                            source[relationship.hasMany].splice(index, 1);
+
+                            if (relationship.hasMany) {
+                                var observeManyToManyTarget = function (e) {
+                                    e.oldItems.forEach(function (source) {
+                                        if (trackedEntities.hasKey(source)) {
+                                            var index = source[relationship.hasMany].indexOf(entity);
+                                            if (index >= 0) {
+                                                source[relationship.hasMany].splice(index, 1);
+                                            }
                                         }
-                                    }
+                                    });
+
+                                    e.newItems.forEach(function (source) {
+                                        var index = source[relationship.hasMany].indexOf(entity);
+                                        if (index < 0) {
+                                            source[relationship.hasMany].push(entity);
+                                        }
+                                        self.track(source);
+                                    });
+                                };
+
+                                observeManyToManyTarget({
+                                    property: relationship.withMany,
+                                    source: entity,
+                                    oldItems: [],
+                                    newItems: entity[relationship.withMany]
                                 });
 
-                                e.newItems.forEach(function (source) {
-                                    var index = source[relationship.hasMany].indexOf(entity);
-                                    if (index < 0) {
-                                        source[relationship.hasMany].push(entity);
-                                    }
-                                    self.track(source);
-                                });
-                            };
+                                manyToManyObservers.add(Type, relationship.withMany, observeManyToManyTarget);
+                                entity.observe(observeManyToManyTarget, relationship.withMany);
 
-                            observeManyToManyTarget({
-                                property: relationship.withMany,
-                                source: entity,
-                                oldItems: [],
-                                newItems: entity[relationship.withMany]
-                            });
+                                var arrayObserver = function (e) {
+                                    var event = new BASE.ObservableEvent(relationship.withMany);
+                                    event.newItems = e.newItems;
+                                    event.oldItems = e.oldItems;
+                                    event.source = entity;
+                                    event.property = event.type;
+                                    entity.notify(event);
+                                };
 
-                            manyToManyObservers.add(Type, relationship.withMany, observeManyToManyTarget);
-                            entity.observe(observeManyToManyTarget, relationship.withMany);
-
-                            var arrayObserver = function (e) {
-                                var event = new BASE.ObservableEvent(relationship.withMany);
-                                event.newItems = e.newItems;
-                                event.oldItems = e.oldItems;
-                                event.source = entity;
-                                event.property = event.type;
-                                entity.notify(event);
-                            };
-
-                            arrayObservers.add(Type, relationship.withMany, arrayObserver);
-                            entity[relationship.withMany].observe(arrayObserver);
+                                arrayObservers.add(Type, relationship.withMany, arrayObserver);
+                                entity[relationship.withMany].observe(arrayObserver);
+                            }
                         }
-
                     });
 
                     var event = new BASE.ObservableEvent("tracked");

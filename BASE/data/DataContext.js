@@ -7,7 +7,8 @@ BASE.require([
     "BASE.Synchronizer",
     "BASE.data.NullService",
     "BASE.data.DataSet",
-    "BASE.ObservableArray"
+    "BASE.ObservableArray",
+    "BASE.Future"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -289,39 +290,40 @@ BASE.require([
                     }
                     if (loadedEntity[key] instanceof BASE.ObservableArray) {
                         var relationship = self.orm.getRelationship(Type, key);
-                        if (relationship && typeof loadedEntity[key].load !== "function") {
-                            loadedEntity[key].load = function (options) {
-                                options = options || {};
-                                options.success = options.success || function () { };
-                                options.error = options.error || function () { };
-                                var filter = options.filter || function () { };
+                        if (relationship && entity === loadedEntity) {
+                            loadedEntity[key].load = function (filter) {
+                                return new BASE.Future(function (setValue, setError) {
+                                    filter = filter || function () { };
 
-                                var provider = new self.service.QueryProvider(Type);
-                                var property = relationship.Type === Type ? relationship.hasMany : relationship.withMany;
+                                    var provider = new self.service.QueryProvider(relationship.Type === Type ? relationship.ofType : relationship.Type);
+                                    var property = relationship.Type === Type ? relationship.hasMany : relationship.withMany;
 
-                                var providerResult = provider.execute(filter);
+                                    var providerResult = provider.execute(filter);
 
-                                var loadFilter = function (e) {
-                                    this.load(e[property], loadedEntity.id, providerResult.queryable.expression);
-                                };
+                                    var loadFilter = function (e) {
+                                        this.load(e[property], loadedEntity.id, providerResult.queryable.expression);
+                                    };
 
-                                var loadOptions = {
-                                    Type: Type,
-                                    filter: loadFilter,
-                                    success: function (entities) {
-                                        entities.forEach(function (loadedEntity) {
-                                            var index = entities.indexOf(loadedEntity);
-                                            if (index < 0) {
-                                                loadedEntity[key].add(loadedEntity);
-                                            }
-                                        });
+                                    var loadOptions = {
+                                        Type: Type,
+                                        filter: loadFilter,
+                                        success: function (entities) {
+                                            entities.forEach(function (loadedEntity) {
+                                                var index = entities.indexOf(loadedEntity);
+                                                if (index < 0) {
+                                                    loadedEntity[key].add(loadedEntity);
+                                                }
+                                            });
 
-                                        options.success(entities);
-                                    },
-                                    error: options.error
-                                };
+                                            setValue(entities);
+                                        },
+                                        error: function (err) {
+                                            setError(err);
+                                        }
+                                    };
 
-                                self.loadEntities(loadOptions);
+                                    self.loadEntities(loadOptions);
+                                });
                             };
 
                         }
@@ -499,21 +501,24 @@ BASE.require([
                         return;
                     }
 
+                    var obj = _pendingSave.get(entity) || new BASE.Observable();
+                    var onSaved = function (event) {
+                        obj.unobserve(onSaved);
+                        if (event.error) {
+                            options.error(event.response);
+                        } else {
+                            options.success(event.response);
+                        }
+                    };
+
+                    obj.observe(onSaved);
+
                     if (_pendingSave.hasKey(entity)) {
-                        var obj = _pendingSave.get(entity);
-                        obj.observe(function onSaved(event) {
-                            obj.unobserve(onSaved);
-                            if (event.error) {
-                                options.error(event.response);
-                            } else {
-                                options.success(event.response);
-                            }
-                        });
                         return;
                     }
 
                     if (self.changeTracker.added.hasKey(entity)) {
-                        _pendingSave.add(entity, new BASE.Observable());
+                        _pendingSave.add(entity, obj);
 
                         self.changeTracker.added.remove(entity);
                         self.changeTracker.loaded.add(entity, entity);
@@ -523,10 +528,8 @@ BASE.require([
                                 entity.id = response.dto.id;
                                 var observers = _pendingSave.remove(entity);
 
-                                options.success(response);
-
                                 var event = new BASE.ObservableEvent("saved");
-                                event.response = response;
+                                event.response = responses;
                                 observers.notify(event);
                             }, error: function (e) {
                                 self.changeTracker.added.add(entity, entity);
@@ -535,16 +538,14 @@ BASE.require([
 
                                 var observers = _pendingSave.remove(entity);
 
-                                options.error(errors);
-
                                 var event = new BASE.ObservableEvent("saved");
-                                event.response = e;
+                                event.response = errors;
                                 event.error = true;
                                 observers.notify(event);
                             }
                         });
                     } else if (self.changeTracker.updated.hasKey(entity)) {
-                        _pendingSave.add(entity, new BASE.Observable());
+                        _pendingSave.add(entity, obj);
 
                         self.changeTracker.updated.remove(entity);
                         var updates = _updatedProperties.remove(entity);
@@ -556,9 +557,8 @@ BASE.require([
 
                                 var observers = _pendingSave.remove(entity);
 
-                                options.success(response);
                                 var event = new BASE.ObservableEvent("saved");
-                                event.response = response;
+                                event.response = responses;
 
                                 observers.notify(event);
                             }, error: function (e) {
@@ -568,15 +568,15 @@ BASE.require([
 
                                 var observers = _pendingSave.remove(entity);
 
-                                options.error(errors);
-
                                 var event = new BASE.ObservableEvent("saved");
-                                event.response = e;
+                                event.response = errors;
                                 event.error = true;
                                 observers.notify(event);
                             }
                         });
                     } else if (self.changeTracker.removed.hasKey(entity)) {
+                        _pendingSave.add(entity, obj);
+
                         self.changeTracker.removed.remove(entity);
                         self.changeTracker.loaded.remove(entity);
 
@@ -587,70 +587,62 @@ BASE.require([
 
                         self.service.remove(entity, {
                             success: function (response) {
+                                var observers = _pendingSave.remove(entity);
                                 // This basically destroys the object.
                                 _remove(entity);
                                 responses.push(response);
-                                options.success(response);
+
+                                var event = new BASE.ObservableEvent("saved");
+                                event.response = responses;
+
+                                observers.notify(event);
 
                             }, error: function (e) {
                                 self.changeTracker.removed.add(entity, entity);
                                 self.changeTracker.loaded.add(entity, entity);
                                 errors.push(e);
-                                options.error(errors);
 
+                                var observers = _pendingSave.remove(entity);
+
+                                var event = new BASE.ObservableEvent("saved");
+                                event.response = errors;
+                                event.error = true;
+                                observers.notify(event);
                             }
                         });
                     } else {
-                        options.success(responses);
+                        var event = new BASE.ObservableEvent("saved");
+                        event.response = responses;
+                        obj.notify(event);
                     }
                 });
             };
 
-            self.saveChanges = function (options) {
-                var self = this;
-                options = options || { success: function () { }, error: function () { } };
-                options.success = options.success || function () { };
-                options.error = options.error || function () { };
 
-                var synchronizer = new BASE.Synchronizer();
-                var removedSynchronizer = new BASE.Synchronizer();
 
-                var allEntities = [];
-                var allRemovedEntities = [];
-                var errors = [];
-                var messages = [];
+            self.saveChanges = function () {
+                return new BASE.Future(function (setValue, setError) {
+                    var synchronizer = new BASE.Synchronizer();
+                    var removedSynchronizer = new BASE.Synchronizer();
 
-                self.changeTracker.added.getKeys().forEach(function (key) {
-                    allEntities.push(self.changeTracker.added.get(key));
-                });
-                self.changeTracker.updated.getKeys().forEach(function (key) {
-                    allEntities.push(self.changeTracker.updated.get(key));
-                });
-                self.changeTracker.removed.getKeys().forEach(function (key) {
-                    allRemovedEntities.push(self.changeTracker.removed.get(key));
-                });
+                    var allEntities = [];
+                    var allRemovedEntities = [];
+                    var errors = [];
+                    var messages = [];
 
-                if (allRemovedEntities.length > 0) {
-                    allRemovedEntities.forEach(function (entity) {
-                        removedSynchronizer.add(function (callback) {
-                            self.save(entity, {
-                                success: function (m) {
-                                    messages = messages.concat(m);
-                                    callback();
-                                },
-                                error: function (e) {
-                                    errors = errors.concat(e);
-                                    callback();
-                                }
-                            });
-                        });
+                    self.changeTracker.added.getKeys().forEach(function (key) {
+                        allEntities.push(self.changeTracker.added.get(key));
                     });
-                }
+                    self.changeTracker.updated.getKeys().forEach(function (key) {
+                        allEntities.push(self.changeTracker.updated.get(key));
+                    });
+                    self.changeTracker.removed.getKeys().forEach(function (key) {
+                        allRemovedEntities.push(self.changeTracker.removed.get(key));
+                    });
 
-                removedSynchronizer.start(function () {
-                    if (errors.length === 0) {
-                        allEntities.forEach(function (entity) {
-                            synchronizer.add(function (callback) {
+                    if (allRemovedEntities.length > 0) {
+                        allRemovedEntities.forEach(function (entity) {
+                            removedSynchronizer.add(function (callback) {
                                 self.save(entity, {
                                     success: function (m) {
                                         messages = messages.concat(m);
@@ -663,19 +655,37 @@ BASE.require([
                                 });
                             });
                         });
-
-                        synchronizer.start(function () {
-                            if (errors.length === 0) {
-                                options.success(messages);
-                            } else {
-                                options.error(errors);
-                            }
-                        });
-                    } else {
-                        options.error(errors);
                     }
-                });
 
+                    removedSynchronizer.start(function () {
+                        if (errors.length === 0) {
+                            allEntities.forEach(function (entity) {
+                                synchronizer.add(function (callback) {
+                                    self.save(entity, {
+                                        success: function (m) {
+                                            messages = messages.concat(m);
+                                            callback();
+                                        },
+                                        error: function (e) {
+                                            errors = errors.concat(e);
+                                            callback();
+                                        }
+                                    });
+                                });
+                            });
+
+                            synchronizer.start(function () {
+                                if (errors.length === 0) {
+                                    setValue(messages);
+                                } else {
+                                    setError(errors);
+                                }
+                            });
+                        } else {
+                            setError(errors);
+                        }
+                    });
+                });
             };
 
             return self;

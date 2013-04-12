@@ -35,20 +35,12 @@
 
             self.addChildController = function (controller, callback) {
                 callback = callback || function () { };
-                self.view.addSubview(controller.view, function () {
-                    controller.parent = self;
-                    self.controllers.add(controller);
-                    callback();
-                });
+                self.view.addSubview(controller.view, callback);
             };
 
             self.removeChildController = function (controller, callback) {
                 callback = callback || function () { };
-                self.view.removeSubview(controller.view, function () {
-                    self.controllers.remove(controller);
-                    controller.parent = null;
-                    callback();
-                });
+                self.view.removeSubview(controller.view, callback);
             };
 
             self.loadChildController = function (controllerUrl, options) {

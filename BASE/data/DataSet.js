@@ -2,7 +2,8 @@
     "BASE.Observable",
     "BASE.ObservableArray",
     "BASE.Hashmap",
-    "BASE.ObservableEvent"
+    "BASE.ObservableEvent",
+    "BASE.Future"
 ], function () {
 
     BASE.namespace("BASE.data");
@@ -154,16 +155,19 @@
                 }
             };
 
-            self.load = function (options) {
-                options = options || {};
-                options.success = options.success || function () { };
-                options.error = options.error || function () { };
-                var filter = options.filter || function () { };
-                _context.loadEntities({
-                    success: options.success,
-                    error: options.error,
-                    Type: _Type,
-                    filter: filter
+            self.load = function (filter) {
+                return new BASE.Future(function (setValue, setError) {
+                    filter = filter || function () { };
+                    _context.loadEntities({
+                        success: function (results) {
+                            setValue(results);
+                        },
+                        error: function (err) {
+                            setError(err);
+                        },
+                        Type: _Type,
+                        filter: filter
+                    });
                 });
             };
 

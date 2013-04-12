@@ -37,7 +37,7 @@
 
                 var parser = new BASE.query.ExpressionParser();
                 parser.queryBuilder = self.createQueryBuilder();
-                var expressions = [];
+                var expressions = {};
 
                 queryable.expression.children.forEach(function (expression) {
                     expressions[expression.nodeName] = parser.parse(expression);

@@ -145,7 +145,14 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                             attributeValue = attributes[x].value;
                             var index = attributeName.indexOf("data-set-");
                             if (index >= 0) {
-                                var property = attributeName.replace("data-set-", "");
+                                var propertyName = attributeName.replace("data-set-", "");
+                                var names = propertyName.split("-");
+                                var property = names.shift();
+
+                                names.forEach(function (name) {
+                                    property += name.substr(0, 1).toUpperCase() + name.substring(1);
+                                });
+
                                 if (typeof view[property] !== "function") {
                                     view[property] = attributeValue;
                                 }
