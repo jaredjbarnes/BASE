@@ -1,9 +1,4 @@
-﻿/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/jQuery.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Array/prototype/forEach.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/Object/keys.js" />
-
-BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys", "BASE.Synchronizer"], function () {
+﻿BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys", "BASE.Synchronizer"], function () {
 
     BASE.require.compile = function () {
         ///<summary>

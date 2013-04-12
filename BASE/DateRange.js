@@ -1,7 +1,3 @@
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/EventEmitter.js" />
-/// <reference path="http://raw.github.com/jaredjbarnes/BASE/master/BASE/Date.js" />
-
 BASE.require(["BASE.Observable","BASE.Date"], function(){
 	
 	BASE.DateRange = (function(_Super){
