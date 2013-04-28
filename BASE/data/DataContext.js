@@ -21,6 +21,8 @@ BASE.require([
                 return new DataContext();
             }
 
+            Super.call(self);
+
             var _orm = null;
             var _relationships = null;
             var _service = new BASE.data.NullService();
@@ -304,25 +306,18 @@ BASE.require([
                                         this.load(e[property], loadedEntity.id, providerResult.queryable.expression);
                                     };
 
-                                    var loadOptions = {
-                                        Type: Type,
-                                        filter: loadFilter,
-                                        success: function (entities) {
-                                            entities.forEach(function (loadedEntity) {
-                                                var index = entities.indexOf(loadedEntity);
-                                                if (index < 0) {
-                                                    loadedEntity[key].add(loadedEntity);
-                                                }
-                                            });
+                                    self.loadEntities(Type, loadFilter).then(function (entities) {
+                                        entities.forEach(function (loadedEntity) {
+                                            var index = entities.indexOf(loadedEntity);
+                                            if (index < 0) {
+                                                loadedEntity[key].add(loadedEntity);
+                                            }
+                                        });
 
-                                            setValue(entities);
-                                        },
-                                        error: function (err) {
-                                            setError(err);
-                                        }
-                                    };
-
-                                    self.loadEntities(loadOptions);
+                                        setValue(entities);
+                                    }).error(function (err) {
+                                        setError(err);
+                                    });
                                 });
                             };
 
@@ -398,20 +393,13 @@ BASE.require([
                 return dataSet;
             };
 
-            self.loadEntities = function (options) {
+            self.loadEntities = function (Type, filter) {
                 var self = this;
-                var Type = options.Type;
-                options = options || {};
-                var filter = options.filter = options.filter || function () { };
-                options.error = options.error || function () { };
-                options.success = options.success || function () { };
-
+                var filter = filter || function () { };
                 var dataSet = self.getDataSet(Type);
 
-                self.service.load({
-                    Type: Type,
-                    filter: filter,
-                    success: function (dtos) {
+                return BASE.Future(function (setValue, setError) {
+                    self.service.load(Type, filter).then(function (dtos) {
                         var trackedEntities = [];
                         var forEach = function (x) {
                             var dto = dtos[x];
@@ -421,7 +409,7 @@ BASE.require([
                                 if (x < dtos.length) {
                                     forEach(x);
                                 } else {
-                                    options.success(trackedEntities);
+                                    setValue(trackedEntities);
                                 }
                             }, 0);
                         };
@@ -429,12 +417,10 @@ BASE.require([
                         if (dtos.length > 0) {
                             forEach(0);
                         } else {
-                            options.success([]);
+                            setValue([]);
                         }
-                    },
-                    error: options.error
+                    }).error(setError);
                 });
-
             };
 
             self.load = function (entity) {
@@ -522,27 +508,25 @@ BASE.require([
 
                         self.changeTracker.added.remove(entity);
                         self.changeTracker.loaded.add(entity, entity);
-                        self.service.add(entity, {
-                            success: function (response) {
-                                responses.push(response);
-                                entity.id = response.dto.id;
-                                var observers = _pendingSave.remove(entity);
+                        self.service.add(entity).then(function (response) {
+                            responses.push(response);
+                            entity.id = response.dto.id;
+                            var observers = _pendingSave.remove(entity);
 
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = responses;
-                                observers.notify(event);
-                            }, error: function (e) {
-                                self.changeTracker.added.add(entity, entity);
-                                self.changeTracker.loaded.remove(entity);
-                                errors.push(e);
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = responses;
+                            observers.notify(event);
+                        }).error(function (e) {
+                            self.changeTracker.added.add(entity, entity);
+                            self.changeTracker.loaded.remove(entity);
+                            errors.push(e);
 
-                                var observers = _pendingSave.remove(entity);
+                            var observers = _pendingSave.remove(entity);
 
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = errors;
-                                event.error = true;
-                                observers.notify(event);
-                            }
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = errors;
+                            event.error = true;
+                            observers.notify(event);
                         });
                     } else if (self.changeTracker.updated.hasKey(entity)) {
                         _pendingSave.add(entity, obj);
@@ -550,29 +534,26 @@ BASE.require([
                         self.changeTracker.updated.remove(entity);
                         var updates = _updatedProperties.remove(entity);
 
-                        self.service.update(entity, {
-                            updates: updates,
-                            success: function (response) {
-                                responses.push(response);
+                        self.service.update(entity, updates).then(function (response) {
+                            responses.push(response);
 
-                                var observers = _pendingSave.remove(entity);
+                            var observers = _pendingSave.remove(entity);
 
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = responses;
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = responses;
 
-                                observers.notify(event);
-                            }, error: function (e) {
-                                self.changeTracker.updated.add(entity, entity);
-                                _updatedProperties.add(entity, updates);
-                                errors.push(e);
+                            observers.notify(event);
+                        }).error(function (e) {
+                            self.changeTracker.updated.add(entity, entity);
+                            _updatedProperties.add(entity, updates);
+                            errors.push(e);
 
-                                var observers = _pendingSave.remove(entity);
+                            var observers = _pendingSave.remove(entity);
 
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = errors;
-                                event.error = true;
-                                observers.notify(event);
-                            }
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = errors;
+                            event.error = true;
+                            observers.notify(event);
                         });
                     } else if (self.changeTracker.removed.hasKey(entity)) {
                         _pendingSave.add(entity, obj);
@@ -583,32 +564,28 @@ BASE.require([
                         var oneToOnes = self.orm.getOneToOneRelationships();
                         var oneToManys = self.orm.getOneToManyRelationships();
 
-                        //TODO: find the cascading deletes and not remove them because they have already been removed.
+                        self.service.remove(entity).then(function (response) {
+                            var observers = _pendingSave.remove(entity);
+                            // This basically destroys the object.
+                            _remove(entity);
+                            responses.push(response);
 
-                        self.service.remove(entity, {
-                            success: function (response) {
-                                var observers = _pendingSave.remove(entity);
-                                // This basically destroys the object.
-                                _remove(entity);
-                                responses.push(response);
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = responses;
 
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = responses;
+                            observers.notify(event);
 
-                                observers.notify(event);
+                        }).error(function (e) {
+                            self.changeTracker.removed.add(entity, entity);
+                            self.changeTracker.loaded.add(entity, entity);
+                            errors.push(e);
 
-                            }, error: function (e) {
-                                self.changeTracker.removed.add(entity, entity);
-                                self.changeTracker.loaded.add(entity, entity);
-                                errors.push(e);
+                            var observers = _pendingSave.remove(entity);
 
-                                var observers = _pendingSave.remove(entity);
-
-                                var event = new BASE.ObservableEvent("saved");
-                                event.response = errors;
-                                event.error = true;
-                                observers.notify(event);
-                            }
+                            var event = new BASE.ObservableEvent("saved");
+                            event.response = errors;
+                            event.error = true;
+                            observers.notify(event);
                         });
                     } else {
                         var event = new BASE.ObservableEvent("saved");

@@ -89,14 +89,12 @@
             return "(" + joined + ")";
         };
 
-        //todo: maybe map the operator to the odata operater here
-        var operatorMapping = {
-            "equal": "eq",
-            "notEqual": "ne"
-        };
-
         ODataQueryBuilder.prototype["equal"] = function (left, right) {
             return "(" + left + " eq " + right + ")";
+        };
+
+        ODataQueryBuilder.prototype["notEqual"] = function (left, right) {
+            return "(" + left + " ne " + right + ")";
         };
 
         ODataQueryBuilder.prototype["constant"] = function (expression) {
@@ -147,34 +145,28 @@
 
         }
 
-        ODataQueryBuilder.prototype["notEqual"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " ne " + boundary + right + boundary + ")";
-        };
-
         ODataQueryBuilder.prototype["greaterThan"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " gt " + boundary + right + boundary + ")";
+            return "(" + left + " gt " + right + ")";
         };
 
         ODataQueryBuilder.prototype["lessThan"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " lt " + boundary + right + boundary + ")";
+            return "(" + left + " lt " + right + ")";
         };
 
         ODataQueryBuilder.prototype["greaterThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " ge " + boundary + right + boundary + ")";
+            return "(" + left + " ge " + right + ")";
         };
 
         ODataQueryBuilder.prototype["lessThanOrEqual"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " le " + boundary + right + boundary + ")";
+            return "(" + left + " le " + right + ")";
         };
 
         ODataQueryBuilder.prototype["not"] = function (left, right) {
             var boundary = typeof right === "string" ? "'" : "";
-            return "(" + left + " not " + boundary + right + boundary + ")";
+            return "(" + left + " not " + right + ")";
         };
 
         ODataQueryBuilder.prototype["skip"] = function (value) {

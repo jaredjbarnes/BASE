@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.ObservableEvent", "BASE.Future"], function () {
+﻿BASE.require(["BASE.Notifiable", "BASE.ObservableEvent", "BASE.Future"], function () {
     BASE.Task = (function (Super) {
 
         // A Task takes any Observable that fires events 
@@ -77,8 +77,8 @@
 
             self.start = function () {
                 if (_started === false) {
+                    _started = true;
                     if (futures.length > 0) {
-                        _started = true;
                         futures.forEach(function (future) {
                             var value = future.value;
                             var error = future.errorObject;
@@ -118,6 +118,6 @@
         };
 
         return Task;
-    }(BASE.Observable));
+    }(BASE.Notifiable));
 
 });

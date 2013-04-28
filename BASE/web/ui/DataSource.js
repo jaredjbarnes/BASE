@@ -22,7 +22,12 @@
 
             self.viewWithAttribute = function (attribute) {
                 //This returns a Future<View>.
-                throw new Error("\"viewsWithAttribute\" was intended to be overridden by subclass.");
+                throw new Error("\"viewWithAttribute\" was intended to be overridden by subclass.");
+            };
+
+            self.viewsWithAttributes = function (attributes) {
+                //This returns a Task<Future<View>>.
+                throw new Error("\"viewsWithAttributes\" was intended to be overridden by subclass.");
             };
 
             self.indexPathForItemId = function (id) {
@@ -33,6 +38,11 @@
             self.uriWithReuseId = function (reuseId) {
                 //This returns a uri for the given reuseId.
                 throw new Error("\"uriWithReuseId\" was intended to be overridden by subclass.");
+            };
+
+
+            self.prepareViewForReuse = function (view) {
+                //This allows the source to reset the view on the data.
             };
 
             // Event object has indexPath as a property.

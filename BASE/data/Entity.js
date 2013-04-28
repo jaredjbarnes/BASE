@@ -52,20 +52,17 @@
                         return;
                     }
                     if (self.__dataContext) {
-                        self.__dataContext.loadEntities({
-                            Type: self.constructor,
-                            filter: function (entity) {
-                                this.where(entity.id.equals(this.toGuid(self.id)));
-                            },
-                            success: function () {
-                                setValue(self);
-                            },
-                            error: function (err) {
-                                setError(err);
-                            }
+
+                        self.__dataContext.loadEntities(self.constructor, function (entity) {
+                            this.where(entity.id.equals(this.toGuid(self.id)));
+                        }).then(function () {
+                            setValue(self);
+                        }).error(function (err) {
+                            setError(err);
                         });
+
                     } else {
-                        console.log(this);
+                        console.error(self);
                         throw new Error("Entity isn't part of a context.");
                     }
                 });

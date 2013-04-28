@@ -1,32 +1,5 @@
 BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
 
-    var parseCSS = function (input) {
-        // nuke the comments
-        var commentStart = input.search(/\/\*/);
-        while (commentStart > -1) {
-            input = input.substr(0, commentStart) + input.substr(input.search(/\*\//) + 2);
-            commentStart = input.search(/\/\*/);
-        }
-
-        input = input.trim();
-        var parsed = {};
-        var sections = input.split("}");
-        sections.pop(); // remove the empty string at the end of the array
-        // loop through the sections
-        for (i in sections) {
-            var parts = sections[i].split("{");
-            var selector = parts[0].trim();
-            var rulesets = parts[1].trim().split(";");
-            rulesets.pop(); //remove the empty string at the end of the array
-            parsed[selector] = {};
-            for (j in rulesets) {
-                var ruleset = rulesets[j].split(":");
-                parsed[selector][ruleset[0]] = ruleset[1];
-            }
-        }
-        return parsed;
-    };
-
     BASE.namespace("BASE.web.ui");
 
     var asyncWalkTheDom = function (elem, callback) {
@@ -39,10 +12,11 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                 walkTheDom($(this));
             });
 
-
             var controllerNamespace = $elem.data("controller");
             var viewNamespace = controllerNamespace && !$elem.data("view") ? "BASE.web.ui.View" : $elem.data("view");
             var controllerUrl = $elem.data("load-controller");
+            var behaviorAttribute = $elem.data("behaviors");
+            var behaviorNamespaces = behaviorAttribute ? behaviorAttribute.split("|") : [];
             var viewUrl = $elem.data("load-view");
 
             if (viewNamespace || controllerNamespace || controllerUrl || viewUrl) {
@@ -50,15 +24,19 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                 var Controller;
                 var $loadedView;
                 var $loadedController;
+                var Behaviors = [];
 
                 synchronizer.add(function (callback) {
                     var innerSynchronizer = new BASE.Synchronizer();
 
                     innerSynchronizer.add(function (callback) {
                         if (viewNamespace || controllerNamespace) {
-                            BASE.require([viewNamespace, controllerNamespace], function () {
+                            BASE.require([viewNamespace, controllerNamespace].concat(behaviorNamespaces), function () {
                                 View = BASE.getObject(viewNamespace);
                                 Controller = BASE.getObject(controllerNamespace);
+                                behaviorNamespaces.forEach(function(namespace){
+                                    Behaviors.push(BASE.getObject(namespace));
+                                })
                                 callback();
                             });
                         } else {
@@ -136,36 +114,16 @@ BASE.require(["jQuery", "BASE.Synchronizer", "jQuery.loadFile"], function () {
                         $elem.data("view", view);
                         $elem.attr("data-view", viewNamespace);
 
-                        // data-set support
-                        var attributes = $elem.prop("attributes");
-                        var attributeName;
-                        var attributeValue;
-                        for (var x = 0 ; x < attributes.length; x++) {
-                            attributeName = attributes[x].name;
-                            attributeValue = attributes[x].value;
-                            var index = attributeName.indexOf("data-set-");
-                            if (index >= 0) {
-                                var propertyName = attributeName.replace("data-set-", "");
-                                var names = propertyName.split("-");
-                                var property = names.shift();
-
-                                names.forEach(function (name) {
-                                    property += name.substr(0, 1).toUpperCase() + name.substring(1);
-                                });
-
-                                if (typeof view[property] !== "function") {
-                                    view[property] = attributeValue;
-                                }
-                            }
-                        }
-
+                        // Add behaviors
+                        Behaviors.forEach(function(Behavior){
+                            view.behaviors.add(Behavior);
+                        });
                     }
 
                     if (Controller) {
                         controller = new Controller(view);
                         $elem.data("controller", controller);
                     }
-
 
                     if ($loadedController) {
                         $elem.replaceWith($loadedController);

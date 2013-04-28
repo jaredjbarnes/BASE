@@ -156,25 +156,17 @@
             };
 
             self.load = function (filter) {
-                return new BASE.Future(function (setValue, setError) {
-                    filter = filter || function () { };
-                    _context.loadEntities({
-                        success: function (results) {
-                            setValue(results);
-                        },
-                        error: function (err) {
-                            setError(err);
-                        },
-                        Type: _Type,
-                        filter: filter
-                    });
-                });
+                return context.loadEntities(_Type, filter);
             };
 
             self.onChange = function (callback) {
                 var self = this;
                 self.observe(callback, "changed");
             };
+
+            self.count = function (filter) {
+                return _context.service.count(_Type, filter);
+            }
 
         }
 

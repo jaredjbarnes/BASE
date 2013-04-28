@@ -112,7 +112,7 @@
             return Expression.number(Expression.constant(value));
         } else if (typeof value === "boolean") {
             return Expression.boolean(Expression.constant(value));
-        } else if (typeof value === null) {
+        } else if (value === null) {
             return Expression["null"](Expression.constant(value));
         } else if (typeof value === undefined) {
             return Expression["undefined"](Expression.constant(value));

@@ -1,69 +1,58 @@
-﻿(function () {
-    BASE.Observable = (function () {
-        function Observable() {
+﻿BASE.require([
+    "BASE.Notifiable",
+    "BASE.PropertyChangedEvent",
+    "BASE.Future",
+    "BASE.Task"
+], function () {
+    BASE.namespace("BASE");
+
+    BASE.Observable = (function (Super) {
+        var Observable = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {
                 return new Observable();
             }
-            self._globalObservers = [];
-            self._typeObservers = {};
-            return this;
-        }
-        Observable.prototype.observe = function (callback, type) {
-            var callback;
-            if (arguments.length === 2) {
-                var type = arguments[1];
-                callback = arguments[0];
-                if (!this._typeObservers[type]) {
-                    this._typeObservers[type] = [];
-                }
-                var observers = this._typeObservers[type];
-                observers.push(callback);
-            } else {
-                callback = arguments[0];
-                this._globalObservers.push(callback);
-            }
-            return this;
-        };
-        Observable.prototype.unobserve = function (callback, type) {
-            var callback;
-            if (arguments.length === 2) {
-                var type = arguments[1];
-                callback = arguments[0];
-                if (!this._typeObservers[type]) {
-                    this._typeObservers[type] = [];
-                }
-                var observers = this._typeObservers[type];
-                var index = observers.indexOf(callback);
-                if (index >= 0) {
-                    observers.splice(index, 1);
-                }
-            } else {
-                callback = arguments[0];
-                var index = this._globalObservers.indexOf(callback);
-                if (index >= 0) {
-                    this._globalObservers.splice(index, 1);
-                }
-            }
 
-            return this;
+            Super.call(self);
+
+            self.notify = function (event) {
+                var self = this;
+                var globalObservers = this._globalObservers.slice(0);
+                var typeObservers = [];
+
+                var task = new BASE.Task();
+
+                if (this._typeObservers[event.type]) {
+                    typeObservers = this._typeObservers[event.type].slice(0);
+                }
+
+                var forEachObserver = function (observer) {
+                    var futureResponse;
+                    var response = observer.call(self, event);
+                    if (!(response instanceof BASE.Future)) {
+                        futureResponse = new BASE.Future(function (setValue, setError) {
+                            setTimeout(function () {
+                                setValue(response);
+                            }, 0);
+                        });
+                    } else {
+                        futureResponse = response;
+                    }
+
+                    task.add(futureResponse);
+                };
+
+                globalObservers.forEach(forEachObserver);
+                typeObservers.forEach(forEachObserver);
+
+                return task.start();
+            };
+
+            return self;
         };
-        Observable.prototype.notify = function (event) {
-            var self = this;
-            var globalObservers = this._globalObservers.slice(0);
-            var typeObservers = [];
-            if (this._typeObservers[event.type]) {
-                typeObservers = this._typeObservers[event.type].slice(0);
-            }
-            globalObservers.forEach(function (observer) {
-                observer.call(self, event);
-            });
-            typeObservers.forEach(function (observer) {
-                observer.call(self, event);
-            });
-            return this;
-        };
+
+        BASE.extend(Observable, Super);
+
         return Observable;
-    })();
-
-})();
+    }(BASE.Notifiable));
+});

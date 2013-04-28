@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.ObservableEvent"], function () {
+﻿BASE.require(["BASE.Notifiable", "BASE.ObservableEvent"], function () {
 
     BASE.Future = (function (Super) {
 
@@ -46,16 +46,14 @@
                 }
 
                 getValue(function (value) {
-                    if (typeof _error === "undefined") {
-                        hasResponse = true;
+                    if (typeof _error === "undefined" && typeof _value === "undefined") {
                         _state = _loadedState;
                         _value = value;
                         self.notify(new BASE.ObservableEvent("success"));
                         self.notify(new BASE.ObservableEvent("complete"));
                     }
                 }, function (err) {
-                    if (typeof _value === "undefined") {
-                        hasResponse = true;
+                    if (typeof _error === "undefined" && typeof _value === "undefined") {
                         _state = _errorState;
                         _error = err;
                         self.notify(new BASE.ObservableEvent("error"));
@@ -102,6 +100,6 @@
 
         BASE.extend(Future, Super);
         return Future;
-    }(BASE.Observable));
+    }(BASE.Notifiable));
 
 });

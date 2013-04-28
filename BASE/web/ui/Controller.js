@@ -1,11 +1,19 @@
-﻿BASE.require(["BASE.Observable", "BASE.Hashmap", "BASE.ObservableArray", "BASE.Synchronizer", "jQuery.loadFile", "BASE.web.ui.View"], function () {
+﻿BASE.require([
+    "BASE.Observable",
+    "jQuery.loadFile",
+    "BASE.web.ui.View",
+    "BASE.Future",
+    "BASE.Task"
+], function () {
 
     BASE.namespace("BASE.web.ui");
+
+    var Task = BASE.Task;
+    var Future = BASE.Future;
 
     BASE.web.ui.Controller = (function (Super) {
 
         var Controller = function (view) {
-            ///<param type="BASE.web.ui.View" name="view"></param>
 
             if (!(this instanceof arguments.callee)) {
                 return new Controller(view);
@@ -33,40 +41,54 @@
                 return $controller.length > 0 ? $controller.data("controller") : null;
             };
 
-            self.addChildController = function (controller, callback) {
-                callback = callback || function () { };
-                self.view.addSubview(controller.view, callback);
+            self.removeController = function (controller) {
+                if ($element.find(controller.view).length > 0) {
+                    controller.view.remove();
+                }
             };
 
-            self.removeChildController = function (controller, callback) {
-                callback = callback || function () { };
-                self.view.removeSubview(controller.view, callback);
+            self.remove = function () {
+                var parent = self.parentController;
+                if (parent) {
+                    parent.removeController(controller);
+                }
             };
 
-            self.loadChildController = function (controllerUrl, options) {
-                options = options || {};
-                var beforeAppend = options.beforeAppend || function () { };
-                var afterAppend = options.afterAppend || function () { };
+            Object.defineProperty(self, "addController", {
+                enumerable: true,
+                configurable: false,
+                value: function (controller, view) {
+                    view = view || self.view;
+                    self.view.addSubview(controller.view);
+                }
+            });
 
-                jQuery.loadFile(controllerUrl, {
-                    success: function (html) {
-                        var $module = $(html);
-                        BASE.web.ui.mvc.applyTo($module[0], function () {
-                            var controller = $module.data("controller");
-                            var view = $module.data("view");
+            Object.defineProperty(self, "loadController", {
+                enumerable: true,
+                configurable: false,
+                value: function (uri, view) {
+                    var beforeControllerAdded = function () { };
+                    var afterControllerAdded = function () { };
 
-                            beforeAppend(controller);
-                            self.addChildController(controller, function () {
-                                afterAppend(controller);
-                            });
-                        });
-                    },
-                    error: function () {
-                        throw new Error("Couldn't find controller at \"" + controllerUrl + "\".");
-                    }
-                });
-            };
+                    var future = Controller.createControllerFromUri(uri).then(function (controller) {
+                        beforeControllerAdded(controller);
+                        self.addController(controller, view);
+                        afterControllerAdded(controller);
+                    });
 
+                    future.beforeControllerAdded = function (callback) {
+                        beforeControllerAdded = callback;
+                        return future;
+                    };
+
+                    future.afterControllerAdded = function (callback) {
+                        afterControllerAdded = callback;
+                        return future;
+                    };
+
+                    return future;
+                }
+            });
 
             Object.defineProperties(self, {
                 childControllers: {
@@ -98,9 +120,66 @@
                 }
             });
 
+            Object.defineProperty(self, "bubble", {
+                enumerable: true,
+                configurable: false,
+                value: function (event) {
+                    if (!(event instanceof BASE.PropagatingEvent)) {
+                        throw new Error("Event wasn't an instance of PropagationEvent");
+                    }
+
+                    if (!event.isPropagationStopped) {
+
+                        self.notify(event);
+                        if (self.parentController) {
+                            self.parentController.bubble(event);
+                        }
+
+                    }
+                }
+            });
+
+            Object.defineProperty(self, "trickle", {
+                enumerable: true,
+                configurable: false,
+                value: function (event) {
+                    if (!(event instanceof BASE.PropagatingEvent)) {
+                        throw new Error("Event wasn't an instance of PropagationEvent");
+                    }
+
+                    if (!event.isPropagationStopped) {
+                        self.notify(event);
+                        self.childControllers.forEach(function (controller) {
+                            controller.trickle(event);
+                        });
+                    }
+                }
+            });
+
             return self;
         };
+
         BASE.extend(Controller, Super);
+        Object.defineProperty(Controller, "createControllerFromUri", {
+            enumerable: false,
+            configurable: false,
+            value: function (controllerUri) {
+                return new BASE.Future(function (setValue, setError) {
+                    $.loadFile(controllerUri, {
+                        success: function (html) {
+                            var $elem = $(html);
+                            BASE.web.ui.mvc.applyTo($elem[0], function () {
+                                var controller = $elem.data("controller");
+                                setValue(controller);
+                            });
+                        },
+                        error: function (e) {
+                            throw new Error("Couldn't load controller at \"" + controllerUri + "\".");
+                        }
+                    });
+                });
+            }
+        });
 
         return Controller;
 

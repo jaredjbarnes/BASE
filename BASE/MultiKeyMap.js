@@ -69,6 +69,22 @@
                 }
             };
 
+            self.copy = function () {
+                var copy = new MultiKeyMap();
+
+                nestedHash.getKeys().forEach(function (key) {
+                    nestedHash.get(key).getKeys().forEach(function (nestedKey) {
+                        copy.add(key, nestedKey, self.get(key, nestedKey));
+                    });
+                });
+
+                return copy;
+            };
+
+            self.getKeys = function () {
+                return nestedHash.getKeys();
+            };
+
             self.hasKey = function (key1, key2) {
                 return self.get(key1, key2) ? true : false;
             }
