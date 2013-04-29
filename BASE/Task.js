@@ -37,13 +37,81 @@
                 }
             });
 
+            var _defaultState = {
+                whenAll: function (callback) {
+                    var wrapper = function () {
+                        self.unobserve(wrapper, "whenAll");
+                        callback(futures);
+                    };
+                    self.observe(wrapper, "whenAll");
+                },
+                whenAny: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "whenAny");
+                        callback(event.future);
+                    };
+                    self.observe(wrapper, "whenAny");
+                    completedFutures.forEach(function (future) {
+                        setTimeout(function () {
+                            callback(future);
+                        }, 0);
+                    });
+                },
+                ifCanceled: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "canceled");
+                        callback();
+                    };
+                    self.observe(wrapper, "canceled");
+                }
+            };
+
+            var _startedState = {
+                whenAll: _defaultState.whenAll,
+                whenAny: _defaultState.whenAny,
+                ifCanceled: _defaultState.ifCanceled
+            };
+
+            var _canceledState = {
+                whenAll: function (callback) { },
+                whenAny: function (callback) { },
+                ifCanceled: function (callback) {
+                    setTimeout(function () {
+                        callback();
+                    }, 0);
+                }
+            };
+
+            var _finishedState = {
+                whenAll: function (callback) {
+                    setTimeout(function () {
+                        callback(completedFutures);
+                    }, 0);
+                },
+                whenAny: function (callback) {
+                    completedFutures.forEach(function (future) {
+                        setTimeout(function () {
+                            callback(future);
+                        }, 0);
+                    });
+                },
+                ifCanceled: function (callback) { }
+            };
+
+            var _state = _defaultState;
+
             self.whenAll = function (callback) {
-                self.observe(callback, "whenAll");
+                _state.whenAll(callback);
                 return self;
             };
 
             self.whenAny = function (callback) {
-                self.observe(callback, "whenAny");
+                _state.whenAny(callback);
+                return self;
+            };
+
+            self.ifCanceled = function (callback) {
+                _state.ifCanceled(callback);
                 return self;
             };
 
@@ -75,36 +143,43 @@
                 }
             };
 
+            var _cancel = function () {
+                if (_state !== _finishedState && _state !== _canceledState) {
+                    _state = _canceledState;
+                    self.notify(new BASE.ObservableEvent("canceled"));
+                }
+            };
+
             self.start = function () {
-                if (_started === false) {
-                    _started = true;
-                    if (futures.length > 0) {
-                        futures.forEach(function (future) {
-                            var value = future.value;
-                            var error = future.errorObject;
-                            if (typeof value !== "undefined" || typeof error !== "undefined") {
-                                setTimeout(function () {
-                                    _notify(future);
-                                }, 0);
-                            } else {
-                                future.observe(function observer(value) {
-                                    future.unobserve(observer, "complete");
-                                    _notify(future);
-                                }, "complete");
-                            }
+                _state = _startedState
+                if (futures.length > 0) {
+                    futures.forEach(function (future) {
+                        var value = future.value;
+                        var error = future.error;
+                        if (typeof value !== "undefined" || typeof error !== "undefined") {
+                            setTimeout(function () {
+                                _notify(future);
+                            }, 0);
+                        } else {
+                            future.observe(function observer(value) {
+                                future.unobserve(observer, "complete");
+                                _notify(future);
+                            }, "complete");
+                        }
 
-                        });
-                    } else {
-                        setTimeout(function () {
-                            var event = new BASE.ObservableEvent("whenAll");
-                            event.futures = futures;
-                            self.notify(event);
+                        future.ifCanceled(_cancel);
+                    });
+                } else {
+                    _state = _finishedState;
+                    setTimeout(function () {
+                        var event = new BASE.ObservableEvent("whenAll");
+                        event.futures = futures;
+                        self.notify(event);
 
-                            var completeEvent = new BASE.ObservableEvent("complete");
-                            completeEvent.futures = futures;
-                            self.notify(completeEvent);
-                        }, 0);
-                    }
+                        var completeEvent = new BASE.ObservableEvent("complete");
+                        completeEvent.futures = futures;
+                        self.notify(completeEvent);
+                    }, 0);
                 }
                 return self;
             };

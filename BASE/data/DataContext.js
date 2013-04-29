@@ -315,7 +315,7 @@ BASE.require([
                                         });
 
                                         setValue(entities);
-                                    }).error(function (err) {
+                                    }).ifError(function (err) {
                                         setError(err);
                                     });
                                 });
@@ -419,7 +419,7 @@ BASE.require([
                         } else {
                             setValue([]);
                         }
-                    }).error(setError);
+                    }).ifError(setError);
                 });
             };
 
@@ -516,7 +516,7 @@ BASE.require([
                             var event = new BASE.ObservableEvent("saved");
                             event.response = responses;
                             observers.notify(event);
-                        }).error(function (e) {
+                        }).ifError(function (e) {
                             self.changeTracker.added.add(entity, entity);
                             self.changeTracker.loaded.remove(entity);
                             errors.push(e);
@@ -543,7 +543,7 @@ BASE.require([
                             event.response = responses;
 
                             observers.notify(event);
-                        }).error(function (e) {
+                        }).ifError(function (e) {
                             self.changeTracker.updated.add(entity, entity);
                             _updatedProperties.add(entity, updates);
                             errors.push(e);
@@ -575,7 +575,7 @@ BASE.require([
 
                             observers.notify(event);
 
-                        }).error(function (e) {
+                        }).ifError(function (e) {
                             self.changeTracker.removed.add(entity, entity);
                             self.changeTracker.loaded.add(entity, entity);
                             errors.push(e);

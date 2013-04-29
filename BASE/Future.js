@@ -22,47 +22,12 @@
                         return _value;
                     }
                 },
-                "errorObject": {
+                "error": {
                     get: function () {
                         return _error;
                     }
                 }
             });
-
-            var _unloadedState = function (success, error) {
-
-                if (success) {
-                    self.observe(function wrapper() {
-                        self.unobserve(wrapper, "success");
-                        success(_value);
-                    }, "success");
-                }
-
-                if (error) {
-                    self.observe(function wrapper() {
-                        self.unobserve(wrapper, "error");
-                        error(_error);
-                    }, "error");
-                }
-
-                getValue(function (value) {
-                    if (typeof _error === "undefined" && typeof _value === "undefined") {
-                        _state = _loadedState;
-                        _value = value;
-                        self.notify(new BASE.ObservableEvent("success"));
-                        self.notify(new BASE.ObservableEvent("complete"));
-                    }
-                }, function (err) {
-                    if (typeof _error === "undefined" && typeof _value === "undefined") {
-                        _state = _errorState;
-                        _error = err;
-                        self.notify(new BASE.ObservableEvent("error"));
-                        self.notify(new BASE.ObservableEvent("complete"));
-                    }
-                });
-                // Reassign get value as to not call the retreive function twice.
-                getValue = function () { };
-            };
 
             var _loadedState = function (success, error) {
                 if (success) {
@@ -80,18 +45,143 @@
                 }
             };
 
-            var _state = _unloadedState;
+            var _defaultState = {
+                observeSuccess: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "success");
+                        callback(_value);
+                    }
+                    self.observe(wrapper, "success");
+                },
+                observeError: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "error");
+                        callback(_error);
+                    }
+                    self.observe(wrapper, "error");
+                },
+                observeCanceled: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "canceled");
+                        callback();
+                    }
+                    self.observe(wrapper, "canceled");
+                },
+                request: function () {
+                    getValue(function (value) {
+                        if (_state !== _canceledState &&
+                            typeof _error === "undefined" &&
+                            typeof _value === "undefined") {
+                            _state = _loadedState;
+                            _value = value;
+                            self.notify(new BASE.ObservableEvent("success"));
+                            self.notify(new BASE.ObservableEvent("complete"));
+                        }
+                    }, function (err) {
+                        if (_state !== _canceledState &&
+                            typeof _error === "undefined" &&
+                            typeof _value === "undefined") {
+                            _state = _errorState;
+                            _error = err;
+                            self.notify(new BASE.ObservableEvent("error"));
+                            self.notify(new BASE.ObservableEvent("complete"));
+                        }
+                    });
 
+                    //This ensures that the getValue is only called once.
+                    getValue = function () { };
+                    _state = _retrievingState;
+                }
+            };
+
+            var _retrievingState = {
+                observeSuccess: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "success");
+                        callback(_value);
+                    }
+                    self.observe(wrapper, "success");
+                },
+                observeError: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "error");
+                        callback(_error);
+                    }
+                    self.observe(wrapper, "error");
+                },
+                observeCanceled: function (callback) {
+                    var wrapper = function (event) {
+                        self.unobserve(wrapper, "canceled");
+                        callback();
+                    }
+                    self.observe(wrapper, "canceled");
+                },
+                request: function () { }
+            };
+
+            var _errorState = {
+                observeSuccess: function (callback) { },
+                observeError: function (callback) {
+                    setTimeout(function () {
+                        callback(_error);
+                    }, 0);
+                },
+                observeCanceled: function (callback) { },
+                request: function () { }
+            };
+
+            var _canceledState = {
+                observeSuccess: function (callback) { },
+                observeError: function (callback) { },
+                observeCanceled: function (callback) {
+                    setTimeout(function () {
+                        callback();
+                    }, 0);
+                },
+                request: function () { }
+            }
+
+            var _loadedState = {
+                observeSuccess: function (callback) {
+                    setTimeout(function () {
+                        callback(_value);
+                    }, 0);
+                },
+                observeError: function (callback) { },
+                observeCanceled: function (callback) { },
+                request: function () { }
+            };
+
+            var _state = _defaultState;
 
             self.then = function (callback) {
                 callback = callback || function () { };
-                _state(callback, null);
+                _state.observeSuccess(callback);
+                _state.request();
                 return self;
             };
 
-            self.error = function (callback) {
+            self.ifError = function (callback) {
                 callback = callback || function () { };
-                _state(null, callback);
+                _state.observeError(callback);
+                _state.request();
+                return self;
+            };
+
+            self.ifCanceled = function (callback) {
+                callback = callback || function () { };
+                _state.observeCanceled(callback);
+                _state.request();
+                return self;
+            }
+
+            self.cancel = function () {
+
+                if (_state !== _loadedState && _state !== _canceledState) {
+                    _state = _canceledState;
+                    self.notify(new BASE.ObservableEvent("canceled"));
+                }
+
                 return self;
             };
 

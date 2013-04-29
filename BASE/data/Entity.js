@@ -57,7 +57,7 @@
                             this.where(entity.id.equals(this.toGuid(self.id)));
                         }).then(function () {
                             setValue(self);
-                        }).error(function (err) {
+                        }).ifError(function (err) {
                             setError(err);
                         });
 
