@@ -125,6 +125,16 @@
                 }
             });
 
+            Object.defineProperty(self, "rootView", {
+                get: function () {
+                    var rootView = self;
+                    while (rootView.parent) {
+                        rootView = rootView.parent;
+                    }
+                    return rootView;
+                }
+            });
+
             Object.defineProperty(self, "data", {
                 configurable: false,
                 enumerable: false,
@@ -207,22 +217,23 @@
                     if (childView.length > 0) {
                         var beforeEvent = new BASE.ObservableEvent("beforeSubviewAdded");
                         beforeEvent.subview = newView;
+                        self.notify(beforeEvent);
 
                         var beforeViewAddedToParentEvent = new BASE.ObservableEvent("beforeViewAddedToParent");
                         beforeViewAddedToParentEvent.subview = view;
+                        view.notify(beforeViewAddedToParentEvent)
+
+                        childView.before(newView.element);
+
                         return new Future(function (setValue, setError) {
-                            new Task(self.notify(beforeEvent), view.notify(beforeViewAddedToParentEvent)).start().whenAll(function () {
-                                childView.before(newView.element);
+                            var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
+                            afterViewAddedToParentEvent.subview = view;
 
+                            var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
+                            afterEvent.subview = newView;
+
+                            new Task(view.notify(afterViewAddedToParentEvent), self.notify(afterEvent)).start().whenAll(function () {
                                 setValue(newView);
-
-                                var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
-                                afterViewAddedToParentEvent.subview = view;
-                                view.notify(afterViewAddedToParentEvent);
-
-                                var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
-                                afterEvent.subview = newView;
-                                self.notify(afterEvent);
                             });
                         }).then();
 
@@ -238,24 +249,25 @@
                 value: function (view) {
                     var beforeEvent = new BASE.ObservableEvent("beforeSubviewAdded");
                     beforeEvent.subview = view;
+                    self.notify(beforeEvent);
 
                     var beforeViewAddedToParentEvent = new BASE.ObservableEvent("beforeViewAddedToParent");
                     beforeViewAddedToParentEvent.subview = view;
+                    view.notify(beforeViewAddedToParentEvent);
+
+                    $(view.element).appendTo(self.containerElement);
 
                     return new Future(function (setValue, setError) {
-                        new Task(self.notify(beforeEvent), view.notify(beforeViewAddedToParentEvent)).start().whenAll(function () {
-                            $(view.element).appendTo(self.containerElement);
+                        var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
+                        afterViewAddedToParentEvent.subview = view;
 
+                        var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
+                        afterEvent.subview = view;
+
+                        new Task(view.notify(afterViewAddedToParentEvent), self.notify(afterEvent)).start().whenAll(function () {
                             setValue(view);
-
-                            var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
-                            afterViewAddedToParentEvent.subview = view;
-                            view.notify(afterViewAddedToParentEvent);
-
-                            var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
-                            afterEvent.subview = view;
-                            self.notify(afterEvent);
                         });
+
                     }).then();
 
                 }
@@ -320,6 +332,34 @@
                 }
             });
 
+            Object.defineProperty(self, "loadSubviewBefore", {
+                enumerable: true,
+                configurable: false,
+                value: function (uri, beforeView) {
+                    var beforeSubviewAdded = function () { };
+                    var afterSubviewAdded = function () { };
+
+                    var future = View.createViewFromUri(uri).then(function (view) {
+                        beforeSubviewAdded(view);
+                        self.insertSubviewBefore(view, beforeView).then(function () {
+                            afterSubviewAdded(view);
+                        });
+                    });
+
+                    future.beforeSubviewAdded = function (callback) {
+                        beforeSubviewAdded = callback;
+                        return future;
+                    };
+
+                    future.afterSubviewAdded = function (callback) {
+                        afterSubviewAdded = callback;
+                        return future;
+                    };
+
+                    return future;
+                }
+            });
+
             Object.defineProperty(self, "getViewByDataId", {
                 enumerable: true,
                 configurable: false,
@@ -341,8 +381,16 @@
                 enumerable: true,
                 configurable: false,
                 value: function () {
-                    if (self.parentView) {
-                        self.parentView.removeSubview(self);
+                    var parent = self.parentView;
+
+                    if (parent) {
+                        return parent.removeSubview(self);
+                    } else {
+                        return BASE.Future(function (setValue) {
+                            setTimeout(function () {
+                                setValue(self);
+                            }, 0);
+                        });
                     }
                 }
             });

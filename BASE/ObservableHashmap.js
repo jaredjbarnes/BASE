@@ -53,19 +53,19 @@
             };
 
             self.onItemAdded = function (callback) {
-                self.observe(callback, "addedItem");
+                self.observe(callback, "itemAdded");
             };
 
             self.onItemRemoved = function (callback) {
-                self.observe(callback, "removedItem");
+                self.observe(callback, "itemRemoved");
             };
 
             self.removeOnItemAdded = function (callback) {
-                self.unobserve(callback, "addedItem");
+                self.unobserve(callback, "itemAdded");
             };
 
             self.removeOnItemRemoved = function (callback) {
-                self.unobserve(callback, "removedItem");
+                self.unobserve(callback, "itemRemoved");
             };
 
             return self;

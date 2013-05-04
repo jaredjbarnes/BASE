@@ -292,7 +292,7 @@ BASE.require([
                     }
                     if (loadedEntity[key] instanceof BASE.ObservableArray) {
                         var relationship = self.orm.getRelationship(Type, key);
-                        if (relationship && entity === loadedEntity) {
+                        if (relationship) {
                             loadedEntity[key].load = function (filter) {
                                 return new BASE.Future(function (setValue, setError) {
                                     filter = filter || function () { };
@@ -662,7 +662,7 @@ BASE.require([
                             setError(errors);
                         }
                     });
-                });
+                }).then();
             };
 
             return self;

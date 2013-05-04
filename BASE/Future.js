@@ -29,6 +29,13 @@
                 }
             });
 
+            var _isComplete = false;
+            Object.defineProperty(self, "isComplete", {
+                get: function () {
+                    return _isComplete;
+                }
+            });
+
             var _loadedState = function (success, error) {
                 if (success) {
                     setTimeout(function () {
@@ -69,6 +76,7 @@
                 },
                 request: function () {
                     getValue(function (value) {
+                        _isComplete = true;
                         if (_state !== _canceledState &&
                             typeof _error === "undefined" &&
                             typeof _value === "undefined") {
@@ -78,6 +86,7 @@
                             self.notify(new BASE.ObservableEvent("complete"));
                         }
                     }, function (err) {
+                        isComplete = true;
                         if (_state !== _canceledState &&
                             typeof _error === "undefined" &&
                             typeof _value === "undefined") {
@@ -178,6 +187,7 @@
             self.cancel = function () {
 
                 if (_state !== _loadedState && _state !== _canceledState) {
+                    _isComplete = true;
                     _state = _canceledState;
                     self.notify(new BASE.ObservableEvent("canceled"));
                 }

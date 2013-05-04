@@ -156,7 +156,7 @@
                     futures.forEach(function (future) {
                         var value = future.value;
                         var error = future.error;
-                        if (typeof value !== "undefined" || typeof error !== "undefined") {
+                        if (future.isComplete) {
                             setTimeout(function () {
                                 _notify(future);
                             }, 0);

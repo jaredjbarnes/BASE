@@ -42,7 +42,7 @@
             };
 
             self.removeController = function (controller) {
-                if ($element.find(controller.view).length > 0) {
+                if ($element.find(controller.view.element).length > 0) {
                     controller.view.remove();
                 }
             };
@@ -50,7 +50,7 @@
             self.remove = function () {
                 var parent = self.parentController;
                 if (parent) {
-                    parent.removeController(controller);
+                    parent.removeController(self);
                 }
             };
 
@@ -59,7 +59,7 @@
                 configurable: false,
                 value: function (controller, view) {
                     view = view || self.view;
-                    self.view.addSubview(controller.view);
+                    view.addSubview(controller.view);
                 }
             });
 
@@ -118,6 +118,17 @@
                         }
                     }
                 }
+            });
+
+            Object.defineProperty(self, "rootController", {
+                get: function () {
+                    var rootController = self;
+                    while (rootController.parentController) {
+                        rootController = rootController.parentController;
+                    }
+                    return rootController;
+                }
+
             });
 
             Object.defineProperty(self, "bubble", {
