@@ -50,6 +50,11 @@
         };
         Notifiable.prototype.notify = function (event) {
             var self = this;
+
+            if (typeof event === "string") {
+                event = new BASE.ObservableEvent(event);
+            }
+
             var globalObservers = this._globalObservers.slice(0);
             var typeObservers = [];
 

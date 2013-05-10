@@ -55,7 +55,7 @@
             };
 
             self.substringOf = function (value) {
-                return Expression.equal(Expression.substringOf(Expression.property(namespace), Expression.string(value)), Expression.getExpressionType(true));
+                return Expression.substringOf(Expression.property(namespace), Expression.string(value));
             };
 
             self.startsWith = function (value) {

@@ -119,6 +119,8 @@ BASE.require([
                 }
             }
 
+
+
             var onEntityTracked = function (event) {
                 var entity = event.entity;
                 var Type = entity.constructor;
@@ -238,9 +240,15 @@ BASE.require([
 
                     entity.observe(observer);
                     _entityObservers.add(entity, "default", observer);
-                    // Add it to the set.
+
+                    //Check to see if the Type is a ManyToMany Type and just load it if so. 
                     var dataSet = self.getDataSet(Type);
-                    dataSet.add(entity);
+                    if (_orm.isMappingType(Type)) {
+                        dataSet.load(entity);
+                    } else {
+                        // Add it to the set.
+                        dataSet.add(entity);
+                    }
 
                 }
 
@@ -268,6 +276,23 @@ BASE.require([
 
                 }
             };
+
+            var _unobserveEntity = function (entity) {
+                var observers = {};
+                var entityObservers = _entityObservers.get(entity) || new BASE.Hashmap();
+                entityObservers.getKeys().forEach(function (key) {
+                    observers[key] = _entityObservers.remove(entity, key);
+                    entity.unobserve(observers[key], key);
+                });
+
+                return function () {
+                    Object.keys(observers).forEach(function (key) {
+                        _entityObservers.add(entity, key, observers[key]);
+                        entity.observe(observers[key], key);
+                    });
+                };
+            };
+
 
             var _makeAndLoadEntity = function (dto) {
                 var Type = _service.getTypeForDto(dto);
@@ -306,18 +331,28 @@ BASE.require([
                                         this.load(e[property], loadedEntity.id, providerResult.queryable.expression);
                                     };
 
+                                    var restore = _unobserveEntity(loadedEntity);
+
                                     self.loadEntities(Type, loadFilter).then(function (entities) {
-                                        entities.forEach(function (loadedEntity) {
-                                            var index = entities.indexOf(loadedEntity);
+                                        entities.forEach(function (entity) {
+                                            var restore = _unobserveEntity(entity);
+                                            var index = loadedEntity[key].indexOf(entity);
                                             if (index < 0) {
-                                                loadedEntity[key].add(loadedEntity);
+                                                loadedEntity[key].add(entity);
                                             }
+                                            restore();
                                         });
 
+                                        restore();
                                         setValue(entities);
+
                                     }).ifError(function (err) {
+
+                                        restore();
                                         setError(err);
+
                                     });
+
                                 });
                             };
 

@@ -16,6 +16,10 @@
             Super.call(self);
 
             self.notify = function (event) {
+                if (typeof event === "string") {
+                    event = new BASE.ObservableEvent(event);
+                }
+
                 var self = this;
                 var globalObservers = this._globalObservers.slice(0);
                 var typeObservers = [];

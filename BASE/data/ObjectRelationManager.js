@@ -26,6 +26,8 @@
             var _typeToPropertyRelationships = new BASE.MultiKeyMap();
             var _manyToManyMappingEntities = new BASE.MultiKeyMap();
 
+            var _manyToManyTypes = new BASE.Hashmap();
+
             (function (relationships) {
                 var oneToOne = relationships.oneToOne || [];
                 var oneToMany = relationships.oneToMany || [];
@@ -57,7 +59,7 @@
                         oneToMany.push(leftRelationship);
                         _typeToPropertyRelationships.add(relationship.Type, relationship.hasMany, relationship);
                         manyToManyRelationships.add(relationship.Type, relationship.hasMany, relationship);
-
+                        _manyToManyTypes.add(relationship.usingMappingType, relationship.usingMappingType);
                     }
 
                     if (relationship.withMany) {
@@ -293,13 +295,14 @@
                                 }
 
                                 if ((entity[relationship.withOne] === newSource || typeof relationship.withOne === "undefined")) {
-                                    if (newSource === null) {
-                                        entity[relationship.withForeignKey] = null;
-                                    } else {
-                                        entity[relationship.withForeignKey] = newSource[relationship.hasKey];
+                                    if (typeof newSource !== "undefined") {
+                                        if (newSource === null) {
+                                            entity[relationship.withForeignKey] = null;
+                                        } else {
+                                            entity[relationship.withForeignKey] = newSource[relationship.hasKey];
+                                        }
                                     }
                                 }
-
                             };
 
                             observeOneToManyTarget({
@@ -548,15 +551,19 @@
 
             self.getOneToOneRelationships = function (Type) {
                 return oneToOneRelationships.get(Type);
-            }
+            };
 
             self.getOneToManyRelationships = function (Type) {
                 return oneToManyRelationships.get(Type);
-            }
+            };
 
             self.getManyToManyRelationships = function (Type) {
                 return manyToManyRelationships.get(Type);
-            }
+            };
+
+            self.isMappingType = function (Type) {
+                return _manyToManyTypes.hasKey(Type);
+            };
 
         };
 

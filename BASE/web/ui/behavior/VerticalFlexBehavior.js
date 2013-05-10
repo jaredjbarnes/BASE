@@ -83,9 +83,9 @@
                         setTimeout(checkIfPartOfDom, 100);
                     }
                 };
+                checkIfPartOfDom();
 
                 view.onBoundsChange(_layout);
-                checkIfPartOfDom();
             };
 
             self.end = function () {

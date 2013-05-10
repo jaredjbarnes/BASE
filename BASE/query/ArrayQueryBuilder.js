@@ -210,8 +210,50 @@
             return value;
         };
 
+        ArrayQueryBuilder.prototype["boolean"] = function (value) {
+            return value;
+        };
+
         ArrayQueryBuilder.prototype["array"] = function (value) {
             return value;
+        };
+
+        ArrayQueryBuilder.prototype["startsWith"] = function (left, right) {
+            var results = [];
+            var self = this;
+            self.localArray.forEach(function (item) {
+                var obj = BASE.getObject(left, item);
+                if (obj.toLowerCase().indexOf(right.toLowerCase()) === 0) {
+                    results.push(item);
+                }
+            });
+            return results;
+        };
+
+        ArrayQueryBuilder.prototype["endsWith"] = function (left, right) {
+            var results = [];
+            var self = this;
+            self.localArray.forEach(function (item) {
+                var obj = BASE.getObject(left, item);
+                if (obj.toLowerCase().lastIndexOf(right.toLowerCase()) === obj.length - right.length) {
+                    results.push(item);
+                }
+            });
+            return results;
+        };
+
+        ArrayQueryBuilder.prototype["substringOf"] = function (left, right) {
+            var results = [];
+            var self = this;
+            self.localArray.forEach(function (item) {
+                var obj = BASE.getObject(left, item);
+                if (right.trim() === "") {
+                    results.push(item);
+                } else if (obj.toLowerCase().indexOf(right.toLowerCase()) >= 0) {
+                    results.push(item);
+                }
+            });
+            return results;
         };
 
         ArrayQueryBuilder.prototype["equal"] = function (left, right) {
