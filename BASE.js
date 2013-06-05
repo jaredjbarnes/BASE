@@ -221,6 +221,7 @@
                     };
 
                     script.onerror = function () {
+                        delete loading[namespace];
                         throw new Error("Failed to load: \"" + namespace + "\".");
                     };
 
