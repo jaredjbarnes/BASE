@@ -47,10 +47,6 @@
 
             self.load = function () {
                 return new BASE.Future(function (setValue, setError) {
-                    if (!self.id) {
-                        setValue(self);
-                        return;
-                    }
                     if (self.__dataContext) {
 
                         self.__dataContext.loadEntities(self.constructor, function (entity) {

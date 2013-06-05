@@ -1,60 +1,48 @@
 ﻿BASE.require([
-    "BASE.query.Query",
-    "BASE.query.ExpressionParser",
-    "BASE.query.ExpressionBuilder",
-    "BASE.query.Queryable"
+    "BASE.Future"
 ], function () {
-    BASE.namespace("LEAVITT.query");
+    BASE.namespace("BASE.query");
 
     BASE.query.Provider = (function (Super) {
-        var Provider = function (Type) {
+        var Provider = function () {
             var self = this;
             if (!(self instanceof arguments.callee)) {
-                return new Provider(Type);
+                return new Provider();
             }
 
             Super.call(self);
 
-            var _QueryBuilder = Object;
-            var _Builder = BASE.query.ExpressionBuilder;
-            var _Queryable = BASE.query.Queryable;
+            var _queryable = null;
+            Object.defineProperty(self, "queryable", {
+                get: function () {
+                    return _queryable;
+                },
+                set: function (value) {
+                    var oldValue = _queryable;
+                    if (value !== _queryable) {
+                        if (_queryable && _queryable.provider === self) {
+                            _queryable.provider = null;
+                        }
 
-            self.createQueryBuilder = function () {
-                return new _QueryBuilder();
-            };
-            self.createExpressionBuilder = function () {
-                return new _Builder(Type);
-            };
-            self.createQueryable = function () {
-                return new _Queryable();
-            };
+                        _queryable = value;
+                        _queryable.provider = self;
+                    }
+                }
+            });
 
+            //This should always return a Future of an array of objects.
             self.execute = function (filter) {
-                var builder = self.createExpressionBuilder();
-                var queryable = self.createQueryable();
-                var query = new BASE.query.Query(filter, builder, queryable);
-                query.run(Type);
-
-                var parser = new BASE.query.ExpressionParser();
-                parser.queryBuilder = self.createQueryBuilder();
-                var expressions = {};
-
-                queryable.expression.children.forEach(function (expression) {
-                    expressions[expression.nodeName] = parser.parse(expression);
+                return new BASE.Future(function (setValue, setError) {
+                    setTimeout(function () {
+                        setValue([]);
+                    }, 0);
                 });
-
-                return {
-                    expressions: expressions,
-                    queryBuilder: parser.queryBuilder,
-                    builder: builder,
-                    queryable: queryable
-                };
             };
         };
 
         BASE.extend(Provider, Super);
 
         return Provider;
-    }(BASE.Observable));
+    }(Object));
 
 });

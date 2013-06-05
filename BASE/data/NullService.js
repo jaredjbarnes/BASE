@@ -21,7 +21,23 @@
                 }
             });
 
-            self.load = function (Type, Filter) {
+            self.load = function (Type, filter) {
+                return new BASE.Future(function (setValue) {
+                    setTimeout(function () {
+                        setValue([], { message: "Loaded" });
+                    }, 0);
+                });
+            };
+
+            self.loadEntity = function (Type, id) {
+                return new BASE.Future(function (setValue) {
+                    setTimeout(function () {
+                        setValue({ id: Math.random() * 10000 }, { message: "Loaded" });
+                    }, 0);
+                });
+            };
+
+            self.loadArrayInEntity = function (ArrayType, foreignKey, filter) {
                 return new BASE.Future(function (setValue) {
                     setTimeout(function () {
                         setValue([], { message: "Loaded" });

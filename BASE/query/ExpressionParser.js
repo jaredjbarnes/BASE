@@ -2,14 +2,14 @@
     BASE.namespace("BASE.query");
 
     BASE.query.ExpressionParser = (function (Super) {
-        var ExpressionParser = function () {
+        var ExpressionParser = function (queryBuilder) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
-                return new ExpressionParser();
+                return new ExpressionParser(queryBuilder);
             }
 
             Super.call(self);
-            self.queryBuilder = {};
+            self.queryBuilder = queryBuilder || {};
 
             self.parse = function (expression) {
                 if (!expression) {

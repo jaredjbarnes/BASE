@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable","BASE.Future"], function () {
+﻿BASE.require(["BASE.Observable", "BASE.Future"], function () {
     BASE.namespace("BASE.web");
 
     BASE.web.ajax = {
@@ -45,30 +45,37 @@
             });
         },
         GET: function (url, settings) {
+            settings = settings || {};
             settings.type = "GET";
             return BASE.web.ajax.request(url, settings);
         },
         PUT: function (url, settings) {
+            settings = settings || {};
             settings.type = "PUT";
             return BASE.web.ajax.request(url, settings);
         },
         POST: function () {
+            settings = settings || {};
             settings.type = "POST";
             return BASE.web.ajax.request(url, settings);
         },
         PATCH: function () {
+            settings = settings || {};
             settings.type = "PATCH";
             return BASE.web.ajax.request(url, settings);
         },
         DELETE: function () {
+            settings = settings || {};
             settings.type = "DELETE";
             return BASE.web.ajax.request(url, settings);
         },
         OPTIONS: function () {
+            settings = settings || {};
             settings.type = "OPTIONS";
             return BASE.web.ajax.request(url, settings);
         },
         UPDATE: function () {
+            settings = settings || {};
             settings.type = "UPDATE";
             return BASE.web.ajax.request(url, settings);
         }

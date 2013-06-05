@@ -33,22 +33,13 @@
         };
 
         ODataQueryBuilder.prototype["orderBy"] = function () {
-            var result = "&$orderby=";
-
-            var children = Array.prototype.slice.call(arguments, 0);
-            var result = [];
-            children.forEach(function (expression, index) {
-                result.push(expression);
-                if (index !== children.length - 1) {
-                    result.push(", ");
-                }
-            });
-            return result.join("");
+            var result = Array.prototype.slice.call(arguments, 0);
+            return "&$orderby=" + result.join(", ");
         };
 
         ODataQueryBuilder.prototype["where"] = function () {
             var self = this;
-            return self["and"].apply(self.parsers, arguments);
+            return "&$filter=" + self["and"].apply(self.parsers, arguments);
         };
 
         ODataQueryBuilder.prototype["and"] = function () {
@@ -170,11 +161,11 @@
         };
 
         ODataQueryBuilder.prototype["skip"] = function (value) {
-            return value;
+            return "&$skip=" + value;
         };
 
         ODataQueryBuilder.prototype["take"] = function (value) {
-            return value;
+            return "&$top=" + value;
         };
 
         return ODataQueryBuilder;

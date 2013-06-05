@@ -1,4 +1,6 @@
-﻿BASE.require(["BASE.Observable", "BASE.query.Expression", "BASE.query.Queryable"], function () {
+﻿BASE.require([
+    "BASE.Observable",
+    "BASE.query.Expression"], function () {
     BASE.namespace("BASE.query");
 
     BASE.query.ExpressionBuilder = (function (Super) {
@@ -66,10 +68,6 @@
                 return Expression.endsWith(Expression.property(namespace), Expression.string(value));
             }
 
-            self.not = function (expression) {
-                // ????
-            };
-
             var mapping;
             if (typeof Type === "function") {
                 mapping = new Type();
@@ -81,10 +79,8 @@
                 Object.defineProperty(self, property, {
                     get: function () {
                         var ChildType;
-                        if (mapping[property] === null) {
+                        if (mapping[property] === null || typeof mapping[property] === "undefined") {
                             ChildType = Object;
-                        } else if (Array.isArray(mapping[property])) {
-                            return new BASE.query.Queryable();
                         } else {
                             if (typeof Type === "function") {
                                 ChildType = mapping[property].constructor;

@@ -266,22 +266,6 @@
         return expression;
     };
 
-    Expression.load = function () {
-        var expression = new OperationExpression("load");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.number = function () {
-        var expression = new OperationExpression("number");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
     Expression.boolean = function () {
         var expression = new OperationExpression("boolean");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
@@ -292,6 +276,14 @@
 
     Expression.string = function () {
         var expression = new OperationExpression("string");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.number = function () {
+        var expression = new OperationExpression("number");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });

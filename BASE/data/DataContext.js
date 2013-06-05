@@ -8,7 +8,8 @@ BASE.require([
     "BASE.data.NullService",
     "BASE.data.DataSet",
     "BASE.ObservableArray",
-    "BASE.Future"
+    "BASE.Future",
+    "BASE.query.Queryable"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -244,7 +245,7 @@ BASE.require([
                     //Check to see if the Type is a ManyToMany Type and just load it if so. 
                     var dataSet = self.getDataSet(Type);
                     if (_orm.isMappingType(Type)) {
-                        dataSet.load(entity);
+                        dataSet.loadEntity(entity);
                     } else {
                         // Add it to the set.
                         dataSet.add(entity);
@@ -322,18 +323,27 @@ BASE.require([
                                 return new BASE.Future(function (setValue, setError) {
                                     filter = filter || function () { };
 
-                                    var provider = new self.service.QueryProvider(relationship.Type === Type ? relationship.ofType : relationship.Type);
-                                    var property = relationship.Type === Type ? relationship.hasMany : relationship.withMany;
+                                    var PropertyType;
+                                    var property;
+                                    var foreignKey;
 
-                                    var providerResult = provider.execute(filter);
+                                    if (relationship.Type === Type) {
+                                        PropertyType = relationship.ofType
+                                        property = relationship.hasMany;
+                                        foreignKey = relationship.hasKey;
+                                    } else {
+                                        PropertyType = relationship.Type;
+                                        property = relationship.withMany;
+                                        foreignKey = relationship.withKey;
+                                    }
 
-                                    var loadFilter = function (e) {
-                                        this.load(e[property], loadedEntity.id, providerResult.queryable.expression);
-                                    };
+                                    var queryable = new BASE.query.Queryable(PropertyType).where(filter).and(function (entity) {
+                                        return entity[foreignKey].equals(loadedEntity.id);
+                                    });
 
-                                    var restore = _unobserveEntity(loadedEntity);
+                                    self.loadEntities(PropertyType, queryable).then(function (entities) {
+                                        var restore = _unobserveEntity(loadedEntity);
 
-                                    self.loadEntities(Type, loadFilter).then(function (entities) {
                                         entities.forEach(function (entity) {
                                             var restore = _unobserveEntity(entity);
                                             var index = loadedEntity[key].indexOf(entity);
@@ -347,12 +357,9 @@ BASE.require([
                                         setValue(entities);
 
                                     }).ifError(function (err) {
-
                                         restore();
                                         setError(err);
-
                                     });
-
                                 });
                             };
 
@@ -428,13 +435,12 @@ BASE.require([
                 return dataSet;
             };
 
-            self.loadEntities = function (Type, filter) {
+            self.loadEntities = function (Type, queryable) {
                 var self = this;
-                var filter = filter || function () { };
                 var dataSet = self.getDataSet(Type);
 
                 return BASE.Future(function (setValue, setError) {
-                    self.service.load(Type, filter).then(function (dtos) {
+                    self.service.load(Type, queryable).then(function (dtos) {
                         var trackedEntities = [];
                         var forEach = function (x) {
                             var dto = dtos[x];

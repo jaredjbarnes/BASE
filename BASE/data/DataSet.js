@@ -3,7 +3,8 @@
     "BASE.ObservableArray",
     "BASE.Hashmap",
     "BASE.ObservableEvent",
-    "BASE.Future"
+    "BASE.Future",
+    "BASE.query.Queryable"
 ], function () {
 
     BASE.namespace("BASE.data");
@@ -155,8 +156,12 @@
                 }
             };
 
-            self.load = function (filter) {
-                return context.loadEntities(_Type, filter);
+            self.load = function (queryable) {
+                if (!(queryable instanceof BASE.query.Queryable)) {
+                    throw new Error("Expected a queryable.");
+                }
+
+                return context.loadEntities(_Type, queryable);
             };
 
             self.onChange = function (callback) {
@@ -165,7 +170,7 @@
             };
 
             self.count = function (filter) {
-                return _context.service.count(_Type, filter);
+                return _context.service.count(_Type, new BASE.query.Queryable(_Type).where(filter));
             }
 
         }
