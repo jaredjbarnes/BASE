@@ -100,7 +100,7 @@
                     _context.load(loadedEntity);
                 } else {
                     _entitiesByNoId.add(loadedEntity, loadedEntity);
-                    _context.add(loadedEntity);
+                    _context.load(loadedEntity);
                 }
 
                 _loadEntity(entity);
@@ -113,7 +113,7 @@
                 if (loadedEntity === entity && entity instanceof _Type && !this.has(entity)) {
                     if (entity.id) {
                         _entitiesById.add(entity.id, entity);
-                        _context.add(entity);
+                        _context.load(entity);
                     } else {
                         _entitiesByNoId.add(entity, entity);
                         entity.observe(function onIdChanged(event) {
@@ -157,6 +157,10 @@
             };
 
             self.load = function (queryable) {
+                if (typeof queryable === "undefined") {
+                    queryable = new BASE.query.Queryable(_Type);
+                }
+
                 if (!(queryable instanceof BASE.query.Queryable)) {
                     throw new Error("Expected a queryable.");
                 }

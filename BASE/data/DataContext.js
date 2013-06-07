@@ -76,25 +76,35 @@ BASE.require([
                     oneToMany.forEach(function (key) {
                         var relationship = _orm.getOneToManyRelationships(Type).get(key);
                         var property = relationship.Type === Type ? relationship.hasMany : relationship.withOne;
+                        var PropertyType = relationship.Type === Type ? relationship.ofType : relationship.Type;
 
                         var observer = _entityObservers.get(entity, property);
                         if (observer) {
                             entity.unobserve(observer, property);
                         }
 
-                        if (relationship.Type === Type) {
-                            var dataSet = self.getDataSet(relationship.ofType);
+                        // Ghost OneToMany
+                        if (_orm.isMappingType(PropertyType)) {
+                            var dataSet = self.getDataSet(PropertyType);
                             while (entity[property].length > 0) {
-                                if (relationship.cascadeDelete) {
-                                    _remove(entity[property].pop());
-                                } else {
-                                    entity[property].pop();
-                                }
+                                dataSet.unloadEntity(entity[property].pop());
                             }
                         } else {
-                            var key = relationship.withKey;
-                            entity[property] = null;
-                            entity[key] = null;
+                            // Normal OneToMany
+                            if (relationship.Type === Type) {
+                                var dataSet = self.getDataSet(PropertyType);
+                                while (entity[property].length > 0) {
+                                    if (relationship.cascadeDelete) {
+                                        _remove(entity[property].pop());
+                                    } else {
+                                        entity[property].pop();
+                                    }
+                                }
+                            } else {
+                                var key = relationship.withKey;
+                                entity[property] = null;
+                                entity[key] = null;
+                            }
                         }
 
                         if (observer) {
@@ -264,7 +274,7 @@ BASE.require([
                     entity.unobserve(observer);
 
 
-                    // Add many to many relationships, and apply observers for Ghost ManyToMany mappings
+                    // remove many to many relationships, and remove observers for Ghost ManyToMany mappings
                     var manyToManyMappings = _orm.getManyToManyRelationships(Type) ? _orm.getManyToManyRelationships(Type).getKeys() : [];
                     manyToManyMappings.forEach(function (key) {
                         var relationship = _orm.getManyToManyRelationships(Type).get(key);
