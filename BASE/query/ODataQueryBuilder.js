@@ -120,6 +120,10 @@
             return "null";
         };
 
+        ODataQueryBuilder.prototype["undefined"] = function (value) {
+            return "undefined";
+        };
+
         ODataQueryBuilder.prototype["string"] = function (value) {
             return "'" + value.replace("'", "''") + "'";
         };

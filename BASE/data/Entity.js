@@ -1,8 +1,13 @@
 ﻿BASE.require([
     "BASE.Observable",
-    "BASE.Future"
+    "BASE.Future",
+    "BASE.data.EntityChangeTracker",
+    "BASE.PropertyChangedEvent"
 ], function () {
     BASE.namespace("BASE.data");
+
+    var PropertyChangedEvent = BASE.PropertyChangedEvent;
+
     BASE.data.Entity = (function (Super) {
         function Entity() {
             var self = this;
@@ -14,20 +19,14 @@
             Super.call(self);
 
             var _id = null;
-            var _tracker = null;
-
-            var __dataContext = null;
 
             Object.defineProperties(self, {
-                "__dataContext": {
+                "changeTracker": {
                     get: function () {
-                        return __dataContext;
+                        return _changeTracker;
                     },
-                    set: function (value) {
-                        if (__dataContext === null) {
-                            __dataContext = value;
-                        }
-                    }
+                    enumerable: true,
+                    configurable: true
                 },
                 "id": {
                     get: function () {
@@ -47,12 +46,14 @@
 
             self.load = function () {
                 return new BASE.Future(function (setValue, setError) {
-                    if (self.__dataContext) {
+                    var dataContext = self.changeTracker.dataContext;
+                    if (dataContext) {
+                        var dataSet = dataContext.getDataSet(self.constructor);
 
-                        self.__dataContext.loadEntities(self.constructor, function (entity) {
-                            this.where(entity.id.equals(this.toGuid(self.id)));
-                        }).then(function () {
-                            setValue(self);
+                        dataSet.where(function (e) {
+                            return e.id.equals(self.id);
+                        }).toArray().then(function (entities) {
+                            setValue(entities[0]);
                         }).ifError(function (err) {
                             setError(err);
                         });
@@ -61,9 +62,11 @@
                         console.error(self);
                         throw new Error("Entity isn't part of a context.");
                     }
-                });
+                }).then();
             };
 
+            // This needs to be set last.
+            var _changeTracker = new BASE.data.EntityChangeTracker(self);
         }
 
         BASE.extend(Entity, BASE.Observable);

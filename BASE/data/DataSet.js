@@ -4,10 +4,20 @@
     "BASE.Hashmap",
     "BASE.ObservableEvent",
     "BASE.Future",
-    "BASE.query.Queryable"
+    "BASE.query.Queryable",
+    "BASE.data.EntityChangeTracker",
+    "BASE.PropertyChangedEvent",
+    "BASE.query.Provider"
 ], function () {
 
     BASE.namespace("BASE.data");
+
+    var Queryable = BASE.query.Queryable;
+    var Provider = BASE.query.Provider;
+    var EntityChangeTracker = BASE.data.EntityChangeTracker;
+    var PropertyChangedEvent = BASE.PropertyChangedEvent;
+    var Hashmap = BASE.Hashmap;
+    var Future = BASE.Future;
 
     BASE.data.DataSet = (function (Super) {
 
@@ -19,34 +29,35 @@
 
             Super.call(self);
 
-            var _entitiesById = new BASE.Hashmap();
-            var _arrayObservers = new BASE.Hashmap();
-            var _observers = new BASE.Hashmap();
-            var _entitiesByNoId = new BASE.Hashmap();
-            var _allEntities = new BASE.Hashmap();
+            var _loadedEntities = new BASE.Hashmap();
+            var _addedEntities = new BASE.Hashmap();
+            var _idObservers = new BASE.Hashmap();
             var _Type = Type;
-            var _context = context;
+            var _dataContext = context;
 
             Object.defineProperties(self, {
                 "local": {
                     get: function () {
                         var local = [];
-                        _allEntities.getKeys().forEach(function (key) {
-                            local.push(_allEntities.get(key));
+                        _loadedEntities.getKeys().forEach(function (key) {
+                            local.push(_loadedEntities.get(key));
+                        });
+                        _addedEntities.getKeys().forEach(function (key) {
+                            local.push(_addedEntities.get(key));
                         });
                         return local;
                     },
                     enumerable: true,
                     configurable: true
                 },
-                "context": {
+                "dataContext": {
                     get: function () {
-                        return _context;
+                        return _dataContext;
                     },
                     enumerable: true,
                     configurable: true
                 },
-                "type": {
+                "Type": {
                     get: function () {
                         return _Type;
                     },
@@ -55,117 +66,148 @@
                 }
             });
 
-            var _loadEntity = function (entity) {
-                if (!_allEntities.hasKey(entity)) {
-                    _allEntities.add(entity, entity);
-
-                    var event = new BASE.ObservableEvent("changed");
-                    event.newItems = [entity];
-                    event.oldItems = [];
-                    self.notify(event);
-                }
-            };
-
-            var _unloadEntity = function (entity) {
-                if (_allEntities.hasKey(entity)) {
-                    _allEntities.remove(entity, entity);
-
-                    var event = new BASE.ObservableEvent("changed");
-                    event.newItems = [];
-                    event.oldItems = [entity];
-                    self.notify(event);
-                }
-            };
-
-            var _getTrackedEntity = function (entity) {
-                var self = this;
-                var noId = _entitiesByNoId.get(entity);
-                var byId = _entitiesById.get(entity.id);
-                if (!noId && !byId) {
-                    return entity;
-                } else if (noId) {
-                    return noId;
-                } else if (byId) {
-                    return byId;
-                }
-            };
-
-            self.checkForEntity = _getTrackedEntity;
-
-            self.loadEntity = function (entity) {
-                var loadedEntity = _getTrackedEntity(entity);
-
-                if (loadedEntity.id) {
-                    _entitiesById.add(loadedEntity.id, loadedEntity);
-                    _context.load(loadedEntity);
-                } else {
-                    _entitiesByNoId.add(loadedEntity, loadedEntity);
-                    _context.load(loadedEntity);
-                }
-
-                _loadEntity(entity);
-
-                return loadedEntity;
-            };
-
+            // This will add the entity to the set and change its state to ADDED.
             self.add = function (entity) {
-                var loadedEntity = _getTrackedEntity(entity);
-                if (loadedEntity === entity && entity instanceof _Type && !this.has(entity)) {
-                    if (entity.id) {
-                        _entitiesById.add(entity.id, entity);
-                        _context.load(entity);
-                    } else {
-                        _entitiesByNoId.add(entity, entity);
-                        entity.observe(function onIdChanged(event) {
-                            entity.unobserve(onIdChanged, "id");
-                            _entitiesByNoId.remove(entity);
-                            _entitiesById.add(entity.id, entity);
-                        }, "id");
-                        _context.add(entity);
-                    }
-                    _loadEntity(entity);
+                // Prevent any dirty objects from coming through.
+                if (!(entity instanceof Type) || entity === null) {
+                    return entity;
                 }
-                return loadedEntity;
+
+                // Check to see if this entity is already part of this set.
+                // And return the loaded Entity.
+                var loadedEntity = self.get(entity);
+                if (loadedEntity) {
+                    return loadedEntity;
+                } else {
+                    entity.changeTracker.dataContext = _dataContext;
+                    entity.changeTracker.add();
+
+                    // This is to switch the entity from the added bucket to the 
+                    // loaded bucket, or vice-virsa.
+                    var idObserver = function (e) {
+                        // There may be a time where the id is nulled and then set again.
+                        // so in this time we swap the hashes that the entity is in.
+                        if (e.newValue === null && e.oldValue !== null) {
+                            // Remove reference from added, and add to loaded.
+                            _addedEntities.add(entity, entity);
+                            _loadedEntities.remove(e.oldValue, entity);
+                        } else if (e.newValue !== null && e.oldValue === null) {
+                            // Remove reference from added, and add to loaded.
+                            _addedEntities.remove(entity);
+                            _loadedEntities.add(e.newValue, entity);
+                        }
+                    }
+
+                    // We also need to listen for changes to the id.
+                    // So we can switch the entity to the loadedEntities hash.
+                    entity.observe(idObserver, "id");
+
+                    // Save the observer so the when the entity is removed we can detatch.
+                    _idObservers.add(entity, idObserver);
+
+                    _addedEntities.add(entity, entity);
+
+                    return entity;
+                }
+
             };
 
+            // This will remove the entity from the set and change its state to REMOVED.
             self.remove = function (entity) {
-                if (entity && entity instanceof _Type) {
-                    _unloadEntity(entity);
-                    _context.remove(entity);
-                    _entitiesById.remove(entity.id);
-                    _entitiesByNoId.remove(entity);
+
+                // Prevent any dirty objects from coming through.
+                if (!(entity instanceof Type) || entity === null) {
+                    throw new Error("The entity supplied was either null or not the right type.");
                 }
-                return entity;
+
+                // Get the entity if its part of our set.
+                var loadedEntity = self.get(entity);
+                if (loadedEntity) {
+                    loadedEntity.changeTracker.remove();
+                    // Detatch the id observer to prevent memory leak.
+                    loadedEntity.unobserve(_idObservers.remove(loadedEntity), "id");
+
+                    return loadedEntity;
+                } else {
+                    return null;
+                }
+
             };
 
-            // This can be used to update the dataSet, and not trigger a remove on the dataContext;
-            self.unloadEntity = function (entity) {
-                if (entity && entity instanceof _Type) {
-                    _unloadEntity(entity);
-                    _entitiesById.remove(entity.id);
-                    _entitiesByNoId.remove(entity);
-                }
-            };
-
-            self.has = function (entity) {
+            self.get = function (entity) {
                 if (entity instanceof _Type) {
-                    if (_entitiesById.get(entity.id) || _entitiesByNoId.get(entity)) {
-                        return true;
-                    }
-                    return false;
+                    // Try to get the result from both hashes.
+                    return _addedEntities.get(entity) || _loadedEntities.get(entity.id);
                 }
             };
 
-            self.load = function (queryable) {
-                if (typeof queryable === "undefined") {
-                    queryable = new BASE.query.Queryable(_Type);
+            // This method is much faster then doing a linear search of your array.
+            self.has = function (entity) {
+                return self.get(entity) === null ? false : true;
+            };
+
+            // This method makes entities from dtos.
+            self.load = function (dto) {
+                // If its just a dto then run it through the loaders.
+                // Otherwise just load it into the context.
+                if (!(dto instanceof self.Type)) {
+                    var Type = _dataContext.service.getTypeForDto(dto);
+                    var loadedEntity = self.get(dto);
+
+                    // If it isn't loaded create the entity, loaded it in.
+                    if (!loadedEntity) {
+
+                        if (typeof dto.id === "undefined" || dto.id === null) {
+                            throw new Error("Entity needs a \"id\" to load.");
+                        }
+
+                        loadedEntity = new Type();
+                        loadedEntity.id = dto.id;
+                        loadedEntity.changeTracker.dataContext = _dataContext;
+                        loadedEntity.changeTracker.changeState(EntityChangeTracker.LOADED);
+                        _loadedEntities.add(loadedEntity.id, loadedEntity);
+                    }
+
+                    var previousState = loadedEntity.changeTracker.state;
+                    loadedEntity.changeTracker.sync(dto);
+                    loadedEntity.changeTracker.changeState(previousState);
+
+                    return loadedEntity;
+                } else {
+                    _loadedEntities.add(dto.id, dto);
+                }
+            };
+
+            // This allows users to query the data set with queryables. 
+            self.where = function (expression) {
+                var queryable = new Queryable(_Type);
+
+                if (expression) {
+                    queryable.where(expression);
                 }
 
-                if (!(queryable instanceof BASE.query.Queryable)) {
-                    throw new Error("Expected a queryable.");
-                }
+                queryable.provider = new Provider();
+                queryable.provider.execute = function (queryable) {
+                    return new Future(function (setValue, setError) {
+                        _dataContext.service.readEntities(queryable.copy()).then(function (dtos) {
+                            var resultEntities = [];
+                            dtos.forEach(function (dto) {
+                                // This will load the entity into the context.
+                                var target = self.load(dto);
 
-                return context.loadEntities(_Type, queryable);
+                                // Add the target to what we send back to the user that asked.
+                                resultEntities.push(target);
+                            });
+
+                            // This sends back all the targets entities that have now been loaded via "one to many".
+                            setValue(resultEntities);
+                        }).ifError(function (e) {
+                            setError(e);
+                        });
+                    });
+                };
+
+                return queryable;
             };
 
             self.onChange = function (callback) {
@@ -173,8 +215,10 @@
                 self.observe(callback, "changed");
             };
 
-            self.count = function (filter) {
-                return _context.service.count(_Type, new BASE.query.Queryable(_Type).where(filter));
+            // TODO: Change the count method to be called on the queryable.
+            // This needs to be moved to the queryable.
+            self.count = function (expression) {
+                return _dataContext.service.countEntities(_Type, new BASE.query.Queryable(_Type).where(expression));
             }
 
         }

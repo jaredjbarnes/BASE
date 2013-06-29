@@ -23,8 +23,6 @@
             return self;
         };
 
-
-
         BASE.extend(Expression, Super);
 
         return Expression;
@@ -102,19 +100,22 @@
     BASE.query.OperationExpression = OperationExpression;
     BASE.PropertyExpression = ValueExpression;
 
-
     Expression.getExpressionType = function (value) {
         if (value instanceof BASE.query.Expression) {
             return value;
-        } if (typeof value === "string") {
+        }
+
+        if (typeof value === "string") {
             return Expression.string(Expression.constant(value));
+        } else if (typeof value === "function") {
+            return Expression.function(Expression.constant(value));
         } else if (typeof value === "number") {
             return Expression.number(Expression.constant(value));
         } else if (typeof value === "boolean") {
             return Expression.boolean(Expression.constant(value));
         } else if (value === null) {
             return Expression["null"](Expression.constant(value));
-        } else if (typeof value === undefined) {
+        } else if (typeof value === "undefined") {
             return Expression["undefined"](Expression.constant(value));
         } else if (Array.isArray(value)) {
             returnExpression.array(Expression.constant(value));
@@ -266,6 +267,11 @@
         return expression;
     };
 
+    Expression.count = function () {
+        var expression = new ValueExpression("count");
+        return expression;
+    };
+
     Expression.boolean = function () {
         var expression = new OperationExpression("boolean");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
@@ -292,6 +298,14 @@
 
     Expression.object = function () {
         var expression = new OperationExpression("object");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.function = function () {
+        var expression = new OperationExpression("function");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });

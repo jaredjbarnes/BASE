@@ -10,37 +10,20 @@
 
             Super.call(self);
 
-            var _QueryProvider = BASE.query.Provider;
+            // This method allows for optimized reads of a many to many property.
+            self.readManyToMany = function (entity, property, queryable) {
+                var PropertyType = queryable.Type;
+                var EntityType = entity.constructor;
 
-            Object.defineProperties(self, {
-                "QueryProvider": {
-                    configurable: true,
-                    get: function () {
-                        return _QueryProvider;
-                    }
-                }
-            });
+                //Do what you need to here.
 
-            self.load = function (Type, filter) {
-                return new BASE.Future(function (setValue) {
-                    setTimeout(function () {
-                        setValue([], { message: "Loaded" });
-                    }, 0);
-                });
             };
 
-            self.loadEntity = function (Type, id) {
+            // This method allows the 
+            self.read = function (Type, queryable) {
                 return new BASE.Future(function (setValue) {
                     setTimeout(function () {
-                        setValue({ id: Math.random() * 10000 }, { message: "Loaded" });
-                    }, 0);
-                });
-            };
-
-            self.loadArrayInEntity = function (ArrayType, foreignKey, filter) {
-                return new BASE.Future(function (setValue) {
-                    setTimeout(function () {
-                        setValue([], { message: "Loaded" });
+                        setValue({ message: "Added!", dto: { id: (Math.random() * 10000).toFixed(5) } });
                     }, 0);
                 });
             };
@@ -70,22 +53,24 @@
                 });
             };
 
-            self.logIn = function (username, factors) {
-                return new BASE.Future(function (setValue) {
-                    setTimeout(function () {
-                        setValue({ message: "Logged In!" });
-                    }, 0);
-                });
-            };
-
-            self.getTypeForDto = function (dto) {
-                //This allows the service to dictate what a dto's class is.
-            };
-
             self.count = function (Type, filter) {
                 return new BASE.Future(function (setValue) {
                     setTimeout(function () {
                         setValue(0);
+                    }, 0);
+                });
+            };
+
+            // This allows the service to dictate what a dto's class is.
+            // This helps with abstract classes.
+            self.getTypeForDto = function (dto) {
+
+            };
+
+            self.logIn = function (username, factors) {
+                return new BASE.Future(function (setValue) {
+                    setTimeout(function () {
+                        setValue({ message: "Logged In!" });
                     }, 0);
                 });
             };

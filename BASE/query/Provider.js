@@ -12,26 +12,8 @@
 
             Super.call(self);
 
-            var _queryable = null;
-            Object.defineProperty(self, "queryable", {
-                get: function () {
-                    return _queryable;
-                },
-                set: function (value) {
-                    var oldValue = _queryable;
-                    if (value !== _queryable) {
-                        if (_queryable && _queryable.provider === self) {
-                            _queryable.provider = null;
-                        }
-
-                        _queryable = value;
-                        _queryable.provider = self;
-                    }
-                }
-            });
-
             //This should always return a Future of an array of objects.
-            self.execute = function (filter) {
+            self.execute = function (queryable) {
                 return new BASE.Future(function (setValue, setError) {
                     setTimeout(function () {
                         setValue([]);

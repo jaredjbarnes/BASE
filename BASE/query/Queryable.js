@@ -9,13 +9,22 @@
     var ExpressionBuilder = BASE.query.ExpressionBuilder;
 
     BASE.query.Queryable = (function (Super) {
-        var Queryable = function (Type) {
+        var Queryable = function (Type, expression) {
             var self = this;
+            var expression = expression || {};
+
             if (!(self instanceof arguments.callee)) {
-                return new Queryable(Type);
+                return new Queryable(Type, expression);
             }
 
             Super.call(self);
+
+            var _Type = null;
+            Object.defineProperty(self, "Type", {
+                get: function () {
+                    return Type;
+                }
+            });
 
             var _provider = null;
             Object.defineProperty(self, "provider", {
@@ -25,17 +34,12 @@
                 set: function (value) {
                     var oldValue = _provider;
                     if (value !== _provider) {
-                        if (_provider && _provider.queryable === self) {
-                            _provider.queryable = null;
-                        }
-
                         _provider = value;
-                        _provider.queryable = self;
                     }
                 }
             });
 
-            var _whereExpression = null;
+            var _whereExpression = expression.where || null;
             Object.defineProperty(self, "expression", {
                 get: function () {
                     return {
@@ -64,36 +68,48 @@
             };
 
             var _or = function (fn) {
-                fn = fn || function () { };
-                var rightExpression = fn.call(self, new ExpressionBuilder(Type));
+                var rightExpression;
+
+                if (fn instanceof Expression) {
+                    rightExpression = Expression.or.apply(Expression, arguments);
+                } else {
+                    fn = fn || function () { };
+                    rightExpression = fn.call(self, new ExpressionBuilder(Type));
+                }
 
                 if (_whereExpression) {
-                    _whereExpression = Expression.or.apply(Expression, [_whereExpression, rightExpression]);
+                    var expressions = _whereExpression.children;
+                    expressions.push(rightExpression);
+
+                    _whereExpression = Expression.where(Expression.or.apply(Expression, expressions));
                 } else {
-                    _whereExpression = rightExpression;
+                    _whereExpression = Expression.where(rightExpression);
                 }
 
                 return self;
             };
 
             var _and = function (fn) {
-                fn = fn || function () { };
-                var rightExpression = fn.call(self, new ExpressionBuilder(Type));
-
-                if (!(rightExpression instanceof Expression)) {
-                    throw new Error("");
+                if (fn instanceof Expression) {
+                    rightExpression = Expression.and.apply(Expression, arguments);
+                } else {
+                    fn = fn || function () { };
+                    rightExpression = fn.call(self, new ExpressionBuilder(Type));
                 }
 
                 if (_whereExpression) {
-                    _whereExpression = Expression.or.apply(Expression, [_whereExpression, rightExpression]);
+                    var expressions = _whereExpression.children;
+                    expressions.push(rightExpression);
+
+                    _whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
                 } else {
-                    _whereExpression = rightExpression;
+                    _whereExpression = Expression.where(rightExpression);
                 }
 
                 return self;
             };
 
-            var _takeExpression = null;
+            var _takeExpression = expression.take || null;
             var _take = function (value) {
                 if (_takeExpression === null) {
                     _takeExpression = Expression.take(Expression.constant(value));
@@ -103,7 +119,7 @@
                 return self;
             };
 
-            var _skipExpression = null;
+            var _skipExpression = expression.skip || null;
             var _skip = function (value) {
                 if (_skipExpression === null) {
                     _skipExpression = Expression.skip(Expression.constant(value));
@@ -113,7 +129,17 @@
                 return self;
             };
 
-            var _orderByExpression = [];
+            var _countExpression = expression.count || null;
+            var _count = function (value) {
+                if (_countExpression === null) {
+                    _countExpression = Expression.count();
+                } else {
+                    throw new Error("Cannot call \"count\" twice.");
+                }
+                return self;
+            };
+
+            var _orderByExpression = expression.orderBy ? expression.orderBy.children : [];
             var _orderByDesc = function (fn) {
                 _orderByExpression.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
                 return self;
@@ -129,12 +155,44 @@
             };
 
             var _execute = function () {
+                /// <summary>Executes the queryable.</summary>
+                /// <returns type="BASE.Future"></returns>
                 if (_provider === null) {
                     throw new Error("The queryable needs a provider property.");
                 } else {
                     return _provider.execute(self.expression);
                 }
             };
+
+            var _count = function () {
+
+            };
+
+            var _toArray = function () {
+                /// <summary>Executes the queryable.</summary>
+                /// <returns type="BASE.Future"></returns>
+                return _provider.execute(self);
+            };
+
+            var _copy = function () {
+                var queryable = new Queryable(Type, self.expression);
+                return queryable;
+            };
+
+            var _merge = function (queryable) {
+                var whereChildren = queryable.expression.where.children;
+                var rightExpression = Expression.and.apply(Expression, whereChildren);
+                if (_whereExpression) {
+                    var expressions = _whereExpression.children;
+                    expressions.push(rightExpression);
+
+                    _whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
+                } else {
+                    _whereExpression = Expression.where(rightExpression);
+                }
+
+                return self;
+            }
 
             Object.defineProperties(self, {
                 toGuid: {
@@ -157,6 +215,11 @@
                     configurable: false,
                     value: _and
                 },
+                merge: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _merge
+                },
                 take: {
                     enumerable: false,
                     configurable: false,
@@ -177,10 +240,20 @@
                     configurable: false,
                     value: _orderBy
                 },
-                execute: {
+                toArray: {
                     enumerable: false,
                     configurable: false,
-                    value: _execute
+                    value: _toArray
+                },
+                count: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _count
+                },
+                copy: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _copy
                 }
             });
 
@@ -189,6 +262,8 @@
         };
 
         BASE.extend(Queryable, Super);
+
+        var q = new Queryable();
 
         return Queryable;
     }(Object));

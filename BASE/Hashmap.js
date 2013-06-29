@@ -25,11 +25,11 @@
 
             self.add = function (key, object) {
 
-                if (!key) {
+                if (key === null || typeof key === "undefined") {
                     throw new Error("Cannot add an object with a null or undefined key. object: " + object);
                 }
 
-                if (typeof key === "string") {
+                if (typeof key === "string" || typeof key === "number") {
                     hash[key] = object;
                     return;
                 }
@@ -46,7 +46,7 @@
                     return null;
                 }
 
-                if (typeof key === "string") {
+                if (typeof key === "string" || typeof key === "number") {
                     return hash[key] || null;
                 }
 
@@ -63,7 +63,7 @@
                 }
 
                 var value = null;
-                if (typeof key === "string") {
+                if (typeof key === "string" || typeof key === "number") {
                     value = hash[key];
                     delete hash[key];
                     return value || null;
@@ -77,11 +77,17 @@
                 return value;
             };
 
+            self.clear = function () {
+                self.getKeys().forEach(function (key) {
+                    self.remove(key);
+                });
+            };
+
             self.hasKey = function (key) {
                 if (key === null || typeof key === "undefined") {
                     return false;
                 }
-                if (typeof key === "string") {
+                if (typeof key === "string" || typeof key === "number") {
                     return hash[key] ? true : false;
                 }
 

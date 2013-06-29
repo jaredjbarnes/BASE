@@ -56,7 +56,7 @@
                 observeSuccess: function (callback) {
                     var wrapper = function (event) {
                         self.unobserve(wrapper, "success");
-                        callback(_value);
+                        callback.apply(_value, [_value]);
                     }
                     self.observe(wrapper, "success");
                 },
@@ -153,7 +153,7 @@
             var _loadedState = {
                 observeSuccess: function (callback) {
                     setTimeout(function () {
-                        callback(_value);
+                        callback.apply(_value, [_value]);
                     }, 0);
                 },
                 observeError: function (callback) { },

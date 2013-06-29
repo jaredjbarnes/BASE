@@ -7,6 +7,7 @@
             settings.type = settings.type || "GET"
             settings.headers = settings.headers || {};
             //settings.headers["Accept"] = settings.headers["Accept"] || "*/*";
+            settings.headers["Content-Type"] = "application/json";
             settings.data = settings.data || "";
 
 
@@ -54,27 +55,27 @@
             settings.type = "PUT";
             return BASE.web.ajax.request(url, settings);
         },
-        POST: function () {
+        POST: function (url, settings) {
             settings = settings || {};
             settings.type = "POST";
             return BASE.web.ajax.request(url, settings);
         },
-        PATCH: function () {
+        PATCH: function (url, settings) {
             settings = settings || {};
             settings.type = "PATCH";
             return BASE.web.ajax.request(url, settings);
         },
-        DELETE: function () {
+        DELETE: function (url, settings) {
             settings = settings || {};
             settings.type = "DELETE";
             return BASE.web.ajax.request(url, settings);
         },
-        OPTIONS: function () {
+        OPTIONS: function (url, settings) {
             settings = settings || {};
             settings.type = "OPTIONS";
             return BASE.web.ajax.request(url, settings);
         },
-        UPDATE: function () {
+        UPDATE: function (url, settings) {
             settings = settings || {};
             settings.type = "UPDATE";
             return BASE.web.ajax.request(url, settings);
