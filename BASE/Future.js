@@ -199,6 +199,18 @@
         };
 
         BASE.extend(Future, Super);
+
+        var _fromResult = function (value) {
+            return new Future(function (setValue) {
+                setTimeout(function () { setValue(value); }, 0);
+            });
+        };
+
+        Object.defineProperty(Future, "fromResult", {
+            enumerable: false,
+            value: _asResult
+        });
+
         return Future;
     }(BASE.Notifiable));
 
