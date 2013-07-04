@@ -37,6 +37,10 @@
             return "&$orderby=" + result.join(", ");
         };
 
+        ODataQueryBuilder.prototype["count"] = function (left, right) {
+            return "&$inlinecount=allpages";
+        };
+
         ODataQueryBuilder.prototype["where"] = function () {
             var self = this;
             return "&$filter=" + self["and"].apply(self.parsers, arguments);

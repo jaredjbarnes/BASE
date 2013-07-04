@@ -239,6 +239,7 @@
 
                             // This should always be up to date.
                             Object.defineProperty(mappingEntity, relationship.withForeignKey, {
+                                configurable: true,
                                 enumerable: true,
                                 get: function () {
                                     return entity.id;
@@ -248,6 +249,7 @@
 
                             // This should always be up to date.
                             Object.defineProperty(mappingEntity, relationship.hasForeignKey, {
+                                configurable: true,
                                 enumerable: true,
                                 get: function () {
                                     return target.id;

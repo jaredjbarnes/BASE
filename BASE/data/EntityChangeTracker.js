@@ -49,7 +49,6 @@
 
                     // If its not a relationship save changes.
                     if (!oneToOne && !oneToOneTarget && !oneToManyAsTarget) {
-                        console.log("UPDATE: " + event.property);
                         _state.update(event);
                     }
                 }

@@ -267,11 +267,6 @@
         return expression;
     };
 
-    Expression.count = function () {
-        var expression = new ValueExpression("count");
-        return expression;
-    };
-
     Expression.boolean = function () {
         var expression = new OperationExpression("boolean");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {

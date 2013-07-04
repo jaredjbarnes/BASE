@@ -1,18 +1,14 @@
-﻿
-BASE.require([
+﻿BASE.require([
     "BASE.query.ArrayProvider",
     "BASE.query.Queryable"
 ], function () {
     var ArrayProvider = BASE.query.ArrayProvider;
     var Queryable = BASE.query.Queryable;
 
-    var _where = function (Type, expression) {
+    var _asQueryable = function (Type) {
         var self = this;
-        if (arguments.length < 2) {
-            Type = Object;
-        }
 
-        var queryable = new Queryable(Type).where(expression);
+        var queryable = new Queryable(Type || Object);
         queryable.provider = self.providerFactory();
         return queryable;
     };
@@ -28,9 +24,11 @@ BASE.require([
             enumerable: false,
             value: _providerFactory
         },
-        "where": {
+        "asQueryable": {
             enumerable: false,
-            value: _where
+            value: _asQueryable
         }
     });
 });
+
+

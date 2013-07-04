@@ -129,16 +129,6 @@
                 return self;
             };
 
-            var _countExpression = expression.count || null;
-            var _count = function (value) {
-                if (_countExpression === null) {
-                    _countExpression = Expression.count();
-                } else {
-                    throw new Error("Cannot call \"count\" twice.");
-                }
-                return self;
-            };
-
             var _orderByExpression = expression.orderBy ? expression.orderBy.children : [];
             var _orderByDesc = function (fn) {
                 _orderByExpression.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
@@ -164,14 +154,38 @@
                 }
             };
 
-            var _count = function () {
-
-            };
-
             var _toArray = function () {
                 /// <summary>Executes the queryable.</summary>
                 /// <returns type="BASE.Future"></returns>
                 return _provider.execute(self);
+            };
+
+            var _count = function () {
+                return _provider.count(self);
+            };
+
+            var _all = function () {
+                return _provider.all(self);
+            };
+
+            var _any = function () {
+                return _provider.any(self);
+            };
+
+            var _firstOrDefault = function () {
+                return _provider.firstOrDefault(self);
+            };
+
+            var _lastOrDefault = function () {
+                return _provider.lastOrDefault(self);
+            };
+
+            var _first = function () {
+                return _provider.first(self);
+            };
+
+            var _last = function () {
+                return _provider.last(self);
             };
 
             var _copy = function () {
@@ -230,6 +244,41 @@
                     configurable: false,
                     value: _skip
                 },
+                all: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _all
+                },
+                any: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _any
+                },
+                first: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _first
+                },
+                last: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _last
+                },
+                firstOrDefault: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _firstOrDefault
+                },
+                lastOrDefault: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _lastOrDefault
+                },
+                count: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _count
+                },
                 orderBy: {
                     enumerable: false,
                     configurable: false,
@@ -244,11 +293,6 @@
                     enumerable: false,
                     configurable: false,
                     value: _toArray
-                },
-                count: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _count
                 },
                 copy: {
                     enumerable: false,
