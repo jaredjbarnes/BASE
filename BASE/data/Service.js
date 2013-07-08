@@ -24,20 +24,6 @@
                 }
             });
 
-            // This method allows for optimized reads of a many to many property.
-            self.readTargetEntities = function (sourceEntity, sourceProperty, queryable) {
-                var PropertyType = queryable.Type;
-                var EntityType = sourceEntity.constructor;
-
-                //Do what you need to here.
-
-            };
-
-            // This method allows reads from a data set with a specific type.
-            self.readEntities = function (Type, queryable) {
-
-            };
-
             // Call this method to create an entity.
             self.createEntity = function (entity) {
                 var Type = entity.constructor;
@@ -52,12 +38,16 @@
                 var Type = entity.constructor;
             };
 
-            self.countEntities = function (Type, filter) {
-                
-            };
-
             // This allows the service to dictate what a dto's class is.
             self.getTypeForDto = function (dto) {
+
+            };
+
+            self.getSetProvider = function (Type) {
+
+            };
+
+            self.getTargetProvider = function (entity, property) {
 
             };
 

@@ -50,7 +50,7 @@
                     if (dataContext) {
                         var dataSet = dataContext.getDataSet(self.constructor);
 
-                        dataSet.where(function (e) {
+                        dataSet.asQueryable().where(function (e) {
                             return e.id.equals(self.id);
                         }).toArray().then(function (entities) {
                             setValue(entities[0]);

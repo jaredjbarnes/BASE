@@ -47,6 +47,7 @@
                     if (typeof entity[key] === "undefined" || key === "constructor") {
                         return;
                     }
+
                     if (entity[key] instanceof BASE.ObservableArray) {
                         //Load meta data to the array object.
                         var array = entity[key];
@@ -56,6 +57,26 @@
                                 value: dto[key][property]
                             });
                         });
+
+                        // We need to set the array up with a type.
+                        // This is a convenience for the developer, so they don't have to say asQueryable(Type).
+                        var oneToMany = dataContext.orm.oneToMany.get(entity.constructor, key);
+                        var manyToMany = dataContext.orm.manyToMany.get(entity.constructor, key);
+                        var manyToManyAsTargets = dataContext.orm.manyToManyAsTargets.get(entity.constructor, key);
+
+                        var TargetType;
+                        if (oneToMany || manyToMany) {
+                            TargetType = oneToMany ? oneToMany.ofType : manyToMany.ofType;
+                        } else if (manyToManyAsTargets) {
+                            TargetType = manyToManyAsTargets.type;
+                        }
+
+                        Object.defineProperty(array, "Type", {
+                            get: function () {
+                                return TargetType;
+                            }
+                        });
+
                     } else if (typeof dto[key] === 'object' && dto[key] !== null) {
                         var Type = dataContext.service.getTypeForDto(dto[key]);
                         var dataSet = dataContext.getDataSet(Type);

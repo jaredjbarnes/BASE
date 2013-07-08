@@ -7,7 +7,8 @@
     "BASE.query.Queryable",
     "BASE.data.EntityChangeTracker",
     "BASE.PropertyChangedEvent",
-    "BASE.query.Provider"
+    "BASE.query.Provider",
+    "BASE.Task"
 ], function () {
 
     BASE.namespace("BASE.data");
@@ -18,6 +19,7 @@
     var PropertyChangedEvent = BASE.PropertyChangedEvent;
     var Hashmap = BASE.Hashmap;
     var Future = BASE.Future;
+    var Task = BASE.Task;
 
     BASE.data.DataSet = (function (Super) {
 
@@ -179,17 +181,16 @@
             };
 
             // This allows users to query the data set with queryables. 
-            self.where = function (expression) {
+            self.asQueryable = function () {
                 var queryable = new Queryable(_Type);
 
-                if (expression) {
-                    queryable.where(expression);
-                }
+                var provider = _dataContext.service.getSetProvider();
+                queryable.provider = provider;
+                var oldExecute = provider.execute;
 
-                queryable.provider = new Provider();
-                queryable.provider.execute = function (queryable) {
+                provider.toArray = provider.execute = function (queryable) {
                     return new Future(function (setValue, setError) {
-                        _dataContext.service.readEntities(queryable.copy()).then(function (dtos) {
+                        oldExecute.call(provider, queryable).then(function (dtos) {
                             var resultEntities = [];
                             dtos.forEach(function (dto) {
                                 // This will load the entity into the context.

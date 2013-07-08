@@ -9,7 +9,8 @@ BASE.require([
     "BASE.ObservableArray",
     "BASE.Future",
     "BASE.Task",
-    "BASE.query.Queryable"
+    "BASE.query.Queryable",
+    "Array.prototype.asQueryable"
 ], function () {
     BASE.namespace("BASE.data");
 

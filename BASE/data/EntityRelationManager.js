@@ -597,15 +597,12 @@
                         // The service provider doesn't need to work until the entity is loaded.
                         if (entity.changeTracker.state === BASE.data.EntityChangeTracker.LOADED) {
 
-                            var provider = new Provider();
-                            provider.execute = function (queryable) {
-
-                                queryable.and(function (e) {
-                                    return e[relationship.withForeignKey].equals(entity.id);
-                                });
-
+                            var provider = _dataContext.service.getTargetProvider(entity, property);
+                            var oldExecute = provider.execute;
+                            provider.toArray = provider.execute = function (queryable) {
                                 return new Future(function (setValue, setError) {
-                                    _dataContext.service.readEntities(queryable.copy()).then(function (dtos) {
+
+                                    oldExecute.call(provider, queryable).then(function (dtos) {
                                         var resultEntities = [];
                                         dtos.forEach(function (dto) {
                                             var dataSet = _dataContext.getDataSet(relationship.ofType);
@@ -623,6 +620,7 @@
                                     }).ifError(function (error) {
                                         setError(error);
                                     });
+
                                 });
 
                             };
@@ -630,6 +628,7 @@
                             // This just grabs the default array provider, until its saved to the database.
                             provider = new ArrayProvider(entity[property]);
                         }
+
                         return provider;
                     };
 
@@ -649,14 +648,15 @@
                         var provider;
                         // The service provider doesn't need to work until the entity is loaded.
                         if (entity.changeTracker.state === BASE.data.EntityChangeTracker.LOADED) {
-                            provider = new Provider();
+                            var provider = _dataContext.service.getTargetProvider(entity, property);
+                            var oldExecute = provider.execute;
 
                             // We override the execute method to customize our provider.
-                            provider.execute = function (queryable) {
+                            provider.toArray = provider.execute = function (queryable) {
 
                                 return new Future(function (setValue, setError) {
 
-                                    _dataContext.service.readTargetEntities(entity, property, queryable.copy()).then(function (dtos) {
+                                    oldExecute.call(provider, queryable).then(function (dtos) {
                                         var resultEntities = [];
                                         dtos.forEach(function (dto) {
                                             var dataSet = _dataContext.getDataSet(relationship.ofType);
@@ -731,14 +731,15 @@
                     var relationship = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor, property);
 
                     factory = function () {
-                        var provider = new Provider();
-                        provider.execute = function (queryable) {
+                        var provider = _dataContext.service.getTargetProvider(entity, property);
+                        var oldExecute = provider.execute;
+                        provider.toArray = provider.execute = function (queryable) {
                             return new Future(function (setValue, setError) {
 
-                                _dataContext.service.readTargetEntities(entity, property, queryable).then(function (dtos) {
+                                oldExecute.call(provider, queryable).then(function (dtos) {
                                     var resultEntities = [];
                                     dtos.forEach(function (dto) {
-                                        var dataSet = _dataContext.getDataSet(relationship.Type);
+                                        var dataSet = _dataContext.getDataSet(relationship.type);
                                         var source = dataSet.load(dto);
 
                                         // Add the source to what we send back to the user that asked.
@@ -774,6 +775,7 @@
                             });
 
                         };
+
                         return provider;
                     };
 

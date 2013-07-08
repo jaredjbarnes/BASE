@@ -19,15 +19,22 @@
 
             Super.call(self);
 
-            var _Type = null;
+            var _Type = Type || Object;
             Object.defineProperty(self, "Type", {
+                enumerable: false,
                 get: function () {
-                    return Type;
+                    return _Type;
+                },
+                set: function (value) {
+                    if (value !== _Type) {
+                        _Type = value;
+                    }
                 }
             });
 
             var _provider = null;
             Object.defineProperty(self, "provider", {
+                enumerable: false,
                 get: function () {
                     return _provider;
                 },
@@ -41,6 +48,7 @@
 
             var _whereExpression = expression.where || null;
             Object.defineProperty(self, "expression", {
+                enumerable: false,
                 get: function () {
                     return {
                         where: _whereExpression,
@@ -164,28 +172,47 @@
                 return _provider.count(self);
             };
 
-            var _all = function () {
-                return _provider.all(self);
+            var _all = function (func) {
+                return _provider.all(self, func);
             };
 
-            var _any = function () {
-                return _provider.any(self);
+            var _any = function (func) {
+                return _provider.any(self, func);
             };
 
-            var _firstOrDefault = function () {
-                return _provider.firstOrDefault(self);
+            var _firstOrDefault = function (func) {
+                return _provider.firstOrDefault(self, func);
             };
 
-            var _lastOrDefault = function () {
-                return _provider.lastOrDefault(self);
+            var _lastOrDefault = function (func) {
+                return _provider.lastOrDefault(self, func);
             };
 
-            var _first = function () {
-                return _provider.first(self);
+            var _first = function (func) {
+                return _provider.first(self, func);
             };
 
-            var _last = function () {
-                return _provider.last(self);
+            var _last = function (func) {
+                return _provider.last(self, func);
+            };
+
+            var _select = function (forEachFunc) {
+                return _provider.select(self, forEachFunc);
+            };
+
+            var _contains = function (item) {
+                return _provider.contains(self, item);
+            };
+
+            var _include = function () {
+                return _provider.include(self, item);
+            };
+
+            var _intersects = function (compareToQueryable) {
+                if (compareToQueryable instanceof Array) {
+                    compareToQueryable = compareToQueryable.asQueryable();
+                }
+                return _provider.intersects(self, compareToQueryable);
             };
 
             var _copy = function () {
@@ -278,6 +305,21 @@
                     enumerable: false,
                     configurable: false,
                     value: _count
+                },
+                select: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _select
+                },
+                contains: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _contains
+                },
+                intersects: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _intersects
                 },
                 orderBy: {
                     enumerable: false,

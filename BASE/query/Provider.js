@@ -1,7 +1,15 @@
 ﻿BASE.require([
-    "BASE.Future"
+    "BASE.Future",
+    "BASE.query.ExpressionBuilder",
+    "BASE.query.ArrayQueryBuilder",
+    "BASE.query.ExpressionParser",
 ], function () {
     BASE.namespace("BASE.query");
+
+    var Future = BASE.Future;
+    var ExpressionBuilder = BASE.query.ExpressionBuilder;
+    var ArrayQueryBuilder = BASE.query.ArrayQueryBuilder;
+    var ExpressionParser = BASE.query.ExpressionParser;
 
     BASE.query.Provider = (function (Super) {
         var Provider = function () {
@@ -12,59 +20,189 @@
 
             Super.call(self);
 
-            self.count = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setValue(0);
-                    }, 0);
+            self.count = function (queryable) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        setValue(array.length);
+                    });
                 });
             };
 
-            self.any = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setValue(false);
-                    }, 0);
+            self.any = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        if (results.length > 0) {
+                            setValue(true);
+                        } else {
+                            setValue(false);
+                        }
+
+                    });
                 });
             };
 
-            self.all = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setValue(true);
-                    }, 0);
+            self.all = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        setValue(results.length === array.length);
+                    });
                 });
             };
 
-            self.firstOrDefault = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setValue(null);
-                    }, 0);
+            self.firstOrDefault = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        setValue(results[0] || null);
+                    });
                 });
             };
 
-            self.lastOrDefault = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setValue(null);
-                    }, 0);
+            self.lastOrDefault = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        setValue(results[results.length - 1] || null);
+                    });
                 });
             };
 
-            self.first = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setError(Error("Out of range error."));
-                    }, 0);
+            self.first = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        var result = results[0];
+
+                        if (result) {
+                            setValue(result);
+                        } else {
+                            setError(new Error("Couldn't find a match."));
+                        }
+                    });
                 });
             };
 
-            self.last = function () {
-                return new BASE.Future(function (setValue, setError) {
-                    setTimeout(function () {
-                        setError(Error("Out of range error."));
-                    }, 0);
+            self.last = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        var result = results[results.length - 1];
+
+                        if (result) {
+                            setValue(result);
+                        } else {
+                            setError(new Error("Couldn't find a match."));
+                        }
+                    });
+                });
+            };
+
+            self.contains = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var builder = new ArrayQueryBuilder(array);
+                        var parser = new ExpressionParser(builder);
+                        var results;
+
+                        if (typeof func === "function") {
+                            results = parser.parse(func.call(queryable, new ExpressionBuilder(queryable.Type)));
+                        } else {
+                            results = array;
+                        }
+
+                        setValue(results > 0);
+                    });
+                });
+            };
+
+            self.select = function (queryable, forEachFunc) {
+                return new Future(function (setValue, setError) {
+                    self.toArray(queryable).then(function (array) {
+                        var objects = [];
+
+                        array.forEach(function (item) {
+                            objects.push(forEachFunc(item));
+                        });
+
+                        setValue(objects);
+                    });
+                });
+            };
+
+            self.intersects = function (queryable, compareToQueryable) {
+                return new Future(function (setValue, setError) {
+                    var task = new BASE.Task();
+                    task.add(self.toArray(queryable));
+                    task.add(compareToQueryable.toArray());
+                    task.start().whenAll(function (futures) {
+                        var intersects = [];
+                        var array1 = futures[0].value;
+                        var array2 = futures[1].value;
+
+                        array1.forEach(function (item) {
+                            if (array2.indexOf(item) > -1) {
+                                intersects.push(item);
+                            }
+                        });
+
+                        setValue(intersects);
+                    });
                 });
             };
 

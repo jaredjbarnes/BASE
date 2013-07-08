@@ -7,7 +7,7 @@
 
     var _asQueryable = function (Type) {
         var self = this;
-
+        Type = Type || self.Type;
         var queryable = new Queryable(Type || Object);
         queryable.provider = self.providerFactory();
         return queryable;

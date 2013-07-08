@@ -71,6 +71,13 @@
                     var property = relationship.hasMany;
 
                     var array = entity[property];
+
+                    Object.defineProperty(array, "Type", {
+                        get: function () {
+                            return relationship.ofType;
+                        }
+                    });
+
                     array.notify({ oldItems: [], newItems: array.slice(0) });
                 });
 
@@ -81,6 +88,12 @@
                     var property = relationship.hasMany;
 
                     var array = entity[property];
+                    Object.defineProperty(array, "Type", {
+                        get: function () {
+                            return relationship.ofType;
+                        }
+                    });
+
                     array.notify({ oldItems: [], newItems: array.slice(0) });
                 });
 
@@ -113,6 +126,12 @@
                     var property = relationship.withMany;
 
                     var array = entity[property];
+                    Object.defineProperty(array, "Type", {
+                        get: function () {
+                            return relationship.type;
+                        }
+                    });
+
                     array.notify({ oldItems: [], newItems: array.slice(0) });
                 });
             };

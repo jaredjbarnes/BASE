@@ -3,7 +3,8 @@
     "BASE.query.ArrayQueryBuilder",
     "BASE.query.Queryable",
     "BASE.query.ExpressionParser",
-    "BASE.Future"
+    "BASE.Future",
+    "BASE.Task"
 ], function () {
     BASE.namespace("LEAVITT.query");
 
@@ -21,73 +22,6 @@
             }
 
             Super.call(self, array);
-
-            self.count = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (array) {
-                        setValue(array.length);
-                    });
-                });
-            };
-
-            self.any = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (array) {
-                        setValue(array.length > 0);
-                    });
-                });
-            };
-
-            self.all = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (result) {
-                        setValue(array.length === result.length);
-                    });
-                });
-            };
-
-            self.firstOrDefault = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (array) {
-                        setValue(array[0] || null);
-                    });
-                });
-            };
-
-            self.lastOrDefault = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (array) {
-                        setValue(array[array.length - 1] || null);
-                    });
-                });
-            };
-
-            self.last = function (queryable) {
-                return new Future(function (setValue, setError) {
-                    self.toArray(queryable).then(function (array) {
-                        if (array.length === 0) {
-                            setError(Error("Out of range error."));
-                        }
-
-                        setValue(array[array.length - 1]);
-                    });
-                });
-
-            };
-
-            self.first = function (queryable) {
-                return new Future(function (setValue, setError) {
-
-                    self.toArray(queryable).then(function (array) {
-                        if (array.length === 0) {
-                            setError(Error("Out of range error."));
-                        }
-
-                        setValue(array[0]);
-                    });
-
-                });
-            };
 
             self.toArray = function (queryable) {
                 var self = this;

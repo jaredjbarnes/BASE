@@ -208,7 +208,7 @@
 
         Object.defineProperty(Future, "fromResult", {
             enumerable: false,
-            value: _asResult
+            value: _fromResult
         });
 
         return Future;
