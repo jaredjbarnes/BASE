@@ -119,6 +119,8 @@
             return Expression["undefined"](Expression.constant(value));
         } else if (Array.isArray(value)) {
             returnExpression.array(Expression.constant(value));
+        } else if (value instanceof Date) {
+            return Expression.date(Expression.constant(value));
         } else {
             return Expression.object(Expression.constant(value));
         }
@@ -293,6 +295,14 @@
 
     Expression.object = function () {
         var expression = new OperationExpression("object");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
+    };
+
+    Expression.date = function () {
+        var expression = new OperationExpression("date");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });

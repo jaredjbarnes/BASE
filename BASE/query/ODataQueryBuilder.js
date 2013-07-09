@@ -128,6 +128,10 @@
             return "undefined";
         };
 
+        ODataQueryBuilder.prototype["date"] = function (value) {
+            return "DateTime'" + JSON.stringify(value) + "'";
+        };
+
         ODataQueryBuilder.prototype["string"] = function (value) {
             return "'" + value.replace("'", "''") + "'";
         };

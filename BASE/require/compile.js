@@ -1,4 +1,36 @@
-﻿BASE.require(["jQuery", "Array.prototype.forEach", "Object.keys", "BASE.Synchronizer"], function () {
+﻿BASE.require([
+    "BASE.Future",
+    "BASE.Task"
+], function () {
+    var GET = function (url, settings) {
+        settings = settings || {};
+        settings.headers = settings.headers || {};
+
+        return new BASE.Future(function (setValue, setError) {
+
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function (event) {
+                if (xhr.readyState == 4) {
+                    if (xhr.status < 300 && xhr.status >= 200) {
+                        setValue(xhr.responseText);
+                    } else {
+                        var error = new Error(status);
+                        error.xhr = xhr;
+                        error.message = "Error";
+                        setError(error);
+                    }
+                }
+            }
+
+            xhr.open("GET", url, true);
+            Object.keys(settings.headers).forEach(function (key) {
+                xhr.setRequestHeader(key, settings.headers[key]);
+            });
+
+            xhr.send(settings.data);
+        });
+    };
+
 
     BASE.require.compile = function () {
         ///<summary>
@@ -8,30 +40,23 @@
         ///Returns undefined, and open a new tab with the compiled file.
         ///</returns>
         var dependencies = BASE.require.dependencyList;
-        var compilationHash = {};
-        var synchronizer = new BASE.Synchronizer();
+        var task = new BASE.Task();
 
         dependencies.forEach(function (namespace) {
-            if (namespace !== "BASE.require.compile") {
-                synchronizer.add(function (callback) {
-                    $.ajax({
-                        url: BASE.require.getPath(namespace),
-                        type: "GET",
-                        dataType: "text",
-                        complete: function (xhr) {
-                            var data = xhr.responseText;
-                            compilationHash[namespace] = "/*FILE: " + namespace + " START*/\n" + data + "\n/*FILE: " + namespace + " END*/\n";
-                            callback();
-                        }
-                    });
-                });
+            if (namespace !== "BASE.require.compile" &&
+                namespace !== "Object" &&
+                namespace !== "Function" &&
+                namespace !== "Date" &&
+                namespace !== "Number" &&
+                namespace !== "Array") {
+                task.add(GET(BASE.require.getPath(namespace)));
             }
         });
 
-        synchronizer.start(function () {
+        task.start().whenAll(function (futures) {
             var compilation = [];
-            dependencies.forEach(function (namespace) {
-                compilation.push(compilationHash[namespace]);
+            futures.forEach(function (future) {
+                compilation.push(future.value);
             });
             var encoded = encodeURI(compilation.join("\n"));
             location.href = "data:application/javascript;charset=utf-8," + encoded;

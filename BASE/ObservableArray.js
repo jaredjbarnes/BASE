@@ -122,11 +122,6 @@ BASE.require(["BASE.Future"], function () {
             this.splice(index, 1);
         }
     };
-    BASE.ObservableArray.prototype.load = function () {
-        return new BASE.Future(function (setValue, setError) {
-            setValue([]);
-        });
-    };
 
     BASE.ObservableArray.fromArray = function (array) {
         var observableArray = new BASE.ObservableArray();

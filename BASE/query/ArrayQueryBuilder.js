@@ -59,7 +59,7 @@
 
             Super.call(self);
 
-            var filteredArray = sourceArray;
+            var filteredArray = sourceArray.slice(0);
 
             var _value = null;
             Object.defineProperty(self, "value", {
@@ -235,6 +235,10 @@
                 return value;
             };
 
+            var _date = function (value) {
+                return value;
+            };
+
             var _function = function (value) {
                 return value;
             };
@@ -381,6 +385,7 @@
                 "undefined": { enumerable: false, configurable: false, value: _undefined },
                 "number": { enumerable: false, configurable: false, value: _number },
                 "object": { enumerable: false, configurable: false, value: _object },
+                "date": { enumerable: false, configurable: false, value: _date },
                 "function": { enumerable: false, configurable: false, value: _function },
                 "boolean": { enumerable: false, configurable: false, value: _boolean },
                 "array": { enumerable: false, configurable: false, value: _array },

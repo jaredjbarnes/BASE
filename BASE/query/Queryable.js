@@ -215,6 +215,12 @@
                 return _provider.intersects(self, compareToQueryable);
             };
 
+            var _ofType = function (Type) {
+                var queryable = new Queryable(Type);
+                queryable.provider = _provider;
+                return queryable;
+            };
+
             var _copy = function () {
                 var queryable = new Queryable(Type, self.expression);
                 return queryable;
@@ -335,6 +341,11 @@
                     enumerable: false,
                     configurable: false,
                     value: _toArray
+                },
+                ofType: {
+                    enumerable: false,
+                    configurable: false,
+                    value: _ofType
                 },
                 copy: {
                     enumerable: false,

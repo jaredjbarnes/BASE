@@ -318,8 +318,8 @@ if (!window.BASE) {
             var paths = options.paths;
             var files = options.files;
             var concat = function () {
-                var result = "";
-                for (var x = 0 ; x < arguments.length; x++) {
+                var result = arguments[0];
+                for (var x = 1 ; x < arguments.length; x++) {
                     result += "/" + arguments[x];
                 }
                 return result.replace(/\/+/g, '/');
@@ -381,6 +381,12 @@ if (!window.BASE) {
             self.setPath = function (namespace, path) {
                 if (namespace && path) {
                     var finalPath = path;
+
+                    if (path.indexOf("../") >= 0) {
+                        paths[namespace] = finalPath.replace(/\/+/g, '/');
+                        return;
+                    }
+
                     if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
                         finalPath = finalPath.lastIndexOf("/") === finalPath.length - 1 ? finalPath.substr(0, finalPath.length - 1) : finalPath;
                         paths[namespace] = finalPath;
