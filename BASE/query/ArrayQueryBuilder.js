@@ -350,7 +350,7 @@
             var _skip = function (value) {
                 var self = this;
 
-                for (var x = 0 ; x < value && self.localArray.length > 0; x++) {
+                for (var x = 0 ; x < value && filteredArray.length > 0; x++) {
                     filteredArray.shift();
                 }
                 return filteredArray;
