@@ -3,6 +3,8 @@
     "BASE.query.Expression"], function () {
         BASE.namespace("BASE.query");
 
+        var Expression = BASE.query.Expression;
+
         BASE.query.ExpressionBuilder = (function (Super) {
             var ExpressionBuilder = function (Type, namespace) {
                 var self = this;
@@ -13,7 +15,6 @@
                 Super.call(self);
                 namespace = namespace || "";
 
-                var Expression = BASE.query.Expression;
 
                 var findExpressionType = Expression.getExpressionType;
 
@@ -104,6 +105,27 @@
             };
 
             BASE.extend(ExpressionBuilder, Super);
+
+            var _and = function () {
+                return Expression.and.apply(Expression, arguments);
+            }
+
+            var _or = function () {
+                return Expression.or.apply(Expression, arguments);
+            }
+
+            Object.defineProperties(ExpressionBuilder, {
+                "and": {
+                    enumerable: false,
+                    configurable: false,
+                    value: _and
+                },
+                "or": {
+                    enumerable: false,
+                    configurable: false,
+                    value: _or
+                }
+            });
 
             return ExpressionBuilder;
         }(BASE.Observable));

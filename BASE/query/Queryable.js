@@ -61,7 +61,7 @@
 
             var _where = function (fn) {
                 fn = fn || function () { };
-                var expression = fn.call(self, new ExpressionBuilder(Type));
+                var expression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
 
                 if (!(expression instanceof Expression)) {
                     return self;
@@ -82,7 +82,7 @@
                     rightExpression = Expression.or.apply(Expression, arguments);
                 } else {
                     fn = fn || function () { };
-                    rightExpression = fn.call(self, new ExpressionBuilder(Type));
+                    rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
                 }
 
                 if (_whereExpression) {
@@ -102,7 +102,7 @@
                     rightExpression = Expression.and.apply(Expression, arguments);
                 } else {
                     fn = fn || function () { };
-                    rightExpression = fn.call(self, new ExpressionBuilder(Type));
+                    rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
                 }
 
                 if (_whereExpression) {
