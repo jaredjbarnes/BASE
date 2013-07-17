@@ -72,6 +72,7 @@
                         }
 
                         Object.defineProperty(array, "Type", {
+                            configurable: true,
                             get: function () {
                                 return TargetType;
                             }

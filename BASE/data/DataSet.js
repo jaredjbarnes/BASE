@@ -140,6 +140,8 @@
                 if (entity instanceof _Type) {
                     // Try to get the result from both hashes.
                     return _addedEntities.get(entity) || _loadedEntities.get(entity.id);
+                } else if (typeof entity.id !== "undefined") {
+                    return _loadedEntities.get(entity.id);
                 }
             };
 
@@ -211,17 +213,23 @@
                 return queryable;
             };
 
-            self.onChange = function (callback) {
-                var self = this;
-                self.observe(callback, "changed");
-            };
-
             // TODO: Change the count method to be called on the queryable.
             // This needs to be moved to the queryable.
             self.count = function (expression) {
                 return _dataContext.service.countEntities(_Type, new BASE.query.Queryable(_Type).where(expression));
             }
 
+
+            var superObserve = self.observe;
+            var superUnobserve = self.unobserve;
+
+            self.observe = function (callback) {
+                superObserve.call(self, callback, "change");
+            };
+
+            self.unobserve = function (callback) {
+                superUnobserve.call(self, callback, "change");
+            };
         }
 
         BASE.extend(DataSet, Super);

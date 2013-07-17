@@ -164,6 +164,10 @@
             var _state = _defaultState;
 
             self.then = function (callback) {
+                ///<summary>callback = function(result){
+                /// <br />
+                ///}</summary>
+                /// <returns type="BASE.Future" ></returns>
                 callback = callback || function () { };
                 _state.observeSuccess(callback);
                 _state.request();

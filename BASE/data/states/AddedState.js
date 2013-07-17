@@ -73,6 +73,7 @@
                     var array = entity[property];
 
                     Object.defineProperty(array, "Type", {
+                        configurable: true,
                         get: function () {
                             return relationship.ofType;
                         }
@@ -89,6 +90,7 @@
 
                     var array = entity[property];
                     Object.defineProperty(array, "Type", {
+                        configurable: true,
                         get: function () {
                             return relationship.ofType;
                         }
@@ -127,6 +129,7 @@
 
                     var array = entity[property];
                     Object.defineProperty(array, "Type", {
+                        configurable: true,
                         get: function () {
                             return relationship.type;
                         }

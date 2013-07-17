@@ -81,6 +81,12 @@
                 return copy;
             };
 
+            self.clear = function () {
+                self.getKeys().forEach(function (key) {
+                    self.remove(key);
+                });
+            };
+
             self.getKeys = function () {
                 return nestedHash.getKeys();
             };

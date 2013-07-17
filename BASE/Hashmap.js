@@ -22,6 +22,8 @@
                 return new Hashmap();
             }
             var hash = Object.create(null);
+            // This allows us to pull the keys back as Objects on getKeys();
+            var keyToObjectKey = Object.create(null);
 
             self.add = function (key, object) {
 
@@ -30,6 +32,7 @@
                 }
 
                 if (typeof key === "string" || typeof key === "number") {
+                    keyToObjectKey[key] = key;
                     hash[key] = object;
                     return;
                 }
@@ -38,6 +41,7 @@
                     key._hash = GUID();
                 }
 
+                keyToObjectKey[key._hash] = key;
                 hash[key._hash] = object;
             };
 
@@ -66,11 +70,13 @@
                 if (typeof key === "string" || typeof key === "number") {
                     value = hash[key];
                     delete hash[key];
+                    delete keyToObjectKey[key];
                     return value || null;
                 }
                 if (key._hash && hash[key._hash]) {
                     value = hash[key._hash];
                     delete hash[key._hash];
+                    delete keyToObjectKey[key._hash];
                     return value;
                 }
 
@@ -99,7 +105,12 @@
 
 
             self.getKeys = function () {
-                return Object.keys(hash);
+                var keys = [];
+                Object.keys(hash).forEach(function (key) {
+                    keys.push(keyToObjectKey[key]);
+                });
+
+                return keys;
             };
 
             self.copy = function () {

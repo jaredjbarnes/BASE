@@ -163,7 +163,7 @@
             };
 
             var _toArray = function () {
-                /// <summary>Executes the queryable.</summary>
+                /// <summary>Executes the queryable on the provider.</summary>
                 /// <returns type="BASE.Future"></returns>
                 return _provider.execute(self);
             };

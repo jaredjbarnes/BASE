@@ -121,6 +121,7 @@
                 } else {
                     throw new Error("Cannot add to a task when it has already finished.");
                 }
+                return self;
             };
 
             var _notify = function (future) {

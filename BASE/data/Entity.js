@@ -44,6 +44,15 @@
                 }
             });
 
+            self.save = function () {
+                dataContext = self.changeTracker.dataContext;
+                if (dataContext) {
+                   return dataContext.save(self);
+                } else {
+                    throw new Error("Entity isn't part of a context.");
+                }
+            };
+
             self.load = function () {
                 return new BASE.Future(function (setValue, setError) {
                     var dataContext = self.changeTracker.dataContext;
