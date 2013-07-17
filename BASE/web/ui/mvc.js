@@ -42,10 +42,13 @@ BASE.require([
 
                 var behaviorsFuture = new BASE.Future(function (setValue, setError) {
                     var Behaviors = [];
-                    behaviorNamespaces.forEach(function (namespace) {
-                        Behaviors.push(BASE.getObject(namespace));
+
+                    BASE.require(behaviorNamespaces, function () {
+                        behaviorNamespaces.forEach(function (namespace) {
+                            Behaviors.push(BASE.getObject(namespace));
+                        });
+                        setValue(Behaviors);
                     });
-                    setValue(Behaviors);
                 });
 
                 var controllerMarkupFuture = new BASE.Future(function (setValue, setError) {
