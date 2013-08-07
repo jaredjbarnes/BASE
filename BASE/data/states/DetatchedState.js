@@ -1,6 +1,6 @@
 ﻿BASE.require([
     "BASE.data.states.AbstractState",
-    "BASE.PropertyChangedEvent"
+    "BASE.util.PropertyChangedEvent"
 ], function () {
     BASE.namespace("BASE.data.states");
 

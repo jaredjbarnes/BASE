@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable"], function () {
+﻿BASE.require(["BASE.util.Observable"], function () {
     BASE.namespace("BASE.query");
 
     BASE.query.Expression = (function (Super) {
@@ -26,7 +26,7 @@
         BASE.extend(Expression, Super);
 
         return Expression;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 
     var Expression = BASE.query.Expression;
 

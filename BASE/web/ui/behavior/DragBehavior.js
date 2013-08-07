@@ -1,6 +1,6 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.PropertyChangedEvent",
+    "BASE.util.Observable",
+    "BASE.util.PropertyChangedEvent",
     "BASE.web.MouseDragManager"
 ], function () {
     BASE.namespace("BASE.web.ui.behavior");
@@ -50,5 +50,5 @@
         BASE.extend(DragBehavior, Super);
 
         return DragBehavior;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

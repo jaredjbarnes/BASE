@@ -19,6 +19,10 @@
                 }
             });
 
+            self.toString = function () {
+                return self.message;
+            };
+
             return self;
         };
 

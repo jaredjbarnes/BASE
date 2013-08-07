@@ -1,8 +1,8 @@
 ﻿BASE.require([
     "jQuery",
     "jQuery.fn.region",
-    "BASE.Observable",
-    "BASE.ObservableEvent"
+    "BASE.util.Observable",
+    "BASE.util.ObservableEvent"
 ], function () {
     BASE.namespace("BASE.web");
 
@@ -27,7 +27,7 @@
 
         BASE.extend(MouseEvent, _Super);
         return MouseEvent;
-    })(BASE.ObservableEvent);
+    })(BASE.util.ObservableEvent);
 
 
     BASE.web.MouseDragManager = (function (_Super) {
@@ -95,5 +95,5 @@
         BASE.extend(MouseDragManager, _Super);
 
         return MouseDragManager;
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 });

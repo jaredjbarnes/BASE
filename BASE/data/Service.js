@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.query.Provider"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.query.Provider"], function () {
     BASE.namespace("BASE.data");
 
     BASE.data.Service = (function (Super) {
@@ -19,7 +19,7 @@
                     var oldValue = _relationships;
                     if (value !== _relationships) {
                         _relationships = value;
-                        self.notify(new BASE.PropertyChangedEvent("relationships", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("relationships", oldValue, value));
                     }
                 }
             });
@@ -53,7 +53,7 @@
 
             // This will be called by the developer who wants to begin using the service.
             self.logIn = function (username, factors) {
-                return new BASE.Future(function (setValue) {
+                return new BASE.async.Future(function (setValue) {
                     setTimeout(function () {
                         setValue({ message: "Logged In!" });
                     }, 0);
@@ -66,5 +66,5 @@
         BASE.extend(Service, Super);
 
         return Service;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

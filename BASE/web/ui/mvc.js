@@ -1,7 +1,7 @@
 BASE.require([
     "jQuery",
-    "BASE.Future",
-    "BASE.Task",
+    "BASE.async.Future",
+    "BASE.async.Task",
     "jQuery.loadFile"
 ], function () {
 
@@ -9,7 +9,7 @@ BASE.require([
 
     var asyncWalkTheDom = function (elem, callback) {
         callback = callback || function () { };
-        var task = new BASE.Task();
+        var task = new BASE.async.Task();
 
         var walkTheDom = function ($elem) {
             var $children = $elem.children();
@@ -23,24 +23,24 @@ BASE.require([
             var behaviorAttribute = $elem.data("behaviors");
             var behaviorNamespaces = behaviorAttribute ? behaviorAttribute.split("|") : [];
             var viewUrl = $elem.data("load-view");
-            var innerTask = new BASE.Task();
+            var innerTask = new BASE.async.Task();
 
             if (viewNamespace || controllerNamespace || controllerUrl || viewUrl) {
-                var viewFuture = new BASE.Future(function (setValue, setError) {
+                var viewFuture = new BASE.async.Future(function (setValue, setError) {
                     BASE.require([viewNamespace], function () {
                         var View = BASE.getObject(viewNamespace);
                         setValue(View);
                     });
                 });
 
-                var controllerFuture = new BASE.Future(function (setValue, setError) {
+                var controllerFuture = new BASE.async.Future(function (setValue, setError) {
                     BASE.require([controllerNamespace], function () {
                         var Controller = BASE.getObject(controllerNamespace);
                         setValue(Controller);
                     });
                 });
 
-                var behaviorsFuture = new BASE.Future(function (setValue, setError) {
+                var behaviorsFuture = new BASE.async.Future(function (setValue, setError) {
                     var Behaviors = [];
 
                     BASE.require(behaviorNamespaces, function () {
@@ -51,7 +51,7 @@ BASE.require([
                     });
                 });
 
-                var controllerMarkupFuture = new BASE.Future(function (setValue, setError) {
+                var controllerMarkupFuture = new BASE.async.Future(function (setValue, setError) {
                     if (controllerUrl) {
                         jQuery.loadFile(controllerUrl, {
                             success: function (html) {
@@ -80,7 +80,7 @@ BASE.require([
                     }
                 });
 
-                var viewMarkupFuture = new BASE.Future(function (setValue, setError) {
+                var viewMarkupFuture = new BASE.async.Future(function (setValue, setError) {
                     if (viewUrl && !controllerUrl) {
                         jQuery.loadFile(viewUrl, {
                             success: function (html) {
@@ -109,7 +109,7 @@ BASE.require([
                     }
                 });
 
-                var allFuture = new BASE.Future(function (setValue, setError) {
+                var allFuture = new BASE.async.Future(function (setValue, setError) {
 
                     innerTask.add(viewFuture,
                     controllerFuture,

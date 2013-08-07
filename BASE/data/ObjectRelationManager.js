@@ -1,14 +1,14 @@
 ﻿BASE.require([
-    "BASE.MultiKeyMap",
-    "BASE.Hashmap",
-    "BASE.ObservableEvent",
-    "BASE.Observable",
+    "BASE.collections.MultiKeyMap",
+    "BASE.collections.Hashmap",
+    "BASE.util.ObservableEvent",
+    "BASE.util.Observable",
     "BASE.data.inflection"
 ], function () {
     BASE.namespace("BASE.data");
 
     var inflection = BASE.data.inflection;
-    var Hashmap = BASE.Hashmap;
+    var Hashmap = BASE.collections.Hashmap;
 
     var capitalizeFirstLetter = function (word) {
         return word.substr(0, 1).toUpperCase() + word.substr(1);
@@ -26,17 +26,17 @@
             Super.call(self);
 
             // We store all the relationships in these maps.
-            var _oneToOneRelationships = new BASE.MultiKeyMap();
-            var _oneToManyRelationships = new BASE.MultiKeyMap();
-            var _manyToManyRelationships = new BASE.MultiKeyMap();
+            var _oneToOneRelationships = new BASE.collections.MultiKeyMap();
+            var _oneToManyRelationships = new BASE.collections.MultiKeyMap();
+            var _manyToManyRelationships = new BASE.collections.MultiKeyMap();
 
             // We store all the relationships here from the perspective of the targets.
-            var _oneToOneTargetRelationships = new BASE.MultiKeyMap();
-            var _oneToManyTargetRelationships = new BASE.MultiKeyMap();
-            var _manyToManyTargetRelationships = new BASE.MultiKeyMap();
+            var _oneToOneTargetRelationships = new BASE.collections.MultiKeyMap();
+            var _oneToManyTargetRelationships = new BASE.collections.MultiKeyMap();
+            var _manyToManyTargetRelationships = new BASE.collections.MultiKeyMap();
 
             // We store the dependency properties of a Type in this map.
-            var _dependsOn = new BASE.MultiKeyMap();
+            var _dependsOn = new BASE.collections.MultiKeyMap();
 
             (function (relationships) {
                 var oneToOne = relationships.oneToOne || [];
@@ -182,7 +182,7 @@
         BASE.extend(ObjectRelationManager, Super);
 
         return ObjectRelationManager;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });
 
 /*

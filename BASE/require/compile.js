@@ -1,12 +1,12 @@
 ﻿BASE.require([
-    "BASE.Future",
-    "BASE.Task"
+    "BASE.async.Future",
+    "BASE.async.Task"
 ], function () {
     var GET = function (url, settings) {
         settings = settings || {};
         settings.headers = settings.headers || {};
 
-        return new BASE.Future(function (setValue, setError) {
+        return new BASE.async.Future(function (setValue, setError) {
 
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function (event) {
@@ -40,7 +40,7 @@
         ///Returns undefined, and open a new tab with the compiled file.
         ///</returns>
         var dependencies = BASE.require.dependencyList;
-        var task = new BASE.Task();
+        var task = new BASE.async.Task();
 
         dependencies.forEach(function (namespace) {
             if (namespace !== "BASE.require.compile" &&

@@ -4,7 +4,7 @@
     BASE.namespace("BASE.data");
 
     BASE.data.ErrorResponse = (function (Super) {
-        var ErrorResponse = function (message, error) {
+        var ErrorResponse = function (message) {
             var self = this;
             if (!(self instanceof arguments.callee)) {
                 return new ErrorResponse(message);
@@ -12,12 +12,7 @@
 
             Super.call(self, message);
 
-            var _error = error;
-            Object.defineProperty(self, "error", {
-                get: function () {
-                    return _error;
-                }
-            });
+            self.throw = function (dataContext) { };
 
             return self;
         };

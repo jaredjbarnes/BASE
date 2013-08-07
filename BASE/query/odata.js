@@ -1,6 +1,6 @@
 ﻿BASE.require([
-    "BASE.Future",
-    "BASE.Task",
+    "BASE.async.Future",
+    "BASE.async.Task",
     "BASE.query.ExpressionParser",
     "BASE.query.ExpressionBuilder",
     "BASE.query.ODataQueryBuilder",
@@ -11,8 +11,8 @@
     var ExpressionBuilder = BASE.query.ExpressionBuilder;
     var ExpressionParser = BASE.query.ExpressionParser;
     var ODataQueryBuilder = BASE.query.ODataQueryBuilder;
-    var Future = BASE.Future;
-    var Task = BASE.Task;
+    var Future = BASE.async.Future;
+    var Task = BASE.async.Task;
 
     BASE.query.odata = {
         toString: function (queryable) {

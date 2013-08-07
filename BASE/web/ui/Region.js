@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.ObservableEvent", "BASE.PropertyChangedEvent"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.util.ObservableEvent", "BASE.util.PropertyChangedEvent"], function () {
     BASE.namespace("BASE.web.ui");
 
     BASE.web.ui.Region = (function (_Super) {
@@ -35,27 +35,27 @@
                 if (typeof val === "number" && self.bottom >= val) {
                     var oldValue = self.top;
                     self.setRegion(val, self.right, self.bottom, self.left);
-                    self.notify(new BASE.PropertyChangedEvent("top", oldValue, val));
-                    self.notify(new BASE.PropertyChangedEvent("y", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("top", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("y", oldValue, val));
                 }
             };
             self.setRight = function (val) {
                 if (typeof val === "number" && val >= self.left) {
                     self.setRegion(self.top, val, self.bottom, self.left);
-                    self.notify(new BASE.PropertyChangedEvent("right", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("right", oldValue, val));
                 }
             };
             self.setBottom = function (val) {
                 if (typeof val === "number" && val >= self.top) {
                     self.setRegion(self.top, self.right, val, self.left);
-                    self.notify(new BASE.PropertyChangedEvent("bottom", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("bottom", oldValue, val));
                 }
             };
             self.setLeft = function (val) {
                 if (typeof val === "number" && self.right >= val) {
                     self.setRegion(self.top, self.right, self.bottom, val);
-                    self.notify(new BASE.PropertyChangedEvent("left", oldValue, val));
-                    self.notify(new BASE.PropertyChangedEvent("x", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("left", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("x", oldValue, val));
                 }
             };
             self.setX = self.setLeft;
@@ -63,13 +63,13 @@
             self.setWidth = function (val) {
                 if (typeof val === "number" && val >= 0) {
                     self.setRegion(self.top, self.left + val, self.bottom, self.left);
-                    self.notify(new BASE.PropertyChangedEvent("width", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("width", oldValue, val));
                 }
             };
             self.setHeight = function (val) {
                 if (typeof val === "number" && val >= 0) {
                     self.setRegion(self.top, self.right, self.top + val, self.left);
-                    self.notify(new BASE.PropertyChangedEvent("height", oldValue, val));
+                    self.notify(new BASE.util.PropertyChangedEvent("height", oldValue, val));
                 }
             };
             self.setRegionTo = function (region) {
@@ -81,14 +81,14 @@
                 var oldHeightValue = self.height;
 
                 self.setRegion(region.top, region.right, region.bottom, region.left);
-                if (region.top !== oldTopValue) self.notify(new BASE.PropertyChangedEvent("top", oldTopValue, region.top));
-                if (region.left !== oldLeftValue) self.notify(new BASE.PropertyChangedEvent("left", oldLeftValue, region.left));
-                if (region.x !== oldLeftValue) self.notify(new BASE.PropertyChangedEvent("x", oldLeftValue, region.left));
-                if (region.top !== oldTopValue) self.notify(new BASE.PropertyChangedEvent("y", oldTopValue, region.top));
-                if (region.right !== oldRightValue) self.notify(new BASE.PropertyChangedEvent("right", oldRightValue, region.right));
-                if (region.bottom !== oldBottomValue) self.notify(new BASE.PropertyChangedEvent("bottom", oldBottomValue, region.bottom));
-                if (region.height !== oldHeightValue) self.notify(new BASE.PropertyChangedEvent("height", oldHeightValue, region.height));
-                if (region.width !== oldWidthValue) self.notify(new BASE.PropertyChangedEvent("width", oldWidthValue, region.width));
+                if (region.top !== oldTopValue) self.notify(new BASE.util.PropertyChangedEvent("top", oldTopValue, region.top));
+                if (region.left !== oldLeftValue) self.notify(new BASE.util.PropertyChangedEvent("left", oldLeftValue, region.left));
+                if (region.x !== oldLeftValue) self.notify(new BASE.util.PropertyChangedEvent("x", oldLeftValue, region.left));
+                if (region.top !== oldTopValue) self.notify(new BASE.util.PropertyChangedEvent("y", oldTopValue, region.top));
+                if (region.right !== oldRightValue) self.notify(new BASE.util.PropertyChangedEvent("right", oldRightValue, region.right));
+                if (region.bottom !== oldBottomValue) self.notify(new BASE.util.PropertyChangedEvent("bottom", oldBottomValue, region.bottom));
+                if (region.height !== oldHeightValue) self.notify(new BASE.util.PropertyChangedEvent("height", oldHeightValue, region.height));
+                if (region.width !== oldWidthValue) self.notify(new BASE.util.PropertyChangedEvent("width", oldWidthValue, region.width));
             };
             self.setRegion = function (top, right, bottom, left) {
                 if (bottom >= top && right >= left) {
@@ -105,7 +105,7 @@
                 } else {
                     throw new Error("Invalid Region Instantiation: top=" + top + ", right=" + right + ", bottom=" + bottom + ", left=" + left + ".");
                 }
-                self.notify(new BASE.ObservableEvent("change"));
+                self.notify(new BASE.util.ObservableEvent("change"));
             };
             self.moveToPoint = function (x, y) {
                 self.setRegion(y, x + self.width, y + self.height, x);
@@ -143,6 +143,6 @@
         BASE.extend(Region, _Super);
 
         return Region
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 
 });

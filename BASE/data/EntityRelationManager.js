@@ -1,21 +1,21 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.Hashmap",
-    "BASE.MultiKeyMap",
-    "BASE.Future",
-    "BASE.Task",
-    "BASE.Hashmap",
-    "BASE.PropertyChangedEvent",
-    "BASE.ObservableArray",
+    "BASE.util.Observable",
+    "BASE.collections.Hashmap",
+    "BASE.collections.MultiKeyMap",
+    "BASE.async.Future",
+    "BASE.async.Task",
+    "BASE.collections.Hashmap",
+    "BASE.util.PropertyChangedEvent",
+    "BASE.collections.ObservableArray",
     "BASE.query.Provider",
     "BASE.query.ArrayProvider"
 ], function () {
     BASE.namespace("BASE.data");
 
-    var Future = BASE.Future;
-    var Task = BASE.Task;
-    var Hashmap = BASE.Hashmap;
-    var MultiKeyMap = BASE.MultiKeyMap;
+    var Future = BASE.async.Future;
+    var Task = BASE.async.Task;
+    var Hashmap = BASE.collections.Hashmap;
+    var MultiKeyMap = BASE.collections.MultiKeyMap;
     var Provider = BASE.query.Provider;
     var ArrayProvider = BASE.query.ArrayProvider;
 
@@ -612,12 +612,18 @@
                                             resultEntities.push(target);
 
                                             // Add the target to the entity's array.
-                                            entity[property].push(target);
+                                            var index = entity[property].indexOf(target);
+                                            if (index === -1) {
+                                                entity[property].push(target);
+                                            }
                                         });
 
                                         // This sends back all the targets entities that have now been loaded via "one to many".
                                         setValue(resultEntities);
                                     }).ifError(function (error) {
+
+                                        _dataContext.throwError(error);
+
                                         setError(error);
                                     });
 
@@ -697,12 +703,16 @@
                                             mappingEntities.add(entity, target, mappingEntity);
 
                                             // Add the target to the entity's array.
-                                            entity[property].push(target);
+                                            var index = entity[property].indexOf(target);
+                                            if (index === -1) {
+                                                entity[property].push(target);
+                                            }
                                         });
 
                                         // This sends back all the targets entities that have now been loaded via "many to many".
                                         setValue(resultEntities);
                                     }).ifError(function (error) {
+                                        _dataContext.throwError(error);
                                         setError(error);
                                     });
 
@@ -763,12 +773,17 @@
                                         mappingEntities.add(source, entity, mappingEntity);
 
                                         // Add the source to the entity's array.
-                                        entity[property].push(source);
+                                        var index = entity[property].indexOf(source);
+                                        if (index === -1) {
+                                            entity[property].push(source);
+                                        }
+
                                     });
 
                                     // This sends back all the targets entities that have now been loaded via "many to many".
                                     setValue(resultEntities);
                                 }).ifError(function (error) {
+                                    _dataContext.throwError(error);
                                     setError(error);
                                 });
 
@@ -799,7 +814,7 @@
                     // In case of the relationship being created by a many to many, 
                     // The property may be undefined. So we need to create a ObservableArray if so.
                     if (typeof entity[property] === "undefined") {
-                        entity[property] = new BASE.ObservableArray();
+                        entity[property] = new BASE.collections.ObservableArray();
                     }
 
                     // Get the old Factory, so we can assign it back it the entity is DETATCHED again.
@@ -938,5 +953,5 @@
         BASE.extend(EntityRelationManager, Super);
 
         return EntityRelationManager;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

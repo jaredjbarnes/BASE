@@ -1,11 +1,11 @@
 ﻿BASE.require([
     "BASE.data.states.AbstractState",
-    "BASE.Hashmap",
-    "BASE.PropertyChangedEvent"
+    "BASE.collections.Hashmap",
+    "BASE.util.PropertyChangedEvent"
 ], function () {
     BASE.namespace("BASE.data.states");
 
-    var Hashmap = BASE.Hashmap;
+    var Hashmap = BASE.collections.Hashmap;
 
     BASE.data.states.UpdatedState = (function (Super) {
         var UpdatedState = function (changeTracker, relationManager) {
@@ -18,6 +18,12 @@
 
             var entity = changeTracker.entity;
             var entityChanges = new Hashmap();
+
+            Object.defineProperty(self, "entityChanges", {
+                get: function () {
+                    return entityChanges;
+                }
+            });
 
             // Called to add this entity to the collection.
             self.add = function () {
@@ -39,8 +45,12 @@
                 changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
                 return changeTracker.dataContext.service.updateEntity(entity, entityChanges).then(function () {
                     entityChanges = new Hashmap();
-                }).ifError(function () {
-                    changeTracker.changeState(BASE.data.EntityChangeTracker.UPDATED);
+                }).ifError(function (err) {
+                    if (err instanceof BASE.data.EntityNotFoundError) {
+                        changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
+                    } else {
+                        changeTracker.changeState(BASE.data.EntityChangeTracker.UPDATED);
+                    }
                 });
             };
 

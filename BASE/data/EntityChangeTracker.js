@@ -1,9 +1,9 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.Future",
-    "BASE.Task",
-    "BASE.PropertyChangedEvent",
-    "BASE.Hashmap",
+    "BASE.util.Observable",
+    "BASE.async.Future",
+    "BASE.async.Task",
+    "BASE.util.PropertyChangedEvent",
+    "BASE.collections.Hashmap",
     "Array.prototype.where",
     "BASE.data.EntityRelationManager",
     "BASE.data.states.DetatchedState",
@@ -14,11 +14,11 @@
 ], function () {
     BASE.namespace("BASE.data");
 
-    var Future = BASE.Future;
-    var Task = BASE.Task;
-    var Hashmap = BASE.Hashmap;
+    var Future = BASE.async.Future;
+    var Task = BASE.async.Task;
+    var Hashmap = BASE.collections.Hashmap;
     var EntityRelationManager = BASE.data.EntityRelationManager;
-    var PropertyChangedEvent = BASE.PropertyChangedEvent;
+    var PropertyChangedEvent = BASE.util.PropertyChangedEvent;
 
     var DetatchedState = BASE.data.states.DetatchedState;
     var AddedState = BASE.data.states.AddedState;
@@ -113,6 +113,10 @@
 
                 // Start listening for changes again after we synced it.
                 entity.observe(onEntityUpdated);
+            };
+
+            var _unload = function () {
+                _state.unload();
             };
 
             var _dataContext = null;
@@ -230,5 +234,5 @@
         });
 
         return EntityChangeTracker;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

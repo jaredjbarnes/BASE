@@ -1,11 +1,11 @@
 ﻿BASE.require([
     "BASE.data.states.AbstractState",
-    "BASE.PropertyChangedEvent",
-    "BASE.Hashmap"
+    "BASE.util.PropertyChangedEvent",
+    "BASE.collections.Hashmap"
 ], function () {
     BASE.namespace("BASE.data.states");
 
-    var Hashmap = BASE.Hashmap;
+    var Hashmap = BASE.collections.Hashmap;
 
     BASE.data.states.RemovedState = (function (Super) {
         var RemovedState = function (changeTracker, relationManager) {
@@ -41,9 +41,13 @@
                 changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
                 return changeTracker.dataContext.service.removeEntity(entity).then(function () {
                     changeTracker.dataContext = null;
-                }).ifError(function () {
-                    changeTracker.dataContext.getDataSet(entity.constructor).load(entity);
-                    changeTracker.changeState(BASE.data.EntityChangeTracker.REMOVED);
+                }).ifError(function (err) {
+                    if (err instanceof BASE.data.EntityNotFoundError) {
+                        changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
+                    } else {
+                        changeTracker.dataContext.getDataSet(entity.constructor).load(entity);
+                        changeTracker.changeState(BASE.data.EntityChangeTracker.REMOVED);
+                    }
                 });
             };
 

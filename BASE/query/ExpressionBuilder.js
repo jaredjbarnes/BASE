@@ -1,5 +1,5 @@
 ﻿BASE.require([
-    "BASE.Observable",
+    "BASE.util.Observable",
     "BASE.query.Expression"], function () {
         BASE.namespace("BASE.query");
 
@@ -128,5 +128,5 @@
             });
 
             return ExpressionBuilder;
-        }(BASE.Observable));
+        }(BASE.util.Observable));
     });

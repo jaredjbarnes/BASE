@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.data.states.AbstractState", "BASE.PropertyChangedEvent"], function () {
+﻿BASE.require(["BASE.data.states.AbstractState", "BASE.util.PropertyChangedEvent"], function () {
     BASE.namespace("BASE.data.states");
 
     BASE.data.states.LoadedState = (function (Super) {

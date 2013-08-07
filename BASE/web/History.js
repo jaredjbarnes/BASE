@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent", "BASE.web.Url"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.util.PropertyChangedEvent", "BASE.web.Url"], function () {
     BASE.namespace("BASE.web");
 
     BASE.web.History = (function (Super) {
@@ -21,7 +21,7 @@
             var _oldOnPopState = window.onpopstate || function () { };
 
             var _onPopState = function (e) {
-                var event = new BASE.ObservableEvent("popState");
+                var event = new BASE.util.ObservableEvent("popState");
                 event.state = e.state;
                 event.url = BASE.web.Url.parse(location.href);
                 self.notify(event);
@@ -56,7 +56,7 @@
             self.pushState = function () {
                 history.pushState.apply(history, arguments);
 
-                var event = new BASE.ObservableEvent("pushState");
+                var event = new BASE.util.ObservableEvent("pushState");
                 event.state = arguments[0];
                 event.url = BASE.web.Url.parse(location.href);
                 self.notify(event);
@@ -65,7 +65,7 @@
             self.replaceState = function () {
                 history.replaceState.apply(history, arguments);
 
-                var event = new BASE.ObservableEvent("relaceState");
+                var event = new BASE.util.ObservableEvent("relaceState");
                 event.state = arguments[0];
                 event.url = BASE.web.Url.parse(location.href);
                 self.notify(event);
@@ -82,5 +82,5 @@
         })
 
         return History;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

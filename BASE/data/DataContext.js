@@ -1,25 +1,25 @@
 BASE.require([
-    "BASE.MultiKeyMap",
-    "BASE.Hashmap",
-    "BASE.ObservableEvent",
-    "BASE.Observable",
+    "BASE.collections.MultiKeyMap",
+    "BASE.collections.Hashmap",
+    "BASE.util.ObservableEvent",
+    "BASE.util.Observable",
     "BASE.data.ObjectRelationManager",
     "BASE.data.NullService",
     "BASE.data.DataSet",
-    "BASE.ObservableArray",
-    "BASE.Future",
-    "BASE.Task",
+    "BASE.collections.ObservableArray",
+    "BASE.async.Future",
+    "BASE.async.Task",
     "BASE.query.Queryable",
     "Array.prototype.asQueryable"
 ], function () {
     BASE.namespace("BASE.data");
 
     var ObjectRelationManager = BASE.data.ObjectRelationManager;
-    var Future = BASE.Future;
-    var Task = BASE.Task;
-    var Hashmap = BASE.Hashmap;
-    var Observable = BASE.Observable;
-    var ObservableEvent = BASE.ObservableEvent;
+    var Future = BASE.async.Future;
+    var Task = BASE.async.Task;
+    var Hashmap = BASE.collections.Hashmap;
+    var Observable = BASE.util.Observable;
+    var ObservableEvent = BASE.util.ObservableEvent;
 
     BASE.data.DataContext = (function (Super) {
 
@@ -35,7 +35,7 @@ BASE.require([
             var _orm = null;
             var _relationships = null;
             var _service = new BASE.data.NullService();
-            var _typeToSet = new BASE.Hashmap();
+            var _typeToSet = new BASE.collections.Hashmap();
 
             var _findSets = function () {
                 Object.keys(self).forEach(function (x) {
@@ -69,10 +69,10 @@ BASE.require([
             });
 
             self.changeTracker = {
-                loaded: new BASE.Hashmap(),
-                added: new BASE.Hashmap(),
-                removed: new BASE.Hashmap(),
-                updated: new BASE.Hashmap()
+                loaded: new BASE.collections.Hashmap(),
+                added: new BASE.collections.Hashmap(),
+                removed: new BASE.collections.Hashmap(),
+                updated: new BASE.collections.Hashmap()
             };
 
             self.getDataSet = function (Type) {
@@ -142,6 +142,10 @@ BASE.require([
                 });
             };
 
+            self.throwError = function (error) {
+                error.throw(self);
+            };
+
             self.saveChanges = function () {
                 return new Future(function (setValue, setError) {
                     var task = new Task();
@@ -195,5 +199,5 @@ BASE.require([
 
         return DataContext;
 
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.util.PropertyChangedEvent"], function () {
     BASE.namespace("BASE.web.ui.behavior");
 
     BASE.web.ui.behavior.VerticalFlexBehavior = (function (Super) {
@@ -105,6 +105,6 @@
         BASE.extend(VerticalFlexBehavior, Super);
 
         return VerticalFlexBehavior;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });
 

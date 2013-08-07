@@ -1,10 +1,10 @@
 ﻿BASE.require([
-    "BASE.Observable",
+    "BASE.util.Observable",
     "jQuery",
     "jQuery.fn.region",
-    "BASE.Future",
-    "BASE.Hashmap",
-    "BASE.PropagatingEvent"
+    "BASE.async.Future",
+    "BASE.collections.Hashmap",
+    "BASE.util.PropagatingEvent"
 ], function () {
 
     BASE.namespace("BASE.web.ui");
@@ -13,12 +13,12 @@
     $(window).bind("resize", function () {
         var view = $("[data-view]").first().data("view");
         if (view instanceof BASE.web.ui.View) {
-            view.trickle(new BASE.PropagatingEvent("boundsChange"));
+            view.trickle(new BASE.util.PropagatingEvent("boundsChange"));
         }
     });
 
-    var Task = BASE.Task;
-    var Future = BASE.Future;
+    var Task = BASE.async.Task;
+    var Future = BASE.async.Future;
 
     BASE.web.ui.View = (function (Super) {
 
@@ -83,7 +83,7 @@
                     set: function (val) {
                         if (typeof val === "number" && val !== parseInt($element.css("width"))) {
                             $element.css("width", val + "px");
-                            var event = new BASE.ObservableEvent("boundsChange");
+                            var event = new BASE.util.ObservableEvent("boundsChange");
                             self.notify(event);
                         }
                     }
@@ -95,7 +95,7 @@
                     set: function (val) {
                         if (typeof val === "number" && val !== parseInt($element.css("height"))) {
                             $element.css("height", val + "px");
-                            var event = new BASE.ObservableEvent("boundsChange");
+                            var event = new BASE.util.ObservableEvent("boundsChange");
                             self.notify(event);
                         }
                     }
@@ -120,7 +120,7 @@
                     var oldValue = _containerElement;
                     if (value !== _containerElement) {
                         _containerElement = value;
-                        self.notify(new BASE.PropertyChangedEvent("containerElement", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("containerElement", oldValue, value));
                     }
                 }
             });
@@ -176,7 +176,7 @@
                 enumerable: true,
                 configurable: false,
                 value: function (event) {
-                    if (!(event instanceof BASE.PropagatingEvent)) {
+                    if (!(event instanceof BASE.util.PropagatingEvent)) {
                         throw new Error("Event wasn't an instance of PropagationEvent");
                     }
 
@@ -195,7 +195,7 @@
                 enumerable: true,
                 configurable: false,
                 value: function (event) {
-                    if (!(event instanceof BASE.PropagatingEvent)) {
+                    if (!(event instanceof BASE.util.PropagatingEvent)) {
                         throw new Error("Event wasn't an instance of PropagationEvent");
                     }
 
@@ -215,21 +215,21 @@
                     var childView = $(self.containerElement).find(view.element);
 
                     if (childView.length > 0) {
-                        var beforeEvent = new BASE.ObservableEvent("beforeSubviewAdded");
+                        var beforeEvent = new BASE.util.ObservableEvent("beforeSubviewAdded");
                         beforeEvent.subview = newView;
                         self.notify(beforeEvent);
 
-                        var beforeViewAddedToParentEvent = new BASE.ObservableEvent("beforeViewAddedToParent");
+                        var beforeViewAddedToParentEvent = new BASE.util.ObservableEvent("beforeViewAddedToParent");
                         beforeViewAddedToParentEvent.subview = view;
                         view.notify(beforeViewAddedToParentEvent)
 
                         childView.before(newView.element);
 
                         return new Future(function (setValue, setError) {
-                            var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
+                            var afterViewAddedToParentEvent = new BASE.util.ObservableEvent("afterViewAddedToParent");
                             afterViewAddedToParentEvent.subview = view;
 
-                            var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
+                            var afterEvent = new BASE.util.ObservableEvent("afterSubviewAdded");
                             afterEvent.subview = newView;
 
                             new Task(view.notify(afterViewAddedToParentEvent), self.notify(afterEvent)).start().whenAll(function () {
@@ -247,21 +247,21 @@
                 enumerable: true,
                 configurable: false,
                 value: function (view) {
-                    var beforeEvent = new BASE.ObservableEvent("beforeSubviewAdded");
+                    var beforeEvent = new BASE.util.ObservableEvent("beforeSubviewAdded");
                     beforeEvent.subview = view;
                     self.notify(beforeEvent);
 
-                    var beforeViewAddedToParentEvent = new BASE.ObservableEvent("beforeViewAddedToParent");
+                    var beforeViewAddedToParentEvent = new BASE.util.ObservableEvent("beforeViewAddedToParent");
                     beforeViewAddedToParentEvent.subview = view;
                     view.notify(beforeViewAddedToParentEvent);
 
                     $(view.element).appendTo(self.containerElement);
 
                     return new Future(function (setValue, setError) {
-                        var afterViewAddedToParentEvent = new BASE.ObservableEvent("afterViewAddedToParent");
+                        var afterViewAddedToParentEvent = new BASE.util.ObservableEvent("afterViewAddedToParent");
                         afterViewAddedToParentEvent.subview = view;
 
-                        var afterEvent = new BASE.ObservableEvent("afterSubviewAdded");
+                        var afterEvent = new BASE.util.ObservableEvent("afterSubviewAdded");
                         afterEvent.subview = view;
 
                         new Task(view.notify(afterViewAddedToParentEvent), self.notify(afterEvent)).start().whenAll(function () {
@@ -278,10 +278,10 @@
                 configurable: false,
                 value: function (view) {
 
-                    var beforeSubviewRemovedEvent = new BASE.ObservableEvent("beforeSubviewRemoved");
+                    var beforeSubviewRemovedEvent = new BASE.util.ObservableEvent("beforeSubviewRemoved");
                     beforeSubviewRemovedEvent.subview = view;
 
-                    var beforeViewRemovedFromParentEvent = new BASE.ObservableEvent("beforeViewRemovedFromParent");
+                    var beforeViewRemovedFromParentEvent = new BASE.util.ObservableEvent("beforeViewRemovedFromParent");
                     beforeViewRemovedFromParentEvent.subview = view;
 
                     return new Future(function (setValue, setError) {
@@ -291,11 +291,11 @@
 
                             setValue(view);
 
-                            var afterViewRemovedFromParentEvent = new BASE.ObservableEvent("afterViewRemovedFromParent");
+                            var afterViewRemovedFromParentEvent = new BASE.util.ObservableEvent("afterViewRemovedFromParent");
                             afterViewRemovedFromParentEvent.subview = view;
                             view.notify(afterViewRemovedFromParentEvent);
 
-                            var afterSubviewRemovedEvent = new BASE.ObservableEvent("afterSubviewRemoved");
+                            var afterSubviewRemovedEvent = new BASE.util.ObservableEvent("afterSubviewRemoved");
                             afterSubviewRemovedEvent.subview = view;
                             self.notify(afterSubviewRemovedEvent);
 
@@ -386,7 +386,7 @@
                     if (parent) {
                         return parent.removeSubview(self);
                     } else {
-                        return BASE.Future(function (setValue) {
+                        return BASE.async.Future(function (setValue) {
                             setTimeout(function () {
                                 setValue(self);
                             }, 0);
@@ -395,7 +395,7 @@
                 }
             });
 
-            var _behaviors = new BASE.Hashmap();
+            var _behaviors = new BASE.collections.Hashmap();
 
             Object.defineProperty(self, "behaviors", {
                 enumerable: true,
@@ -431,7 +431,7 @@
             enumerable: true,
             configurable: false,
             value: function (viewUri) {
-                return new BASE.Future(function (setValue, setError) {
+                return new BASE.async.Future(function (setValue, setError) {
                     $.loadFile(viewUri, {
                         success: function (html) {
                             var $elem = $(html);
@@ -449,6 +449,6 @@
         });
 
         return View;
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 
 });

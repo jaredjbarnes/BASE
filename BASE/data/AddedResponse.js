@@ -12,7 +12,7 @@
 
             Super.call(self, message);
 
-            var _dto = null;
+            var _dto = dto;
             Object.defineProperty(self, "dto", {
                 get: function () {
                     return _dto;

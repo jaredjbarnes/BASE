@@ -28,7 +28,7 @@
                     var oldValue = _itemHeight;
                     if (value !== _itemHeight) {
                         _itemHeight = value;
-                        self.notify(new BASE.PropertyChangedEvent("itemHeight", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("itemHeight", oldValue, value));
                     }
                 }
             });
@@ -42,7 +42,7 @@
                     var oldValue = _itemWidth;
                     if (value !== _itemWidth) {
                         _itemWidth = value;
-                        self.notify(new BASE.PropertyChangedEvent("itemWidth", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("itemWidth", oldValue, value));
                     }
                 }
             });
@@ -56,7 +56,7 @@
                     var oldValue = _itemMargin;
                     if (value !== _itemMargin) {
                         _itemMargin = value;
-                        self.notify(new BASE.PropertyChangedEvent("itemMargin", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("itemMargin", oldValue, value));
                     }
                 }
             });
@@ -77,7 +77,7 @@
                     var oldValue = _rowCount;
                     if (value !== _rowCount) {
                         _rowCount = value;
-                        self.notify(new BASE.PropertyChangedEvent("rowCount", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("rowCount", oldValue, value));
                     }
                 }
             });

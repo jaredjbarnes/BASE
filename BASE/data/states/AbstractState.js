@@ -1,11 +1,11 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.PropertyChangedEvent",
-    "BASE.Future"
+    "BASE.util.Observable",
+    "BASE.util.PropertyChangedEvent",
+    "BASE.async.Future"
 ], function () {
     BASE.namespace("BASE.data.states");
 
-    var Future = BASE.Future;
+    var Future = BASE.async.Future;
 
     BASE.data.states.AbstractState = (function (Super) {
         var AbstractState = function (changeTracker, relationManager) {
@@ -48,7 +48,7 @@
                         return;
                     }
 
-                    if (entity[key] instanceof BASE.ObservableArray) {
+                    if (entity[key] instanceof BASE.collections.ObservableArray) {
                         //Load meta data to the array object.
                         var array = entity[key];
                         Object.keys(dto[key]).forEach(function (property) {
@@ -103,5 +103,5 @@
         BASE.extend(AbstractState, Super);
 
         return AbstractState;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

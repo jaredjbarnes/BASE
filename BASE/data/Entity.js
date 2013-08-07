@@ -1,12 +1,12 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.Future",
+    "BASE.util.Observable",
+    "BASE.async.Future",
     "BASE.data.EntityChangeTracker",
-    "BASE.PropertyChangedEvent"
+    "BASE.util.PropertyChangedEvent"
 ], function () {
     BASE.namespace("BASE.data");
 
-    var PropertyChangedEvent = BASE.PropertyChangedEvent;
+    var PropertyChangedEvent = BASE.util.PropertyChangedEvent;
 
     BASE.data.Entity = (function (Super) {
         function Entity() {
@@ -47,14 +47,14 @@
             self.save = function () {
                 dataContext = self.changeTracker.dataContext;
                 if (dataContext) {
-                   return dataContext.save(self);
+                    return dataContext.save(self);
                 } else {
                     throw new Error("Entity isn't part of a context.");
                 }
             };
 
             self.load = function () {
-                return new BASE.Future(function (setValue, setError) {
+                return new BASE.async.Future(function (setValue, setError) {
                     var dataContext = self.changeTracker.dataContext;
                     if (dataContext) {
                         var dataSet = dataContext.getDataSet(self.constructor);
@@ -78,9 +78,9 @@
             var _changeTracker = new BASE.data.EntityChangeTracker(self);
         }
 
-        BASE.extend(Entity, BASE.Observable);
+        BASE.extend(Entity, BASE.util.Observable);
 
         return Entity;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });
 

@@ -302,7 +302,6 @@ if (!window.BASE) {
             return scriptManager;
         }());
 
-
         var Loader = function (options) {
             options = options || {};
             options.paths = options.paths || {};
@@ -354,9 +353,16 @@ if (!window.BASE) {
                     });
                 });
 
-                synchronizer.start(function () {
-                    callback();
-                });
+                // This will ensure that if all dependencies are there it will immediately execute the file.
+                if (cleanedDependencies.length === 0) {
+                    callack();
+                } else {
+                    synchronizer.start(function () {
+                        callback();
+                    });
+                }
+
+
 
             }
 
@@ -544,5 +550,6 @@ if (!window.BASE) {
                 }
             });
         }
+
     })();
 }

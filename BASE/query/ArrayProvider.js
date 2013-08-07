@@ -3,8 +3,8 @@
     "BASE.query.ArrayQueryBuilder",
     "BASE.query.Queryable",
     "BASE.query.ExpressionParser",
-    "BASE.Future",
-    "BASE.Task"
+    "BASE.async.Future",
+    "BASE.async.Task"
 ], function () {
     BASE.namespace("LEAVITT.query");
 
@@ -12,7 +12,7 @@
     var ExpressionParser = BASE.query.ExpressionParser;
     var Queryable = BASE.query.Queryable;
     var Provider = BASE.query.Provider;
-    var Future = BASE.Future;
+    var Future = BASE.async.Future;
 
     BASE.query.ArrayProvider = (function (Super) {
         var ArrayProvider = function (array) {

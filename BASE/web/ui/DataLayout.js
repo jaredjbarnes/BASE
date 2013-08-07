@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.util.PropertyChangedEvent"], function () {
     BASE.namespace("BASE.web.ui");
 
     BASE.web.ui.DataLayout = (function (Super) {
@@ -28,7 +28,7 @@
                     var oldValue = _invalidateOnResize;
                     if (value !== _invalidateOnResize) {
                         _invalidateOnResize = value;
-                        self.notify(new BASE.PropertyChangedEvent("invalidateOnResize", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("invalidateOnResize", oldValue, value));
                     }
                 }
             });
@@ -42,7 +42,7 @@
                     var oldValue = _contentWidth;
                     if (value !== _contentWidth) {
                         _contentWidth = value;
-                        self.notify(new BASE.PropertyChangedEvent("contentWidth", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("contentWidth", oldValue, value));
                     }
                 }
             });
@@ -56,7 +56,7 @@
                     var oldValue = _contentHeight;
                     if (value !== _contentHeight) {
                         _contentHeight = value;
-                        self.notify(new BASE.PropertyChangedEvent("contentHeight", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("contentHeight", oldValue, value));
                     }
                 }
             });
@@ -72,7 +72,7 @@
                         _collectionView = value;
 
                         self.prepareLayout();
-                        self.notify(new BASE.PropertyChangedEvent("collectionView", oldValue, value));
+                        self.notify(new BASE.util.PropertyChangedEvent("collectionView", oldValue, value));
                     }
                 }
             });
@@ -118,5 +118,5 @@
         BASE.extend(DataLayout, Super);
 
         return DataLayout;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

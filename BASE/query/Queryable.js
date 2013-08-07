@@ -154,7 +154,7 @@
 
             var _execute = function () {
                 /// <summary>Executes the queryable.</summary>
-                /// <returns type="BASE.Future"></returns>
+                /// <returns type="BASE.async.Future"></returns>
                 if (_provider === null) {
                     throw new Error("The queryable needs a provider property.");
                 } else {
@@ -164,7 +164,7 @@
 
             var _toArray = function () {
                 /// <summary>Executes the queryable on the provider.</summary>
-                /// <returns type="BASE.Future"></returns>
+                /// <returns type="BASE.async.Future"></returns>
                 return _provider.execute(self);
             };
 

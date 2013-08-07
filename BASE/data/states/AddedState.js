@@ -1,13 +1,13 @@
 ﻿BASE.require([
-    "BASE.Hashmap",
+    "BASE.collections.Hashmap",
     "BASE.data.states.AbstractState",
-    "BASE.PropertyChangedEvent",
-    "BASE.ObservableArray"
+    "BASE.util.PropertyChangedEvent",
+    "BASE.collections.ObservableArray"
 ], function () {
     BASE.namespace("BASE.data.states");
 
-    var Hashmap = BASE.Hashmap;
-    var PropertyChangedEvent = BASE.PropertyChangedEvent;
+    var Hashmap = BASE.collections.Hashmap;
+    var PropertyChangedEvent = BASE.util.PropertyChangedEvent;
 
     BASE.data.states.AddedState = (function (Super) {
         var AddedState = function (changeTracker, relationManager) {
@@ -39,9 +39,9 @@
                 changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
                 return changeTracker.dataContext.service.addEntity(entity).then(function (response) {
                     var previousState = changeTracker.state;
-                    if (response.dto.id) {
-                        entity.id = response.dto.id;
-                    }
+
+                    self.sync(response.dto);
+
                     changeTracker.changeState(previousState);
                 }).ifError(function () {
                     changeTracker.changeState(BASE.data.EntityChangeTracker.ADDED);

@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable"], function () {
+﻿BASE.require(["BASE.util.Observable"], function () {
     BASE.namespace("BASE.query");
 
     var Ascending = function (namespace) {
@@ -404,5 +404,5 @@
         BASE.extend(ArrayQueryBuilder, Super);
 
         return ArrayQueryBuilder;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

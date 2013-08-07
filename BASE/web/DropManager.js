@@ -1,9 +1,9 @@
 ﻿BASE.require([
     "jQuery",
     "jQuery.fn.region",
-    "BASE.Observable",
-    "BASE.ObservableEvent",
-    "BASE.Hashmap"
+    "BASE.util.Observable",
+    "BASE.util.ObservableEvent",
+    "BASE.collections.Hashmap"
 ], function () {
     BASE.namespace("BASE.web");
 
@@ -17,9 +17,9 @@
             var self = this;
             _Super.call(self);
 
-            var _elements = new BASE.Hashmap();
-            var _regions = new BASE.Hashmap();
-            var _Notifiables = new BASE.Hashmap();
+            var _elements = new BASE.collections.Hashmap();
+            var _regions = new BASE.collections.Hashmap();
+            var _Notifiables = new BASE.collections.Hashmap();
 
             dragManager.observe(function () { }, "dragStart");
             dragManager.observe(function () { }, "drag");
@@ -47,5 +47,5 @@
         BASE.extend(DropManager, _Super);
 
         return DropManager;
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 });

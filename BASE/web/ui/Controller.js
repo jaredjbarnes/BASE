@@ -1,15 +1,15 @@
 ﻿BASE.require([
-    "BASE.Observable",
+    "BASE.util.Observable",
     "jQuery.loadFile",
     "BASE.web.ui.View",
-    "BASE.Future",
-    "BASE.Task"
+    "BASE.async.Future",
+    "BASE.async.Task"
 ], function () {
 
     BASE.namespace("BASE.web.ui");
 
-    var Task = BASE.Task;
-    var Future = BASE.Future;
+    var Task = BASE.async.Task;
+    var Future = BASE.async.Future;
 
     BASE.web.ui.Controller = (function (Super) {
 
@@ -135,7 +135,7 @@
                 enumerable: true,
                 configurable: false,
                 value: function (event) {
-                    if (!(event instanceof BASE.PropagatingEvent)) {
+                    if (!(event instanceof BASE.util.PropagatingEvent)) {
                         throw new Error("Event wasn't an instance of PropagationEvent");
                     }
 
@@ -154,7 +154,7 @@
                 enumerable: true,
                 configurable: false,
                 value: function (event) {
-                    if (!(event instanceof BASE.PropagatingEvent)) {
+                    if (!(event instanceof BASE.util.PropagatingEvent)) {
                         throw new Error("Event wasn't an instance of PropagationEvent");
                     }
 
@@ -175,7 +175,7 @@
             enumerable: false,
             configurable: false,
             value: function (controllerUri) {
-                return new BASE.Future(function (setValue, setError) {
+                return new BASE.async.Future(function (setValue, setError) {
                     $.loadFile(controllerUri, {
                         success: function (html) {
                             var $elem = $(html);
@@ -194,6 +194,6 @@
 
         return Controller;
 
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 
 });

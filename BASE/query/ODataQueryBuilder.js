@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable"], function () {
+﻿BASE.require(["BASE.util.Observable"], function () {
     BASE.namespace("BASE.query");
 
     var toServiceNamespace = function (value) {
@@ -129,7 +129,7 @@
         };
 
         ODataQueryBuilder.prototype["date"] = function (value) {
-            return "DateTime'" + JSON.stringify(value) + "'";
+            return "DateTime" + JSON.stringify(value).replace(/"/g, "'") + "";
         };
 
         ODataQueryBuilder.prototype["string"] = function (value) {
@@ -181,5 +181,5 @@
         };
 
         return ODataQueryBuilder;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

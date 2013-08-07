@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.PropertyChangedEvent"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.util.PropertyChangedEvent"], function () {
     BASE.namespace("BASE.web.ui");
 
     BASE.web.ui.DataSource = (function (Super) {
@@ -99,5 +99,5 @@
         BASE.extend(DataSource, Super);
 
         return DataSource;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

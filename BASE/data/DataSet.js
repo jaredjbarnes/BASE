@@ -1,14 +1,14 @@
 ﻿BASE.require([
-    "BASE.Observable",
-    "BASE.ObservableArray",
-    "BASE.Hashmap",
-    "BASE.ObservableEvent",
-    "BASE.Future",
+    "BASE.util.Observable",
+    "BASE.collections.ObservableArray",
+    "BASE.collections.Hashmap",
+    "BASE.util.ObservableEvent",
+    "BASE.async.Future",
     "BASE.query.Queryable",
     "BASE.data.EntityChangeTracker",
-    "BASE.PropertyChangedEvent",
+    "BASE.util.PropertyChangedEvent",
     "BASE.query.Provider",
-    "BASE.Task"
+    "BASE.async.Task"
 ], function () {
 
     BASE.namespace("BASE.data");
@@ -16,10 +16,10 @@
     var Queryable = BASE.query.Queryable;
     var Provider = BASE.query.Provider;
     var EntityChangeTracker = BASE.data.EntityChangeTracker;
-    var PropertyChangedEvent = BASE.PropertyChangedEvent;
-    var Hashmap = BASE.Hashmap;
-    var Future = BASE.Future;
-    var Task = BASE.Task;
+    var PropertyChangedEvent = BASE.util.PropertyChangedEvent;
+    var Hashmap = BASE.collections.Hashmap;
+    var Future = BASE.async.Future;
+    var Task = BASE.async.Task;
 
     BASE.data.DataSet = (function (Super) {
 
@@ -31,9 +31,9 @@
 
             Super.call(self);
 
-            var _loadedEntities = new BASE.Hashmap();
-            var _addedEntities = new BASE.Hashmap();
-            var _idObservers = new BASE.Hashmap();
+            var _loadedEntities = new BASE.collections.Hashmap();
+            var _addedEntities = new BASE.collections.Hashmap();
+            var _idObservers = new BASE.collections.Hashmap();
             var _Type = Type;
             var _dataContext = context;
 
@@ -182,6 +182,11 @@
                 }
             };
 
+            // This method unloads the entity from the data context.
+            self.unload = function (entity) {
+                entity.changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
+            };
+
             // This allows users to query the data set with queryables. 
             self.asQueryable = function () {
                 var queryable = new Queryable(_Type);
@@ -205,6 +210,8 @@
                             // This sends back all the targets entities that have now been loaded via "one to many".
                             setValue(resultEntities);
                         }).ifError(function (e) {
+                            _dataContext.throwError(e);
+
                             setError(e);
                         });
                     });
@@ -235,6 +242,6 @@
         BASE.extend(DataSet, Super);
 
         return DataSet;
-    })(BASE.Observable);
+    })(BASE.util.Observable);
 
 });

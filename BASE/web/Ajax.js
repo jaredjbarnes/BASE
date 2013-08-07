@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.Observable", "BASE.Future"], function () {
+﻿BASE.require(["BASE.util.Observable", "BASE.async.Future"], function () {
     BASE.namespace("BASE.web");
 
     BASE.web.ajax = {
@@ -11,7 +11,7 @@
             settings.data = settings.data || "";
 
 
-            return new BASE.Future(function (setValue, setError) {
+            return new BASE.async.Future(function (setValue, setError) {
 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function (event) {
