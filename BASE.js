@@ -86,6 +86,11 @@ if (!window.BASE) {
 
         var getObject = function (namespace, scope) {
             scope = scope || window;
+
+            if (namespace === "") {
+                return scope;
+            }
+
             if (typeof namespace === "string") {
                 var a = namespace.split('.');
                 var length = a.length;
@@ -355,7 +360,7 @@ if (!window.BASE) {
 
                 // This will ensure that if all dependencies are there it will immediately execute the file.
                 if (cleanedDependencies.length === 0) {
-                    callack();
+                    callback();
                 } else {
                     synchronizer.start(function () {
                         callback();

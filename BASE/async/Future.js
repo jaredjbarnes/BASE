@@ -88,7 +88,7 @@
                             self.notify(new BASE.util.ObservableEvent("complete"));
                         }
                     }, function (err) {
-                        isComplete = true;
+                        _isComplete = true;
                         if (_state !== _canceledState &&
                             typeof _error === "undefined" &&
                             typeof _value === "undefined") {

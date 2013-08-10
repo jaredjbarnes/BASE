@@ -49,11 +49,9 @@
                     self.observe(wrapper, "whenAll");
                 },
                 whenAny: function (callback) {
-                    var wrapper = function (event) {
-                        self.unobserve(wrapper, "whenAny");
+                    self.observe(function (event) {
                         callback(event.future);
-                    };
-                    self.observe(wrapper, "whenAny");
+                    }, "whenAny");
                     completedFutures.forEach(function (future) {
                         setTimeout(function () {
                             callback(future);

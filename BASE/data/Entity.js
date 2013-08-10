@@ -45,7 +45,7 @@
             });
 
             self.save = function () {
-                dataContext = self.changeTracker.dataContext;
+                var dataContext = self.changeTracker.dataContext;
                 if (dataContext) {
                     return dataContext.save(self);
                 } else {

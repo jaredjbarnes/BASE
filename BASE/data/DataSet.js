@@ -109,6 +109,12 @@
 
                     _addedEntities.add(entity, entity);
 
+                    // Emit the changed event
+                    var event = new BASE.util.ObservableEvent("change");
+                    event.newItems = [entity];
+                    event.oldItems = [];
+                    self.notify(event);
+
                     return entity;
                 }
 
@@ -128,6 +134,12 @@
                     loadedEntity.changeTracker.remove();
                     // Detatch the id observer to prevent memory leak.
                     loadedEntity.unobserve(_idObservers.remove(loadedEntity), "id");
+
+                    // Emit the event
+                    var event = new BASE.util.ObservableEvent("change");
+                    event.newItems = [];
+                    event.oldItems = [entity];
+                    self.notify(event);
 
                     return loadedEntity;
                 } else {

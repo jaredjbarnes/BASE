@@ -122,7 +122,7 @@
                     listener = function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
-                            // We need to check to see if the entity on the target is still us.
+                            // We need to check to see if the entity on the target is still the old entity.
                             if (item[relationship.withOne] === entity) {
                                 // Remove the reference from the entity.
                                 item[relationship.withOne] = null;
@@ -132,6 +132,11 @@
                                 if (!relationship.optional) {
                                     dataSet.remove(item);
                                 }
+                            }
+
+                            // The value can be set to null, so if the new value is null remove the foreign key as well.
+                            if (item[relationship.withOne] === null) {
+                                item[relationship.withForeignKey] = null;
                             }
                         });
 
