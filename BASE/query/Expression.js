@@ -20,6 +20,10 @@
                 }
             });
 
+            self.copy = function () {
+                throw new Error("Meant to be overriden");
+            };
+
             return self;
         };
 
@@ -58,6 +62,10 @@
                 }
             });
 
+            self.copy = function () {
+                return new ValueExpression(nodeName, value);
+            };
+
             return self;
         };
         BASE.extend(ValueExpression, Super);
@@ -90,6 +98,17 @@
                     }
                 }
             });
+
+            self.copy = function () {
+                var children = [];
+                var copy = new OperationExpression(nodeName);
+
+                self.children.forEach(function (expression) {
+                    copy.children.push(expression.copy());
+                });
+
+                return copy;
+            };
 
             return self;
         };

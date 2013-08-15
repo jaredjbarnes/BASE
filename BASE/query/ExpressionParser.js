@@ -27,14 +27,14 @@
 
                 var func = self.queryBuilder[expression.nodeName];
                 if (!func) {
-                    throw new Error("The parser doesn't support the \"" + expression.nodeName + "\" expression.");
+                    throw new Error("The builder doesn't support the \"" + expression.nodeName + "\" expression.");
                 }
 
                 children.forEach(function (child, index) {
                     if (child instanceof BASE.query.Expression) {
                         var func = self.queryBuilder[child.nodeName];
                         if (!func) {
-                            throw new Error("The parser doesn't support the \"" + child.nodeName + "\" expression.");
+                            throw new Error("The builder doesn't support the \"" + child.nodeName + "\" expression.");
                         }
                         children[index] = func.call(self.queryBuilder, child);
                     }

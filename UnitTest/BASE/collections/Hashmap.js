@@ -1,5 +1,52 @@
-﻿BASE.require(["BASE.util.UnitTest", "BASE.async.Future", "BASE.collections.Hashmap"], function () {
+﻿BASE.require([
+    "BASE.util.UnitTest",
+    "BASE.util.UnitTestRunner",
+    "BASE.async.Future",
+    "BASE.collections.Hashmap"
+], function () {
     BASE.namespace("UnitTest.BASE.collections");
+
+    var Future = BASE.async.Future;
+
+    var ExpectItToThrowWhenAKeyIsUndefinedOrNull = (function (Super) {
+        var Test = function () {
+            var self = this;
+            if (!(self instanceof Test)) {
+                return new Test();
+            }
+
+            Super.call(self, "UnitTest.BASE.collections.Hashmap: Expect it to throw when a key is undefined or null.");
+
+            self.execute = function () {
+                var hash = new BASE.collections.Hashmap();
+                var passed = false;
+
+                try {
+                    hash.add(null, {});
+                    passed = false;
+                } catch (e) {
+                    passed = true;
+                }
+
+                try {
+                    hash.add(undefined, {});
+                    passed = false;
+                } catch (e) {
+                    passed = true;
+                }
+
+                self.assert(passed, "Passed", "Failed");
+
+                return Future.fromResult(self);
+            }
+
+            return self;
+        };
+
+        BASE.extend(Test, Super);
+
+        return Test;
+    }(BASE.util.UnitTest));
 
     UnitTest.BASE.collections.Hashmap = (function (Super) {
         var Hashmap = function () {
@@ -10,68 +57,9 @@
 
             Super.call(self, "UnitTest.BASE.collections.Hashmap");
 
-            self.execute = function () {
-                return new BASE.async.Future(function (setValue, setError) {
-                    // Run your test here and set the value or error upon completion.
-                    var results = [];
+            var unitTests = self.children;
 
-                    results.push(self.add());
-                    results.push(self.remove());
-                    results.push(self.clear());
-                    results.push(self.get());
-                    results.push(self.copy());
-                    results.push(self.getKeys());
-                    results.push(self.expectItToThrowWhenAKeyIsUndefinedOrNull());
-
-                    var errorMessages = [];
-
-                    var passed = results.every(function (result) {
-                        if (result.passed === false) {
-                            errorMessages.push(result.message);
-                        }
-                        return result.passed === true;
-                    });
-
-                    if (passed) {
-                        self.message = "Passed";
-                        setValue(self);
-                    } else {
-                        self.message = "Failed";
-                        setError(self);
-                    }
-
-                });
-            };
-
-            self.expectItToThrowWhenAKeyIsUndefinedOrNull = function () {
-                var hash = new BASE.collections.Hashmap();
-
-                var result = {
-                    passed: true,
-                    message: "Passed"
-                };
-
-
-                try {
-                    hash.add(null, {});
-                    result.passed = false;
-                    result.message = "Failed";
-                } catch (e) {
-                    result.passed = true;
-                    result.message = "Passed";
-                }
-
-                try {
-                    hash.add(undefined, {});
-                    result.passed = false;
-                    result.message = "Failed";
-                } catch (e) {
-                    result.passed = true;
-                    result.message = "Passed";
-                }
-
-                return result;
-            };
+            unitTests.push(new ExpectItToThrowWhenAKeyIsUndefinedOrNull());
 
             self.getKeys = function () {
                 var hash = new BASE.collections.Hashmap();
@@ -242,5 +230,5 @@
         BASE.extend(Hashmap, Super);
 
         return Hashmap;
-    }(BASE.util.UnitTest));
+    }(BASE.util.UnitTestRunner));
 });

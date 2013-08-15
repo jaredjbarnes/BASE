@@ -119,33 +119,96 @@
 
             var _takeExpression = expression.take || null;
             var _take = function (value) {
-                if (_takeExpression === null) {
-                    _takeExpression = Expression.take(Expression.constant(value));
-                } else {
-                    throw new Error("Cannot call \"take\" twice.");
-                }
-                return self;
+                var expression = {};
+                Object.keys(self.expression).forEach(function (key) {
+                    var value = self.expression[key];
+                    if (value) {
+                        expression[key] = value.copy();
+                    } else {
+                        expression[key] = null;
+                    }
+                });
+
+                expression.take = Expression.take(Expression.constant(value));
+
+                var copy = new Queryable(self.Type, expression);
+                copy.provider = self.provider;
+
+                return copy;
             };
 
             var _skipExpression = expression.skip || null;
             var _skip = function (value) {
-                if (_skipExpression === null) {
-                    _skipExpression = Expression.skip(Expression.constant(value));
-                } else {
-                    throw new Error("Cannot call \"skip\" twice.");
-                }
-                return self;
+                var expression = {};
+                Object.keys(self.expression).forEach(function (key) {
+                    var value = self.expression[key];
+                    if (value) {
+                        expression[key] = value.copy();
+                    } else {
+                        expression[key] = null;
+                    }
+                });
+
+                expression.skip = Expression.skip(Expression.constant(value));
+
+                var copy = new Queryable(self.Type, expression);
+                copy.provider = self.provider;
+
+                return copy;
             };
 
             var _orderByExpression = expression.orderBy ? expression.orderBy.children : [];
             var _orderByDesc = function (fn) {
-                _orderByExpression.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
-                return self;
+                var expression = {};
+                Object.keys(self.expression).forEach(function (key) {
+                    var value = self.expression[key];
+                    if (value) {
+                        expression[key] = value.copy();
+                    } else {
+                        expression[key] = null;
+                    }
+                });
+
+                var orderBy = [];
+                _orderByExpression.forEach(function (expression) {
+                    orderBy.push(expression.copy());
+                });
+
+                orderBy.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+
+                expression.orderBy = orderBy;
+
+                var copy = new Queryable(self.Type, expression);
+                copy.provider = self.provider;
+
+                return copy;
             };
 
             var _orderBy = function (fn) {
-                _orderByExpression.push(Expression.ascending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
-                return self;
+                var expression = {};
+                Object.keys(self.expression).forEach(function (key) {
+                    var value = self.expression[key];
+                    if (value) {
+                        expression[key] = value.copy();
+                    } else {
+                        expression[key] = null;
+                    }
+                });
+
+                var orderBy = [];
+                _orderByExpression.forEach(function (expression) {
+                    orderBy.push(expression.copy());
+                });
+
+                orderBy.push(Expression.ascending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+
+                expression.orderBy = orderBy;
+
+                var copy = new Queryable(self.Type, expression);
+                copy.provider = self.provider;
+
+                return copy;
+
             };
 
             var _toGuid = function (value) {
@@ -359,8 +422,6 @@
         };
 
         BASE.extend(Queryable, Super);
-
-        var q = new Queryable();
 
         return Queryable;
     }(Object));

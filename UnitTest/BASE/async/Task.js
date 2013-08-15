@@ -39,13 +39,8 @@
                     }
 
                     function alldone(future) {
-                        if (allFutures.length !== 0) {
-                            self.message = "Failed";
-                            setError(self);
-                        } else {
-                            self.message = "Passed";
-                            setValue(self);
-                        }
+                        self.assert(allFutures.length === 0, "Passed", "Failed");
+                        setValue(self);
                     }
 
                     allTimers.start().whenAny(onedone).whenAll(alldone);

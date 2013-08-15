@@ -1,19 +1,6 @@
-﻿(function () {
-    function GUID() {
-        var S4 = function () {
-            return Math.floor(
-                    Math.random() * 0x10000 /* 65536 */
-                ).toString(16);
-        };
+﻿BASE.require(["BASE.util.GUID"], function () {
 
-        return (
-                S4() + S4() + "-" +
-                S4() + "-" +
-                S4() + "-" +
-                S4() + "-" +
-                S4() + S4() + S4()
-            );
-    }
+    var GUID = BASE.util.GUID.create;
 
     BASE.namespace("BASE.collections");
 
@@ -128,5 +115,4 @@
 
         return Hashmap;
     }());
-
-})();
+});

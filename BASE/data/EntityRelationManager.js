@@ -665,6 +665,9 @@
                             // We override the execute method to customize our provider.
                             provider.toArray = provider.execute = function (queryable) {
 
+
+
+                                //BLah
                                 return new Future(function (setValue, setError) {
 
                                     oldExecute.call(provider, queryable).then(function (dtos) {

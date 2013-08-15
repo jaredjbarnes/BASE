@@ -11,28 +11,22 @@
             Super.call(self, "UnitTest.BASE.util.Sandbox");
 
             self.execute = function () {
-                return new BASE.async.Future(function (setValue, setError) {
 
-                    var task = new BASE.async.Task();
-                    task.add(self.expectToPassWithValidUrl());
-                    task.add(self.expectToFailWithInvalidUrl());
+                var task = new BASE.async.Task();
+                task.add(self.expectToPassWithValidUrl());
+                task.add(self.expectToFailWithInvalidUrl());
 
-                    task.start().whenAll(function (futures) {
+                task.start().whenAll(function (futures) {
 
-                        var passed = futures.every(function (future) {
-                            return future.value.passed === true;
-                        });
-
-                        if (passed) {
-                            self.message = "Passed";
-                            setValue(self);
-                        } else {
-                            self.message = "Failed";
-                            setError(self);
-                        }
-
+                    var passed = futures.every(function (future) {
+                        return future.value.passed === true;
                     });
+
+                    self.assert(passed, "Passed", "Failed");
+
                 });
+
+                return BASE.async.Future.fromResult(self);
             };
 
             self.expectToPassWithValidUrl = function () {

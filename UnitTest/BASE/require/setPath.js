@@ -20,14 +20,9 @@
                     var firstTest = BASE.require.getPath("Some.namespace.Klass");
                     var secondTest = BASE.require.getPath("Some.other.namespace.Klass");
 
-                    if (firstTest === "/blah/blah1/Klass.js" &&
-                        secondTest === "../blah/blah2/Klass.js" ) {
-                        self.message = "Passed";
-                        setValue(self);
-                    } else {
-                        self.message = "Error";
-                        setError(self);
-                    }
+                    self.assert(firstTest === "/blah/blah1/Klass.js" && secondTest === "../blah/blah2/Klass.js", "Passed", "Error");
+
+                    setValue(self);
 
                 });
             };

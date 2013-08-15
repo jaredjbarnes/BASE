@@ -21,14 +21,8 @@
 
                     var car = new Mazda();
 
-                    if (car instanceof Car) {
-                        self.message = "Passed";
-                        setValue(self);
-                    } else {
-                        self.message = "Error";
-                        setError(self);
-                    }
-
+                    self.assert(car instanceof Car, "Passed", "Error");
+                    setValue(self);
                 });
             };
 

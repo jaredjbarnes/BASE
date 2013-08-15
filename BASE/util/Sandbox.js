@@ -1,4 +1,8 @@
-﻿BASE.require(["BASE.util.Observable", "BASE.util.PropertyChangedEvent", "BASE.async.Future"], function () {
+﻿BASE.require([
+    "BASE.util.Observable",
+    "BASE.util.PropertyChangedEvent",
+    "BASE.async.Future"
+], function () {
     BASE.namespace("BASE.util");
 
     BASE.util.Sandbox = (function (Super) {
@@ -27,9 +31,6 @@
                             setError(new Error("Couldn't find script."));
                         };
 
-                        win.document.body.appendChild(script);
-
-                        var timeout = null;
                         var check = function () {
                             timeout = setTimeout(function () {
                                 if (win.BASE) {
@@ -41,7 +42,12 @@
                             }, 1);
                         };
 
-                        check();
+                        var timeout = setTimeout(function () {
+                            check();
+                        }, 0);
+
+                        win.document.body.appendChild(script);
+
                     });
 
                     document.body.appendChild(iframe);
