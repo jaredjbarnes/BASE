@@ -34,9 +34,7 @@
             // Cache of listeners
             var propertyListeners = new Hashmap();
 
-            // Many to Many hash
-            // This stores the mapping entity with both entities as keys.
-            var mappingEntities = new MultiKeyMap();
+            
 
             // This builds listeners for each "one to one" properties in the entity, and saves the 
             // listeners in a hash.
@@ -205,7 +203,7 @@
                             }
 
                             // Find the mapping entity.
-                            var mappingEntity = mappingEntities.get(entity, item);
+                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, item);
 
                             // Since this is many to many remove the mapping entity.
                             var mappingDataSet = _dataContext.getDataSet(mappingEntity.constructor);
@@ -231,13 +229,13 @@
                             }
 
                             // We need to create the mapping type entity.
-                            var mappingEntity = mappingEntities.get(entity, target) || new relationship.usingMappingType();
+                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, target) || new relationship.usingMappingType();
 
                             // Assign the data context.
                             mappingEntity.changeTracker.dataContext = _dataContext;
 
                             // Add it to the map for quick access on removal.
-                            mappingEntities.add(entity, target, mappingEntity);
+                            entity.changeTracker.dataContext.mappingEntities.add(entity, target, mappingEntity);
 
                             // This will ensure that we get the mapping entity that has been loaded into the data context.
                             mappingEntity = _dataContext.getDataSet(mappingEntity.constructor).add(mappingEntity);
@@ -276,7 +274,7 @@
                                 // If the new value is DETATCHED (0) then remove it from the hash.
                                 if (event.newValue === 0) {
                                     // Remove the mapping Entity from the map for quick access on removal.
-                                    mappingEntities.remove(entity, target);
+                                    entity.changeTracker.dataContext.mappingEntities.remove(entity, target);
                                 }
                             }, "state");
 
@@ -683,7 +681,7 @@
                                             // to LOADED, set it's it, and let the observer take care of the rest.
 
                                             // We need to create the mapping type entity, or get it from the already loaded hash.
-                                            var mappingEntity = mappingEntities.get(entity, target) || new relationship.usingMappingType();
+                                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, target) || new relationship.usingMappingType();
 
                                             // Assign the data context.
                                             mappingEntity.changeTracker.dataContext = _dataContext;
@@ -708,7 +706,7 @@
                                             mappingEntity[targetMappingRelationship.withOne] = target;
 
                                             // Add the mapping to the hash.
-                                            mappingEntities.add(entity, target, mappingEntity);
+                                            entity.changeTracker.dataContext.mappingEntities.add(entity, target, mappingEntity);
 
                                             // Add the target to the entity's array.
                                             var index = entity[property].indexOf(target);
@@ -766,7 +764,7 @@
                                         // to LOADED, set it's it, and let the observer take care of the rest.
 
                                         // We need to create the mapping type entity, or get it from the already loaded hash.
-                                        var mappingEntity = mappingEntities.get(source, entity) || new relationship.usingMappingType();
+                                        var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(source, entity) || new relationship.usingMappingType();
 
                                         // Assign the data context.
                                         mappingEntity.changeTracker.dataContext = _dataContext;
@@ -775,10 +773,16 @@
                                         mappingEntity.changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
 
                                         // Assign the id of the mapping entity as a concatenation of both entity's ids.
-                                        mappingEntity.id = source.id + "|" + entity.id;
+                                        Object.defineProperty(mappingEntity, "id", {
+                                            enumerable: false,
+                                            set: function (val) { },
+                                            get: function () {
+                                                return source.id + "|" + entity.id;
+                                            }
+                                        });
 
                                         // Add the mapping to the hash.
-                                        mappingEntities.add(source, entity, mappingEntity);
+                                        entity.changeTracker.dataContext.mappingEntities.add(source, entity, mappingEntity);
 
                                         // Add the source to the entity's array.
                                         var index = entity[property].indexOf(source);

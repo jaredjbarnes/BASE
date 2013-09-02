@@ -43,8 +43,6 @@
 
             Super.call(self);
 
-            var _value = value;
-
             Object.defineProperties(self, {
                 "nodeName": {
                     enumerable: true,
@@ -57,7 +55,10 @@
                     enumerable: true,
                     configurable: true,
                     get: function () {
-                        return _value;
+                        return value;
+                    },
+                    set: function (val) {
+                        value = val;
                     }
                 }
             });
@@ -125,23 +126,23 @@
         }
 
         if (typeof value === "string") {
-            return Expression.string(Expression.constant(value));
+            return Expression.string(value);
         } else if (typeof value === "function") {
-            return Expression.function(Expression.constant(value));
+            return Expression.function(value);
         } else if (typeof value === "number") {
-            return Expression.number(Expression.constant(value));
+            return Expression.number(value);
         } else if (typeof value === "boolean") {
-            return Expression.boolean(Expression.constant(value));
+            return Expression.boolean(value);
         } else if (value === null) {
-            return Expression["null"](Expression.constant(value));
+            return Expression["null"](value);
         } else if (typeof value === "undefined") {
-            return Expression["undefined"](Expression.constant(value));
+            return Expression["undefined"](value);
         } else if (Array.isArray(value)) {
-            returnExpression.array(Expression.constant(value));
+            return Expression.array(value);
         } else if (value instanceof Date) {
-            return Expression.date(Expression.constant(value));
+            return Expression.date(value);
         } else {
-            return Expression.object(Expression.constant(value));
+            return Expression.object(value);
         }
     };
 
@@ -152,6 +153,68 @@
     Expression.constant = function (value) {
         return new ValueExpression("constant", value);
     };
+
+    //
+    // ValueExpression helpers
+    //
+
+    Expression.boolean = function (value) {
+        var expression = new ValueExpression("boolean");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.string = function (value) {
+        var expression = new ValueExpression("string");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.number = function (value) {
+        var expression = new ValueExpression("number");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.object = function (value) {
+        var expression = new ValueExpression("object");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.date = function (value) {
+        var expression = new ValueExpression("date");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.function = function (value) {
+        var expression = new ValueExpression("function");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression["null"] = function (value) {
+        var expression = new ValueExpression("null");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression["undefined"] = function (value) {
+        var expression = new ValueExpression("undefined");
+        expression.value = value;
+        return expression;
+    };
+
+    Expression.array = function (value) {
+        var expression = new ValueExpression("array");
+        expression.value = value;
+        return expression;
+    };
+
+    //
+    // OperationExpression helpers
+    //
 
     Expression.equal = function () {
         var expression = new OperationExpression("equal");
@@ -287,79 +350,7 @@
         });
         return expression;
     };
-
-    Expression.boolean = function () {
-        var expression = new OperationExpression("boolean");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.string = function () {
-        var expression = new OperationExpression("string");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.number = function () {
-        var expression = new OperationExpression("number");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.object = function () {
-        var expression = new OperationExpression("object");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.date = function () {
-        var expression = new OperationExpression("date");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.function = function () {
-        var expression = new OperationExpression("function");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression["null"] = function () {
-        var expression = new OperationExpression("null");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression["undefined"] = function () {
-        var expression = new OperationExpression("undefined");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
-    Expression.array = function () {
-        var expression = new OperationExpression("array");
-        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
-            expression.children.push(arg);
-        });
-        return expression;
-    };
-
+    
     Expression.startsWith = function () {
         var expression = new OperationExpression("startsWith");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {

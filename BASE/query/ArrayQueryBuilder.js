@@ -82,12 +82,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj > right) {
+                    if (obj > right.value.value) {
                         results.push(item);
                     }
                 });
@@ -100,12 +100,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj < right) {
+                    if (obj < right.value.value) {
                         results.push(item);
                     }
                 });
@@ -118,12 +118,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj >= right) {
+                    if (obj >= right.value.value) {
                         results.push(item);
                     }
                 });
@@ -136,12 +136,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj <= right) {
+                    if (obj <= right.value.value) {
                         results.push(item);
                     }
                 });
@@ -208,11 +208,11 @@
             };
 
             var _constant = function (expression) {
-                return expression.value;
+                return expression;
             };
 
             var _property = function (expression) {
-                return expression.value;
+                return expression;
             };
 
             var _guid = function (value) {
@@ -257,12 +257,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj.toLowerCase().indexOf(right.toLowerCase()) === 0) {
+                    if (obj.toLowerCase().indexOf(right.value.toLowerCase()) === 0) {
                         results.push(item);
                     }
                 });
@@ -275,12 +275,12 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (obj.toLowerCase().lastIndexOf(right.toLowerCase()) === obj.length - right.length) {
+                    if (obj.toLowerCase().lastIndexOf(right.value.toLowerCase()) === obj.length - right.value.length) {
                         results.push(item);
                     }
                 });
@@ -293,14 +293,14 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
-                    if (right.trim() === "") {
+                    if (right.value.trim() === "") {
                         results.push(item);
-                    } else if (obj.toLowerCase().indexOf(right.toLowerCase()) >= 0) {
+                    } else if (obj.toLowerCase().indexOf(right.value.toLowerCase()) >= 0) {
                         results.push(item);
                     }
                 });
@@ -313,13 +313,13 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
 
-                    if (obj === right) {
+                    if (obj === right.value) {
                         results.push(item);
                     }
                 });
@@ -334,31 +334,32 @@
                 sourceArray.forEach(function (item) {
                     // This will compare the base object.
                     var obj;
-                    if (left === "") {
+                    if (left.value === "") {
                         obj = item;
                     } else {
-                        obj = BASE.getObject(left, item);
+                        obj = BASE.getObject(left.value, item);
                     }
 
-                    if (obj !== right) {
+                    if (obj !== right.value) {
                         results.push(item);
                     }
                 });
                 return results;
             };
 
-            var _skip = function (value) {
+            var _skip = function (valueExpression) {
                 var self = this;
-
+                var value = valueExpression.value;
                 for (var x = 0 ; x < value && filteredArray.length > 0; x++) {
                     filteredArray.shift();
                 }
                 return filteredArray;
             };
 
-            var _take = function (value) {
+            var _take = function (valueExpression) {
                 var self = this;
                 var newFilteredArray = [];
+                var value = valueExpression.value;
                 value = value < filteredArray.length ? value : filteredArray.length;
                 for (var x = 0 ; x < value ; x++) {
                     newFilteredArray.push(filteredArray.shift());

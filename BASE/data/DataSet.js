@@ -82,6 +82,7 @@
                     return loadedEntity;
                 } else {
                     entity.changeTracker.dataContext = _dataContext;
+                    // May not be in context, but has been loaded dynamically.
                     entity.changeTracker.add();
 
                     // This is to switch the entity from the added bucket to the 

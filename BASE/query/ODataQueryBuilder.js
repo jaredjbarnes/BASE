@@ -128,20 +128,20 @@
             return "undefined";
         };
 
-        ODataQueryBuilder.prototype["date"] = function (value) {
-            return "DateTime" + JSON.stringify(value).replace(/"/g, "'") + "";
+        ODataQueryBuilder.prototype["date"] = function (expression) {
+            return "DateTime" + JSON.stringify(expression.value).replace(/"/g, "'") + "";
         };
 
-        ODataQueryBuilder.prototype["string"] = function (value) {
-            return "'" + value.replace("'", "''") + "'";
+        ODataQueryBuilder.prototype["string"] = function (expression) {
+            return "'" + expression.value.replace("'", "''") + "'";
         };
 
-        ODataQueryBuilder.prototype["number"] = function (value) {
-            return value.toString();
+        ODataQueryBuilder.prototype["number"] = function (expression) {
+            return expression.value.toString();
         };
 
-        ODataQueryBuilder.prototype["boolean"] = function (value) {
-            return value.toString();
+        ODataQueryBuilder.prototype["boolean"] = function (expression) {
+            return expression.value.toString();
         };
 
         ODataQueryBuilder.prototype["array"] = function (expression) {
@@ -153,22 +153,22 @@
         };
 
         ODataQueryBuilder.prototype["lessThan"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
+            var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " lt " + right + ")";
         };
 
         ODataQueryBuilder.prototype["greaterThanOrEqual"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
+            var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " ge " + right + ")";
         };
 
         ODataQueryBuilder.prototype["lessThanOrEqual"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
+            var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " le " + right + ")";
         };
 
         ODataQueryBuilder.prototype["not"] = function (left, right) {
-            var boundary = typeof right === "string" ? "'" : "";
+            var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " not " + right + ")";
         };
 

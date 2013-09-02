@@ -27,7 +27,7 @@
                 var self = this;
                 return new Future(function (setValue, setError) {
                     var Type = queryable.Type;
-                    var builder = new ArrayQueryBuilder(array);
+                    var builder = new ArrayQueryBuilder(array.slice(0));
                     var parser = new ExpressionParser(builder);
 
                     parser.parse(queryable.expression.where);

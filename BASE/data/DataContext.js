@@ -36,6 +36,7 @@ BASE.require([
             var _relationships = null;
             var _service = new BASE.data.NullService();
             var _typeToSet = new BASE.collections.Hashmap();
+            var _mappingEntities = new BASE.collections.MultiKeyMap();
 
             var _findSets = function () {
                 Object.keys(self).forEach(function (x) {
@@ -64,6 +65,11 @@ BASE.require([
                             _orm = new ObjectRelationManager(value.relationships);
                             value.dataContext = self;
                         }
+                    }
+                },
+                "mappingEntities": {
+                    get: function () {
+                        return _mappingEntities;
                     }
                 }
             });

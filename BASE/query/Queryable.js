@@ -131,8 +131,7 @@
 
                 expression.take = Expression.take(Expression.constant(value));
 
-                var copy = new Queryable(self.Type, expression);
-                copy.provider = self.provider;
+                var copy = createCopy(expression);
 
                 return copy;
             };
@@ -151,8 +150,7 @@
 
                 expression.skip = Expression.skip(Expression.constant(value));
 
-                var copy = new Queryable(self.Type, expression);
-                copy.provider = self.provider;
+                var copy = createCopy(expression);
 
                 return copy;
             };
@@ -169,17 +167,17 @@
                     }
                 });
 
-                var orderBy = [];
+                
+                var orderBy = {children:[]};
                 _orderByExpression.forEach(function (expression) {
-                    orderBy.push(expression.copy());
+                    orderBy.children.push(expression.copy());
                 });
 
-                orderBy.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+                orderBy.children.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
 
                 expression.orderBy = orderBy;
 
-                var copy = new Queryable(self.Type, expression);
-                copy.provider = self.provider;
+                var copy = createCopy(expression);
 
                 return copy;
             };
@@ -195,17 +193,16 @@
                     }
                 });
 
-                var orderBy = [];
+                var orderBy = {children:[]};
                 _orderByExpression.forEach(function (expression) {
-                    orderBy.push(expression.copy());
+                    orderBy.children.push(expression.copy());
                 });
 
-                orderBy.push(Expression.ascending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+                orderBy.children.push(Expression.ascending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
 
                 expression.orderBy = orderBy;
 
-                var copy = new Queryable(self.Type, expression);
-                copy.provider = self.provider;
+                var copy = createCopy(expression);
 
                 return copy;
 
@@ -284,9 +281,14 @@
                 return queryable;
             };
 
-            var _copy = function () {
-                var queryable = new Queryable(Type, self.expression);
+            var createCopy = function (expression) {
+                var queryable = new Queryable(Type, expression);
+                queryable.provider = self.provider;
                 return queryable;
+            };
+
+            var _copy = function () {
+                return createCopy(self.expression);
             };
 
             var _merge = function (queryable) {
