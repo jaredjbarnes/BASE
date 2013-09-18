@@ -400,7 +400,7 @@
                 orderByDesc: {
                     enumerable: false,
                     configurable: false,
-                    value: _orderBy
+                    value: _orderByDesc
                 },
                 toArray: {
                     enumerable: false,
