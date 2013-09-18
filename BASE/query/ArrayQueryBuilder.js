@@ -1,7 +1,8 @@
 ﻿BASE.require(["BASE.util.Observable"], function () {
     BASE.namespace("BASE.query");
 
-    var Ascending = function (namespace) {
+    var Ascending = function (expression) {
+        var namespace = expression.value;
         var self = this;
         if (!(self instanceof Ascending)) {
             return new Ascending();
@@ -25,7 +26,8 @@
             }
         };
     };
-    var Descending = function (namespace) {
+    var Descending = function (expression) {
+        var namespace = expression.value;
         var self = this;
         if (!(self instanceof Descending)) {
             return new Descending();
