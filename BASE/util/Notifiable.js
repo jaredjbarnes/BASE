@@ -8,8 +8,17 @@
             if (!(self instanceof arguments.callee)) {
                 return new Notifiable();
             }
-            self._globalObservers = [];
-            self._typeObservers = {};
+
+            Object.defineProperties(self, {
+                _globalObservers: {
+                    enumerable: false,
+                    value: []
+                },
+                _typeObservers: {
+                    enumerable: false,
+                    value: {}
+                }
+            });
             return this;
         }
         Notifiable.prototype.observe = function (callback, type) {
