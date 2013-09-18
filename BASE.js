@@ -85,7 +85,7 @@ if (!window.BASE) {
         };
 
         var getObject = function (namespace, scope) {
-            scope = scope || window;
+            scope = typeof scope === "undefined" ? (function(){return this;}()) : scope ;
 
             if (namespace === "") {
                 return scope;
