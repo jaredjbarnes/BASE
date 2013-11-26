@@ -89,7 +89,10 @@
 
                                 newEntity.observe(function observer() {
                                     newEntity.unobserve(observer, relationship.withOne);
-                                    entity.unobserve(idObserver, relationship.hasKey);
+                                    // Only un-observe if the entity has already been saved
+                                    if (entity.id !== null) {
+                                        entity.unobserve(idObserver, relationship.hasKey);
+                                    }
                                 }, relationship.withOne);
                             }
                         }
@@ -159,7 +162,10 @@
 
                                 item.observe(function observer() {
                                     item.unobserve(observer, relationship.withOne);
-                                    entity.unobserve(idObserver, relationship.hasKey);
+                                    // Only un-observe if the entity has already been saved
+                                    if (entity.id !== null) {
+                                        entity.unobserve(idObserver, relationship.hasKey);
+                                    }
                                 }, relationship.withOne);
                             }
 

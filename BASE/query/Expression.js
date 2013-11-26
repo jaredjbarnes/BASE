@@ -350,7 +350,7 @@
         });
         return expression;
     };
-    
+
     Expression.startsWith = function () {
         var expression = new OperationExpression("startsWith");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
@@ -366,4 +366,45 @@
         });
         return expression;
     };
+
+    Expression.any = function (Type, namespace, expression) {
+        var anyExpression = new OperationExpression("any");
+        var ofTypeExpression = new ValueExpression("ofType", Type);
+        var propertyExpression = new ValueExpression("property", namespace);
+
+        anyExpression.children.push(ofTypeExpression, propertyExpression, expression);
+
+        return anyExpression;
+    };
+
+    Expression.all = function (Type, namespace, expression) {
+        var allExpression = new OperationExpression("all");
+        var ofTypeExpression = new ValueExpression("ofType", Type);
+        var propertyExpression = new ValueExpression("property", namespace);
+
+        allExpression.children.push(ofTypeExpression, propertyExpression, expression);
+
+        return allExpression;
+    };
+
+    Expression.contains = function (Type, namespace, expression) {
+        var containsExpression = new OperationExpression("contains");
+        var ofTypeExpression = new ValueExpression("ofType", Type);
+        var propertyExpression = new ValueExpression("property", namespace);
+
+        containsExpression.children.push(ofTypeExpression, propertyExpression, expression);
+
+        return containsExpression;
+    };
+
+    Expression.intersects = function (Type, namespace, expression) {
+        var intersectsExpression = new OperationExpression("intersects");
+        var ofTypeExpression = new ValueExpression("ofType", Type);
+        var propertyExpression = new ValueExpression("property", namespace);
+
+        intersectsExpression.children.push(ofTypeExpression, propertyExpression, expression);
+
+        return intersectsExpression;
+    };
+
 });

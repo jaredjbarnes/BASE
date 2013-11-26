@@ -1,4 +1,4 @@
-﻿(function () {
+﻿BASE.require(["BASE.util.ObservableEvent"], function () {
 
     BASE.namespace("BASE.util");
 
@@ -84,5 +84,4 @@
         };
         return Notifiable;
     })();
-
-})();
+});

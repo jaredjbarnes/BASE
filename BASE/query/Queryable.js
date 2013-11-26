@@ -119,18 +119,8 @@
 
             var _takeExpression = expression.take || null;
             var _take = function (value) {
-                var expression = {};
-                Object.keys(self.expression).forEach(function (key) {
-                    var value = self.expression[key];
-                    if (value) {
-                        expression[key] = value.copy();
-                    } else {
-                        expression[key] = null;
-                    }
-                });
-
+                var expression = copyExpressionObject(self.expression);
                 expression.take = Expression.take(Expression.constant(value));
-
                 var copy = createCopy(expression);
 
                 return copy;
@@ -138,16 +128,7 @@
 
             var _skipExpression = expression.skip || null;
             var _skip = function (value) {
-                var expression = {};
-                Object.keys(self.expression).forEach(function (key) {
-                    var value = self.expression[key];
-                    if (value) {
-                        expression[key] = value.copy();
-                    } else {
-                        expression[key] = null;
-                    }
-                });
-
+                var expression = copyExpressionObject(self.expression);
                 expression.skip = Expression.skip(Expression.constant(value));
 
                 var copy = createCopy(expression);
@@ -157,18 +138,9 @@
 
             var _orderByExpression = expression.orderBy ? expression.orderBy.children : [];
             var _orderByDesc = function (fn) {
-                var expression = {};
-                Object.keys(self.expression).forEach(function (key) {
-                    var value = self.expression[key];
-                    if (value) {
-                        expression[key] = value.copy();
-                    } else {
-                        expression[key] = null;
-                    }
-                });
+                var expression = copyExpressionObject(self.expression);
 
-                
-                var orderBy = {children:[]};
+                var orderBy = { children: [] };
                 _orderByExpression.forEach(function (expression) {
                     orderBy.children.push(expression.copy());
                 });
@@ -183,17 +155,9 @@
             };
 
             var _orderBy = function (fn) {
-                var expression = {};
-                Object.keys(self.expression).forEach(function (key) {
-                    var value = self.expression[key];
-                    if (value) {
-                        expression[key] = value.copy();
-                    } else {
-                        expression[key] = null;
-                    }
-                });
+                var expression = copyExpressionObject(self.expression);
 
-                var orderBy = {children:[]};
+                var orderBy = { children: [] };
                 _orderByExpression.forEach(function (expression) {
                     orderBy.children.push(expression.copy());
                 });
@@ -222,10 +186,13 @@
                 }
             };
 
-            var _toArray = function () {
-                /// <summary>Executes the queryable on the provider.</summary>
-                /// <returns type="BASE.async.Future"></returns>
-                return _provider.execute(self);
+            var _toArray = function (callback) {
+                var future = _provider.execute(self);
+                if (typeof callback === "function") {
+                    future.then(callback);
+                }
+
+                return future;
             };
 
             var _count = function () {
@@ -268,6 +235,26 @@
                 return _provider.include(self, item);
             };
 
+            var _ifNone = function (callback) {
+                self.count().then(function (count) {
+                    if (count === 0) {
+                        callback();
+                    }
+                });
+
+                return self;
+            };
+
+            var _ifAny = function (callback) {
+                self.toArray(function (a) {
+                    if (a.length > 0) {
+                        callback(a);
+                    }
+                });
+
+                return self;
+            };
+
             var _intersects = function (compareToQueryable) {
                 if (compareToQueryable instanceof Array) {
                     compareToQueryable = compareToQueryable.asQueryable();
@@ -285,6 +272,20 @@
                 var queryable = new Queryable(Type, expression);
                 queryable.provider = self.provider;
                 return queryable;
+            };
+
+            var copyExpressionObject = function (expressionObject) {
+                var expression = {};
+                Object.keys(expressionObject).forEach(function (key) {
+                    var value = expressionObject[key];
+                    if (value) {
+                        expression[key] = value.copy();
+                    } else {
+                        expression[key] = null;
+                    }
+                });
+
+                return expression;
             };
 
             var _copy = function () {
