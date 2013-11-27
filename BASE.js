@@ -1,5 +1,8 @@
-if (!window.BASE) {
-    (function () {
+
+(function () {
+
+    var global = (function () { return this; }());
+    if (!global.BASE) {
         if (!Array.prototype.hasOwnProperty("indexOf")) {
             Array.prototype.indexOf = function (searchElement, fromIndex) {
                 var i = fromIndex || 0;
@@ -61,11 +64,11 @@ if (!window.BASE) {
 
             for (var x = 0; x < length; x++) {
                 if (x === 0) {
-                    if (typeof window[a[0]] === 'undefined') {
-                        tmpObj = window[a[0]] = {};
+                    if (typeof global[a[0]] === 'undefined') {
+                        tmpObj = global[a[0]] = {};
                         built = true;
                     } else {
-                        tmpObj = window[a[0]];
+                        tmpObj = global[a[0]];
                     }
                 } else {
                     if (typeof tmpObj[a[x]] === 'undefined') {
@@ -85,10 +88,10 @@ if (!window.BASE) {
         };
 
         var getObject = function (namespace, scope) {
-            scope = typeof scope === "undefined" ? (function(){return this;}()) : scope ;
+            context = typeof context === "undefined" ? global : context;
 
             if (namespace === "") {
-                return scope;
+                return context;
             }
 
             if (typeof namespace === "string") {
@@ -98,10 +101,10 @@ if (!window.BASE) {
 
                 for (var x = 0; x < length; x++) {
                     if (x === 0) {
-                        if (typeof scope[a[0]] === 'undefined') {
+                        if (typeof context[a[0]] === 'undefined') {
                             return undefined;
                         } else {
-                            tmpObj = scope[a[0]];
+                            tmpObj = context[a[0]];
                         }
                     } else {
                         if (typeof tmpObj[a[x]] === 'undefined') {
@@ -202,45 +205,58 @@ if (!window.BASE) {
         var dependencyList = [];
         var dependencyHash = {};
 
+        var HtmlLoader = function (namespace) {
+            var self = scriptManager;
+            self.notify();
+            if (!loading[namespace] && !isObject(namespace)) {
+                loading[namespace] = true;
+
+                var script = document.createElement("script");
+                var src = defaultRequire.getPath(namespace);
+
+                script.onload = function () {
+                    if (!script.onloadDone) {
+                        script.onloadDone = true;
+                        if (loading[namespace]) {
+                            self.loaded(namespace);
+                        }
+                    }
+                };
+
+                script.onerror = function () {
+                    throw new Error("Failed to load: \"" + namespace + "\".");
+                };
+
+                script.onreadystatechange = function () {
+                    if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
+                        if (loading[namespace]) {
+                            self.loaded(namespace);
+                        }
+                    }
+                }
+
+                script.src = src;
+                document.getElementsByTagName('head')[0].appendChild(script);
+            }
+        };
+
+        var NodeLoader = function (namespace) {
+            var self = scriptManager;
+
+            if (!isObject(namespace)) {
+                var path = defaultRequire.getPath(namespace);
+                require(path);
+                self.notify();
+            }
+
+        };
+
         var scriptManager = (function () {
             var observers = {};
             var loading = {};
 
             var scriptManager = {
-                load: function (namespace, path) {
-                    var self = scriptManager;
-                    self.notify();
-                    if (!loading[namespace] && !isObject(namespace)) {
-                        loading[namespace] = true;
-
-                        var script = document.createElement("script");
-                        var src = path || require.getPath(namespace);
-
-                        script.onload = function () {
-                            if (!script.onloadDone) {
-                                script.onloadDone = true;
-                                if (loading[namespace]) {
-                                    self.loaded(namespace);
-                                }
-                            }
-                        };
-
-                        script.onerror = function () {
-                            throw new Error("Failed to load: \"" + namespace + "\".");
-                        };
-
-                        script.onreadystatechange = function () {
-                            if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
-                                if (loading[namespace]) {
-                                    self.loaded(namespace);
-                                }
-                            }
-                        }
-
-                        script.src = src;
-                        document.getElementsByTagName('head')[0].appendChild(script);
-                    }
-                },
+                load: HtmlLoader,
                 loaded: function (namespace) {
                     var self = this;
                     self.notify();
@@ -467,15 +483,23 @@ if (!window.BASE) {
                 root = newRoot;
             };
 
+            self.setEnvironmentToNode = function () {
+                    scriptManager.load = NodeLoader;
+            };
+
+            self.setEnvironmentToBrowser = function () {
+                scriptManager.load = HtmlLoader;
+            };
+
             self.setRoot(options.root);
 
             return self;
         };
 
 
-        var require = (function () {
+        var defaultRequire = (function () {
             var loader = new Loader();
-            var require = function (dependencies, callback) {
+            var defaultRequire = function (dependencies, callback) {
                 ///<summary>
                 ///An on demand script loader. e.g. (["jQuery","Object.prototype.enableObserving"], function(){ //invoked after dependencies are loaded.})
                 ///</summary>
@@ -491,35 +515,35 @@ if (!window.BASE) {
                 loader.load(dependencies, callback);
             };
 
-            require.setFile = loader.setFile;
-            require.setPath = loader.setPath;
-            require.getPath = loader.getPath;
-            require.getPrefix = loader.getPrefix;
-            require.scriptManager = loader.scriptManager;
-            require.setRoot = loader.setRoot;
-            require.getRoot = loader.getRoot;
-            require.dependencyList = dependencyList;
-            return require;
+            defaultRequire.setFile = loader.setFile;
+            defaultRequire.setPath = loader.setPath;
+            defaultRequire.getPath = loader.getPath;
+            defaultRequire.getPrefix = loader.getPrefix;
+            defaultRequire.scriptManager = loader.scriptManager;
+            defaultRequire.setRoot = loader.setRoot;
+            defaultRequire.getRoot = loader.getRoot;
+            defaultRequire.dependencyList = dependencyList;
+            return defaultRequire;
 
         }());
 
-        window.BASE = {};
+        global.BASE = {};
 
         if (!Object.defineProperty || !Object.defineProperties) {
             //So IE 6-8 works. 
-            window.BASE.require = require;
-            window.BASE.namespace = namespace;
-            window.BASE.clone = clone;
-            window.BASE.getObject = getObject;
-            window.BASE.isObject = isObject;
-            window.BASE.extend = extend;
-            window.BASE.Loader = Loader;
+            global.BASE.require = defaultRequire;
+            global.BASE.namespace = namespace;
+            global.BASE.clone = clone;
+            global.BASE.getObject = getObject;
+            global.BASE.isObject = isObject;
+            global.BASE.extend = extend;
+            global.BASE.Loader = Loader;
 
         } else {
             //This really sets it as it should be.
-            Object.defineProperties(window.BASE, {
+            Object.defineProperties(global.BASE, {
                 "require": {
-                    value: require,
+                    value: defaultRequire,
                     enumerable: false,
                     writable: false
                 },
@@ -555,6 +579,5 @@ if (!window.BASE) {
                 }
             });
         }
-
-    })();
-}
+    }
+})();
