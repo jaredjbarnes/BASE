@@ -1,583 +1,808 @@
-
 (function () {
 
     var global = (function () { return this; }());
-    if (!global.BASE) {
-        if (!Array.prototype.hasOwnProperty("indexOf")) {
-            Array.prototype.indexOf = function (searchElement, fromIndex) {
-                var i = fromIndex || 0;
-                var length = this.length;
 
-                while (i < length) {
-                    if (this.hasOwnProperty(i) && this[i] === searchElement) {
-                        return i;
-                    }
-                    i += 1;
-                }
-                return -1;
-            };
-        }
+    var emptyFn = function () { };
 
-        if (!Array.prototype.hasOwnProperty("forEach")) {
-            Array.prototype.forEach = function (fn, thisp) {
-                var i;
-                var length = this.length;
+    var namespace = function (namespace) {
+        var obj = namespace;
+        var a = obj.split('.');
+        var length = a.length;
+        var tmpObj;
+        var built = false;
 
-                for (i = 0; i < length; i += 1) {
-                    if (this.hasOwnProperty(i)) {
-                        fn.call(thisp, this[i], i, this);
-                    }
-                }
-            };
-        }
-
-        if (!Object.hasOwnProperty("keys")) {
-            Object.keys = function (object) {
-                var name;
-                var result = [];
-                for (name in object) {
-                    if (Object.prototype.hasOwnProperty.call(object, name)) {
-                        result.push(name);
-                    }
-                }
-
-                return result;
-            };
-        }
-
-        var namespace = function (namespace) {
-            ///<summary>
-            ///A method to create deep namespaces.
-            ///</summary>
-            ///<param name="namespace" type="String">
-            ///An string representing the namespace desired to be made. 
-            ///e.g. "my.custom.namespace"
-            ///</param>
-            ///<returns type="Boolean" >
-            ///Returns true if the namespace was created.
-            ///</returns>
-            var obj = namespace;
-            var a = obj.split('.');
-            var length = a.length;
-            var tmpObj;
-            var built = false;
-
-            for (var x = 0; x < length; x++) {
-                if (x === 0) {
-                    if (typeof global[a[0]] === 'undefined') {
-                        tmpObj = global[a[0]] = {};
-                        built = true;
-                    } else {
-                        tmpObj = global[a[0]];
-                    }
+        for (var x = 0; x < length; x++) {
+            if (x === 0) {
+                if (typeof global[a[0]] === 'undefined') {
+                    tmpObj = global[a[0]] = {};
+                    built = true;
                 } else {
-                    if (typeof tmpObj[a[x]] === 'undefined') {
-                        tmpObj = tmpObj[a[x]] = {};
-                        built = true;
-                    } else {
-                        tmpObj = tmpObj[a[x]];
-                    }
+                    tmpObj = global[a[0]];
                 }
-            }
-            return built;
-        };
-
-        var isObject = function (namespace) {
-            var obj = getObject(namespace);
-            return obj ? true : false;
-        };
-
-        var getObject = function (namespace, scope) {
-            context = typeof context === "undefined" ? global : context;
-
-            if (namespace === "") {
-                return context;
-            }
-
-            if (typeof namespace === "string") {
-                var a = namespace.split('.');
-                var length = a.length;
-                var tmpObj;
-
-                for (var x = 0; x < length; x++) {
-                    if (x === 0) {
-                        if (typeof context[a[0]] === 'undefined') {
-                            return undefined;
-                        } else {
-                            tmpObj = context[a[0]];
-                        }
-                    } else {
-                        if (typeof tmpObj[a[x]] === 'undefined') {
-                            return undefined;
-                        } else {
-                            tmpObj = tmpObj[a[x]];
-                        }
-                    }
-                }
-                return tmpObj;
             } else {
-                return undefined;
-            }
-        };
-
-        var clone = function (object, deep) {
-            ///<summary>
-            ///Returns a clone of the specified object.
-            ///</summary>
-            ///<param name="object" type="Object">
-            ///Object desired to be cloned
-            ///</param>
-            ///<param name="[deep=true]" type="Boolean">
-            ///If true, clones nested objects also.
-            ///If false, only references nested objects.
-            ///</param>
-            ///<returns type="Object" >
-            ///Returns a clone of the object specified with the first Argument.
-            ///</returns>
-            var obj = {};
-            var proto = object;
-            for (var x in proto) {
-                if (typeof proto[x] === 'object' && deep && proto[x].nodeType === undefined) {
-                    obj[x] = clone(proto[x], deep);
+                if (typeof tmpObj[a[x]] === 'undefined') {
+                    tmpObj = tmpObj[a[x]] = {};
+                    built = true;
                 } else {
-                    obj[x] = proto[x];
+                    tmpObj = tmpObj[a[x]];
                 }
             }
+        }
+        return built;
+    };
+
+    var isObject = function (namespace) {
+        var obj = getObject(namespace);
+        return obj ? true : false;
+    };
+
+    var getObject = function (namespace, context) {
+        context = typeof context === "undefined" ? global : context;
+
+        if (namespace === "") {
+            return context;
+        }
+
+        if (typeof namespace === "string") {
+            var a = namespace.split('.');
+            var length = a.length;
+            var obj;
+
+            obj = context[a[0]];
+
+            for (var x = 1; x < length; x++) {
+                if (typeof obj[a[x]] === 'undefined') {
+                    return undefined;
+                } else {
+                    obj = obj[a[x]];
+                }
+            }
+
             return obj;
-        };
+        } else {
+            return undefined;
+        }
+    };
 
-        var extend = function (d, b) {
-            function __() { this.constructor = d; }
-            __.prototype = b.prototype;
-            d.prototype = new __();
-        };
+    var clone = function (object, deep) {
+        var obj = {};
+        var proto = object;
+        for (var x in proto) {
+            if (typeof proto[x] === 'object' && proto[x] !== null && deep) {
+                obj[x] = clone(proto[x], deep);
+            } else {
+                obj[x] = proto[x];
+            }
+        }
+        return obj;
+    };
 
-        var Synchronizer = function () {
+    var extend = function (SubClass, SuperClass) {
+        function __() { this.constructor = SubClass; }
+        __.prototype = SuperClass.prototype;
+        SubClass.prototype = new __();
+    };
+
+    var assertInstance = function (instance) {
+        if (instance === global) {
+            throw new Error("Constructor run in the context of the global object.");
+        }
+    };
+
+    var Observable = (function () {
+        function Observable() {
             var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new Synchronizer();
+
+            assertInstance(self);
+
+            Object.defineProperties(self, {
+                _globalObservers: {
+                    enumerable: false,
+                    value: []
+                },
+                _typeObservers: {
+                    enumerable: false,
+                    value: {}
+                }
+            });
+            return this;
+        }
+
+        Observable.prototype.observe = function (type, callback) {
+            if (typeof type === "undefined" || typeof callback !== "function") {
+                throw new Error("Invalid arguments.");
             }
 
-            Object.call(self);
+            if (!this._typeObservers[type]) {
+                this._typeObservers[type] = [];
+            }
+            this._typeObservers[type].push(callback);
+            return this;
+        };
 
-            var _completed = 0;
-            var onComplete = function () { };
+        Observable.prototype.observeAll = function (callback) {
+            if (typeof callback !== "function") {
+                throw new Error("Invalid arguments.");
+            }
 
-            var _workers = [];
-            var _callbacks = [];
+            this._globalObservers.push(callback);
+        };
 
-            self.add = function (worker, callback) {
-                _workers.push(worker);
-                _callbacks.push(callback || function () { });
-            };
-            self.remove = function (worker) {
-                var index = _workers.indexOf(worker);
-                _workers.splice(index, 1);
-                _callbacks.splice(index, 1);
-            };
-            self.start = function (callback) {
-                onComplete = callback;
-                if (_workers.length === 0) {
-                    callback();
-                    return;
-                }
-                var copy = _workers.slice();
-                copy.forEach(function (func) {
-                    func(function () {
-                        var index = _workers.indexOf(func);
-                        if (index >= 0) {
-                            _workers.splice(index, 1);
+        Observable.prototype.unobserve = function (type, callback) {
+            if (!this._typeObservers[type]) {
+                this._typeObservers[type] = [];
+            }
+            var observers = this._typeObservers[type];
+            var index = observers.indexOf(callback);
+            if (index >= 0) {
+                observers.splice(index, 1);
+            }
+
+            return this;
+        };
+
+        Observable.prototype.unobserveAll = function (callback) {
+            var index = this._globalObservers.indexOf(callback);
+            if (index >= 0) {
+                this._globalObservers.splice(index, 1);
+            }
+            return this;
+        };
+
+        Observable.prototype.notify = function (event) {
+            var self = this;
+
+            if (typeof event === "string") {
+                event = { type: event };
+            }
+
+            var globalObservers = this._globalObservers.slice(0);
+            var typeObservers = [];
+
+            if (this._typeObservers[event.type]) {
+                typeObservers = this._typeObservers[event.type].slice(0);
+            }
+
+            globalObservers.forEach(function (observer) {
+                observer.call(self, event);
+            });
+            typeObservers.forEach(function (observer) {
+                observer.call(self, event);
+            });
+
+            return this;
+        };
+        return Observable;
+    }());
+
+    var Future = (function () {
+        var Future = function (getValue) {
+            var self = this;
+
+            assertInstance(self);
+
+            var observers = new Observable();
+
+            self.value = null;
+            self.error = null;
+            self.isComplete = false;
+
+            var defaultState = {
+                get: function () {
+                    _state = retrievingState;
+                    getValue(function (value) {
+                        if (_state === retrievingState) {
+                            self.isComplete = true;
+                            self.value = value;
+                            _state = completeState;
+                            observers.notify({ type: "then", value: value });
+                            observers.notify({ type: "onComplete" });
                         }
-
-                        if (_workers.length === 0) {
-                            _callbacks.forEach(function (callback) {
-                                callback();
-                            });
-                            callback();
+                    }, function (error) {
+                        if (_state === retrievingState) {
+                            self.isComplete = true;
+                            self.error = error;
+                            _state = errorState;
+                            observers.notify({ type: "ifError", error: error });
+                            observers.notify({ type: "onComplete" });
                         }
                     });
-                });
+                },
+                then: function (callback) {
+                    var listener = function (e) {
+                        callback(e.value);
+                    };
+                    observers.observe("then", listener);
+                },
+                onComplete: function (callback) {
+                    var listener = function (e) {
+                        callback();
+                    };
+                    observers.observe("onComplete", listener);
+                },
+                ifError: function (callback) {
+                    var listener = function (e) {
+                        callback(e.error);
+                    };
+                    observers.observe("ifError", listener);
+                },
+                ifCanceled: function (callback) {
+                    var listener = function (e) {
+                        callback();
+                    };
+                    observers.observe("ifCanceled", listener);
+                },
+                cancel: function () {
+                    self.isComplete = true;
+                    _state = canceledState;
+                    observers.notify({ type: "ifCanceled" });
+                    observers.notify({ type: "onComplete" });
+                }
+            };
+
+            var retrievingState = {
+                get: emptyFn,
+                then: defaultState.then,
+                onComplete: defaultState.onComplete,
+                ifError: defaultState.ifError,
+                ifCanceled: defaultState.ifCanceled,
+                cancel: defaultState.cancel
+            };
+
+            var errorState = {
+                get: emptyFn,
+                then: emptyFn,
+                onComplete: function (callback) {
+                    callback();
+                },
+                ifError: function (callback) {
+                    callback(self.error);
+                },
+                ifCanceled: emptyFn,
+                cancel: emptyFn
+            };
+
+            var canceledState = {
+                get: emptyFn,
+                then: emptyFn,
+                onComplete: function (callback) {
+                    callback();
+                },
+                ifError: emptyFn,
+                ifCanceled: function (callback) {
+                    callback();
+                },
+                cancel: emptyFn
+            };
+
+            var completeState = {
+                get: emptyFn,
+                then: function (callback) {
+                    callback(self.value);
+                },
+                onComplete: function (callback) {
+                    callback();
+                },
+                ifError: emptyFn,
+                ifCanceled: emptyFn,
+                cancel: emptyFn
+            };
+
+            var _state = defaultState;
+
+            self.then = function (callback) {
+                callback = callback || emptyFn;
+                _state.get();
+                _state.then(callback);
+                return self;
+            };
+            self.onComplete = function (callback) {
+                callback = callback || emptyFn;
+                _state.get();
+                _state.onComplete(callback);
+                return self;
+            };
+            self.ifError = function (callback) {
+                callback = callback || emptyFn;
+                _state.get();
+                _state.ifError(callback);
+                return self;
+            };
+            self.ifCanceled = function (callback) {
+                callback = callback || emptyFn;
+                _state.get();
+                _state.ifCanceled(callback);
+                return self;
+            };
+            self.cancel = function () {
+                _state.cancel();
+                return self;
+            };
+
+        };
+
+        Future.fromResult = function (value) {
+            return new Future(function (setValue) {
+                setValue(value);
+            });
+        };
+
+        Future.fromError = function (error) {
+            return new Future(function (setValue, setError) {
+                setError(error);
+            });
+        };
+
+        return Future;
+    }());
+
+    var Task = (function () {
+
+        var Task = function () {
+            var self = this;
+
+            assertInstance(self);
+
+            var observers = new Observable;
+
+            var futures = Array.prototype.slice.call(arguments, 0);
+            var completedFutures = [];
+            var _started = false;
+
+            futures.forEach(function (future, index) {
+                if (typeof future === "function") {
+                    futures[index] = new Future(future);
+                }
+            });
+
+            Object.defineProperties(self, {
+                "value": {
+                    get: function () {
+                        if (!_started) {
+                            self.start();
+                            return undefined;
+                        } else {
+                            return futures;
+                        }
+
+                    }
+                }
+            });
+
+            var _defaultState = {
+                whenAll: function (callback) {
+                    var listener = function () {
+                        callback(futures);
+                    };
+                    observers.observe("whenAll", listener);
+                },
+                whenAny: function (callback) {
+                    observers.observe("whenAny", function (event) {
+                        callback(event.future);
+                    });
+                    completedFutures.forEach(function (future) {
+                        callback(future);
+                    });
+                },
+                onComplete: function (callback) {
+                    var listener = function () {
+                        callback();
+                    };
+                    observers.observe("onComplete", listener);
+                },
+                ifCanceled: function (callback) {
+                    var listener = function (event) {
+                        callback();
+                    };
+                    observers.observe("canceled", listener);
+                }
+            };
+
+            var _startedState = {
+                whenAll: _defaultState.whenAll,
+                whenAny: _defaultState.whenAny,
+                onComplete: _defaultState.onComplete,
+                ifCanceled: _defaultState.ifCanceled
+            };
+
+            var _canceledState = {
+                whenAll: emptyFn,
+                whenAny: emptyFn,
+                onComplete: function (callback) {
+                    callback();
+                },
+                ifCanceled: function (callback) {
+                    callback();
+                }
+            };
+
+            var _finishedState = {
+                whenAll: function (callback) {
+                    callback(completedFutures);
+                },
+                whenAny: function (callback) {
+                    completedFutures.forEach(function (future) {
+                        callback(future);
+                    });
+                },
+                onComplete: function (callback) {
+                    callback();
+                },
+                ifCanceled: emptyFn
+            };
+
+            var _state = _defaultState;
+
+            self.whenAll = function (callback) {
+                _state.whenAll(callback);
+                return self;
+            };
+
+            self.whenAny = function (callback) {
+                _state.whenAny(callback);
+                return self;
+            };
+
+            self.onComplete = function (callback) {
+                _state.onComplete(callback);
+                return self;
+            };
+
+            self.ifCanceled = function (callback) {
+                _state.ifCanceled(callback);
+                return self;
+            };
+
+            self.add = function () {
+                if (completedFutures.length === 0) {
+                    futures.push.apply(futures, arguments);
+                } else {
+                    throw new Error("Cannot add to a task when it has already finished.");
+                }
+                return self;
+            };
+
+            var fireComplete = function () {
+                _state = _finishedState;
+
+                var whenAll = {
+                    type: "whenAll",
+                    futures: completedFutures
+                }
+                observers.notify(whenAll);
+
+                var onComplete = {
+                    type: "onComplete"
+                };
+                observers.notify(onComplete);
+
+            };
+
+            var _notify = function (future) {
+                completedFutures.push(future);
+                var whenAny = {
+                    type: "whenAny",
+                    future: future
+                };
+                observers.notify(whenAny);
+
+                if (_state !== _canceledState && completedFutures.length === futures.length) {
+                    fireComplete();
+                }
+            };
+
+            var _cancel = function () {
+                if (_state !== _finishedState && _state !== _canceledState) {
+                    _state = _canceledState;
+                    observers.notify({ type: "canceled" });
+
+                    var onComplete = {
+                        type: "onComplete"
+                    };
+                    observers.notify(onComplete);
+                }
+            };
+
+            self.start = function () {
+                if (_started === false) {
+                    _started = true;
+                    _state = _startedState
+                    if (futures.length > 0) {
+                        futures.forEach(function (future) {
+                            var value = future.value;
+                            var error = future.error;
+
+                            future.onComplete(function () {
+                                _notify(future);
+                            });
+
+                            future.ifCanceled(_cancel);
+                        });
+                    } else {
+                        fireComplete();
+                    }
+                }
+                return self;
             };
 
             return self;
         };
 
-        var dependencyList = [];
-        var dependencyHash = {};
+        return Task;
+    }());
 
-        var HtmlLoader = function (namespace) {
-            var self = scriptManager;
-            self.notify();
-            if (!loading[namespace] && !isObject(namespace)) {
-                loading[namespace] = true;
+    var Loader = (function () {
 
-                var script = document.createElement("script");
-                var src = defaultRequire.getPath(namespace);
-
-                script.onload = function () {
-                    if (!script.onloadDone) {
-                        script.onloadDone = true;
-                        if (loading[namespace]) {
-                            self.loaded(namespace);
-                        }
-                    }
-                };
-
-                script.onerror = function () {
-                    throw new Error("Failed to load: \"" + namespace + "\".");
-                };
-
-                script.onreadystatechange = function () {
-                    if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadDone) {
-                        if (loading[namespace]) {
-                            self.loaded(namespace);
-                        }
-                    }
-                }
-
-                script.src = src;
-                document.getElementsByTagName('head')[0].appendChild(script);
-            }
-        };
-
-        var NodeLoader = function (namespace) {
-            var self = scriptManager;
-
-            if (!isObject(namespace)) {
-                var path = defaultRequire.getPath(namespace);
-                require(path);
-                self.notify();
-            }
-
-        };
-
-        var scriptManager = (function () {
-            var observers = {};
-            var loading = {};
-
-            var scriptManager = {
-                load: HtmlLoader,
-                loaded: function (namespace) {
-                    var self = this;
-                    self.notify();
-                },
-                observe: function (callback, namespace) {
-                    var self = scriptManager;
-
-                    var wrapperCallback = function () {
-                        self.unobserve(wrapperCallback, namespace);
-                        callback();
-                    };
-
-                    if (!observers[namespace]) {
-                        observers[namespace] = [];
-                    }
-
-                    observers[namespace].push(wrapperCallback);
-                },
-                unobserve: function (callback, namespace) {
-                    var self = scriptManager;
-                    if (observers[namespace]) {
-                        var callbacks = observers[namespace];
-                        var index = callbacks.indexOf(callback);
-                        if (index >= 0) {
-                            callbacks.splice(index, 1);
-                        }
-                    }
-                },
-                notify: function () {
-                    var self = this;
-                    Object.keys(observers).forEach(function (namespace) {
-                        var callbacks = observers[namespace] ? observers[namespace].slice() : [];
-                        if (isObject(namespace) && callbacks.length > 0) {
-                            if (!dependencyHash[namespace]) {
-                                dependencyList.push(namespace);
-                                dependencyHash[namespace] = true;
-                            }
-                            callbacks.forEach(function (callback) {
-                                callback();
-                            });
-
-                            self.notify();
-
-                            observers[namespace] = [];
-                        }
-                    });
-                },
-                getPending: function () {
-                    var pending = [];
-                    Object.keys(loading).forEach(function (namespace) {
-                        if (!isObject(namespace)) {
-                            pending.push(namespace);
-                        }
-                    });
-                    return pending;
-                },
-                isPending: function (namespace) {
-                    return loading[namespace] && !isObject(namespace) ? true : false;
-                },
-                getObservers: function () {
-                    return observers;
-                }
-            };
-            return scriptManager;
-        }());
-
-        var Loader = function (options) {
-            options = options || {};
-            options.paths = options.paths || {};
-            options.files = options.files || {};
-            options.root = options.root || "";
+        var Loader = function () {
             var self = this;
 
-            if (!(self instanceof Loader)) {
-                return new Loader(options);
-            }
+            assertInstance(self);
 
-            var root;
-            var paths = options.paths;
-            var files = options.files;
-            var concat = function () {
-                var result = arguments[0];
-                for (var x = 1 ; x < arguments.length; x++) {
-                    result += "/" + arguments[x];
-                }
-                return result.replace(/\/+/g, '/');
-            };
+            var files = {};
+            var paths = {};
+            var root = "";
+            var loading = {};
 
-            self.scriptManager = scriptManager;
+            self.loadObject = function (namespace) {
+                var obj = getObject(namespace);
 
-            self.load = function (dependencies, callback, error) {
-                callback = callback || function () { };
-                error = error || function () { };
-
-                scriptManager.notify();
-
-                var cleanedDependencies = [];
-
-                dependencies.forEach(function (namespace) {
-                    if (!namespace) {
-                        return;
-                    }
-                    cleanedDependencies.push(namespace);
-                });
-
-                var synchronizer = new Synchronizer();
-
-                cleanedDependencies.forEach(function (namespace) {
-                    synchronizer.add(function (callback) {
-                        scriptManager.observe(function () {
-                            callback();
-                        }, namespace);
-
-                        scriptManager.load(namespace, self.getPath(namespace));
-                    });
-                });
-
-                // This will ensure that if all dependencies are there it will immediately execute the file.
-                if (cleanedDependencies.length === 0) {
-                    callback();
-                } else {
-                    synchronizer.start(function () {
-                        callback();
+                if (obj) {
+                    loading[namespace] = new Future(function (setValue, setError) {
+                        setValue(undefined);
                     });
                 }
 
-
-
-            }
-
-            self.setFile = function (namespace, path) {
-                if (namespace && path) {
-                    var finalPath = path;
-                    if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
-                        finalPath = finalPath.lastIndexOf("/") === finalPath.length - 1 ? finalPath.substr(0, finalPath.length - 1) : finalPath;
-                        files[namespace] = finalPath;
-                        return;
-                    }
-
-                    if (path.indexOf("/") !== 0) {
-                        finalPath = concat(root, path);
-                    }
-
-                    files[namespace] = finalPath.replace(/\/+/g, '/');
-
+                if (!loading[namespace]) {
+                    var path = self.getPath(namespace);
+                    loading[namespace] = self.loadScript(path);
                 }
+
+                return loading[namespace].then().ifError(function () {
+                    delete loading[namespace];
+                });
             };
 
-            self.setPath = function (namespace, path) {
-                if (namespace && path) {
-                    var finalPath = path;
+            self.loadScript = function (path) {
+                throw new Error("This is an abstract class.");
+            };
 
-                    if (path.indexOf("../") >= 0) {
-                        paths[namespace] = finalPath.replace(/\/+/g, '/');
-                        return;
-                    }
-
-                    if (finalPath.indexOf("http://") == 0 || finalPath.indexOf("https://") === 0) {
-                        finalPath = finalPath.lastIndexOf("/") === finalPath.length - 1 ? finalPath.substr(0, finalPath.length - 1) : finalPath;
-                        paths[namespace] = finalPath;
-                        return;
-                    }
-
-                    if (path.indexOf("/") !== 0) {
-                        finalPath = concat(root, path);
-                    }
-
-                    paths[namespace] = finalPath.replace(/\/+/g, '/');
-
+            self.setNamespace = function (namespace, path) {
+                while (path.lastIndexOf("/") === path.length - 1) {
+                    path = path.substring(0, path.length - 1);
                 }
+
+                paths[namespace] = path;
+            };
+
+            self.setObject = function (namespace, path) {
+                files[namespace] = path;
+            };
+
+            self.getRootPath = function () {
+                return root ? root + "/" : "";
             };
 
             self.getPath = function (namespace) {
-                //Checks to see if there is a file for this namespace.
-                if (files[namespace]) {
-                    return files[namespace];
-                }
-
-                var prefix = self.getPrefix(namespace);
                 var path;
+                var namespaces = namespace.split(".");
+                var currentNamespace;
+                var deepestNamespace;
+                var deepestPath;
+                var remainingNamespace;
 
-                if (prefix) {
-                    path = paths[prefix];
-                    namespace = namespace.replace(prefix, "");
+                // Check if there has been a file set to this object.
+                if (files.hasOwnProperty(namespace)) {
+
+                    path = files[namespace];
+
+                } else if (paths.hasOwnProperty(namespace)) {
+
+                    path = paths[namespace] + ".js";
+
                 } else {
-                    path = root;
+                    currentNamespace = "";
+                    for (var x = 0; x < namespaces.length ; x++) {
+                        currentNamespace = (currentNamespace ? currentNamespace + "." : "") + namespaces[x];
+                        if (paths.hasOwnProperty(currentNamespace)) {
+                            deepestNamespace = currentNamespace;
+                            deepestPath = paths[currentNamespace];
+                        }
+                    }
+
+                    if (deepestNamespace === namespace) {
+                        path = deepestPath + ".js";
+                    } else {
+                        if (typeof deepestPath === "undefined") {
+                            path = self.getRootPath() + namespace.replace(/\./g, "/") + ".js";
+                        } else {
+                            remainingNamespace = namespace.replace(deepestNamespace, "");
+                            path = deepestPath + remainingNamespace.replace(/\./g, "/") + ".js";
+                        }
+                    }
+
                 }
 
-                if (path.indexOf("http://") == 0 || path.indexOf("https://") === 0) {
-                    return path + concat("/" + namespace.replace(/\./g, "/") + ".js");
-                }
-                return concat(path, namespace.replace(/\./g, "/") + ".js");
+                return path;
+
             };
 
-            self.getPrefix = function (namespace) {
-                var prefix;
-                var deepestPrefix = '';
-
-                if (paths.hasOwnProperty(namespace)) {
-                    return namespace;
-                }
-
-                for (prefix in paths) {
-                    if (paths.hasOwnProperty(prefix) && prefix + '.' === namespace.substring(0, prefix.length + 1)) {
-                        if (prefix.length > deepestPrefix.length) {
-                            deepestPrefix = prefix;
+            Object.defineProperties(self, {
+                "root": {
+                    get: function () {
+                        return root;
+                    },
+                    set: function (value) {
+                        root = value;
+                        while (root.lastIndexOf("/") === root.length - 1) {
+                            root = root.substring(0, root.length - 1);
                         }
                     }
                 }
+            });
 
-                return deepestPrefix === "" ? null : deepestPrefix;
-            };
-
-            self.getRoot = function (newRoot) {
-                return root;
-            };
-
-            self.setRoot = function (newRoot) {
-                var index = newRoot.lastIndexOf("/");
-                if (index === newRoot.length - 1) {
-                    newRoot = newRoot.substr(0, newRoot.length - 1);
-                }
-
-                root = newRoot;
-            };
-
-            self.setEnvironmentToNode = function () {
-                    scriptManager.load = NodeLoader;
-            };
-
-            self.setEnvironmentToBrowser = function () {
-                scriptManager.load = HtmlLoader;
-            };
-
-            self.setRoot(options.root);
-
-            return self;
         };
 
+        return Loader;
 
-        var defaultRequire = (function () {
-            var loader = new Loader();
-            var defaultRequire = function (dependencies, callback) {
-                ///<summary>
-                ///An on demand script loader. e.g. (["jQuery","Object.prototype.enableObserving"], function(){ //invoked after dependencies are loaded.})
-                ///</summary>
-                ///<param name="dependencies" type="Array">
-                ///An Array of dependencies needed to be loaded before callback is invoked.
-                ///e.g ["jQuery","Object.prototype.enableObserving"]
-                ///</param>
-                ///<param name="callback" type="Function">
-                ///This will only be invoked if all dependencies are loaded.
-                ///</param>
-                ///<returns type="undefined" />
+    }());
 
-                loader.load(dependencies, callback);
+    var NodeLoader = (function (Super) {
+
+        var NodeLoader = function () {
+            var self = this;
+
+            assertInstance(self);
+
+            Super.call(self);
+
+            self.loadScript = function (path) {
+                return new Future(function (setValue, setError) {
+                    try {
+                        require(path);
+                        setValue(undefined);
+                    } catch (e) {
+                        setError(e);
+                    }
+                });
             };
+        };
 
-            defaultRequire.setFile = loader.setFile;
-            defaultRequire.setPath = loader.setPath;
-            defaultRequire.getPath = loader.getPath;
-            defaultRequire.getPrefix = loader.getPrefix;
-            defaultRequire.scriptManager = loader.scriptManager;
-            defaultRequire.setRoot = loader.setRoot;
-            defaultRequire.getRoot = loader.getRoot;
-            defaultRequire.dependencyList = dependencyList;
-            return defaultRequire;
+        extend(NodeLoader, Super);
 
-        }());
+        return NodeLoader;
 
-        global.BASE = {};
+    }(Loader));
 
-        if (!Object.defineProperty || !Object.defineProperties) {
-            //So IE 6-8 works. 
-            global.BASE.require = defaultRequire;
-            global.BASE.namespace = namespace;
-            global.BASE.clone = clone;
-            global.BASE.getObject = getObject;
-            global.BASE.isObject = isObject;
-            global.BASE.extend = extend;
-            global.BASE.Loader = Loader;
+    var HtmlLoader = (function (Super) {
+
+        var HtmlLoader = function () {
+            var self = this;
+
+            assertInstance(self);
+
+            Super.call(self);
+
+            self.loadScript = function (path) {
+                return new Future(function (setValue, setError) {
+                    // All of this is pretty weird because of browser caching etc.
+                    var script = document.createElement("script");
+                    var src = path;
+
+                    script.onload = function () {
+                        if (!script.onloadCalled) {
+                            script.onloadCalled = true;
+                            setValue(undefined);
+                        }
+                    };
+
+                    script.onerror = function () {
+                        setError(Error("Failed to load: \"" + path + "\"."));
+                    };
+
+                    script.onreadystatechange = function () {
+                        if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadCalled) {
+                            script.onloadCalled = true;
+                            setValue(undefined);
+                        }
+                    }
+
+                    script.src = src;
+                    document.getElementsByTagName('head')[0].appendChild(script);
+                });
+            };
+        };
+
+        extend(HtmlLoader, Super);
+
+        return HtmlLoader;
+
+    }(Loader));
+
+    BASE = {};
+
+    BASE.require = function (namespaces, callback) {
+        callback = callback || function () { };
+        var loader = BASE.require.loader;
+
+        if (Array.isArray(namespaces)) {
+
+            return new Future(function (setValue, setError) {
+                var task = new Task();
+                namespaces.forEach(function (namespace) {
+                    task.add(loader.loadObject(namespace));
+                });
+                task.start().whenAll(function (futures) {
+                    var hasError = futures.some(function (future) {
+                        return future.error !== null;
+                    });
+
+                    if (hasError) {
+                        setError("Failed to load all dependencies.");
+                    } else {
+                        callback();
+                        setValue(undefined);
+                    }
+                });
+            }).then();
 
         } else {
-            //This really sets it as it should be.
-            Object.defineProperties(global.BASE, {
-                "require": {
-                    value: defaultRequire,
-                    enumerable: false,
-                    writable: false
-                },
-                "namespace": {
-                    value: namespace,
-                    enumerable: false,
-                    writable: false
-                },
-                "clone": {
-                    value: clone,
-                    enumerable: false,
-                    writable: false
-                },
-                "getObject": {
-                    value: getObject,
-                    enumerable: false,
-                    writable: false
-                },
-                "isObject": {
-                    value: isObject,
-                    enumerable: false,
-                    writable: false
-                },
-                "extend": {
-                    value: extend,
-                    enumerable: false,
-                    writable: false
-                },
-                "Loader": {
-                    value: Loader,
-                    enumerable: false,
-                    writable: false
-                }
-            });
+            throw new Error("Expected namespaces to be an array.");
         }
+    };
+
+    if (global["window"]) {
+        BASE.require.loader = new HtmlLoader();
+    } else {
+        BASE.require.loader = new NodeLoader();
     }
-})();
+
+    Object.defineProperties(BASE, {
+        "extend": {
+            get: function () {
+                return extend;
+            }
+        },
+        "Loader": {
+            get: function () {
+                return Loader;
+            }
+        },
+        "Observable": {
+            get: function () {
+                return Observable;
+            }
+        },
+        "Future": {
+            get: function () {
+                return Future;
+            }
+        },
+        "Task": {
+            get: function () {
+                return Task;
+            }
+        },
+        "namespace": {
+            get: function () {
+                return namespace;
+            }
+        },
+        "isObject": {
+            get: function () {
+                return isObject;
+            }
+        },
+        "getObject": {
+            get: function () {
+                return getObject;
+            }
+        },
+        "clone": {
+            get: function () {
+                return clone;
+            }
+        }
+
+    });
+
+}());
