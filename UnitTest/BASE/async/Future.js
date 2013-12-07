@@ -1,8 +1,7 @@
 ﻿var path = require("path");
-console.log(path.resolve(__dirname, "../../../BASE.js"));
 
 require("../../../BASE.js");
-BASE.require.setRoot("./");
+BASE.require.loader.root("./");
 
 BASE.require(["BASE.async.Future"], function () {
 

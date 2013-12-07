@@ -1,5 +1,5 @@
 ﻿require("../../../../BASE.js");
-BASE.require.setRoot("./");
+BASE.require.loader.root = "./";
 
 BASE.require(["BASE.v1.util.Guid"], function () {
 
