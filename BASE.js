@@ -4,12 +4,20 @@
 
     var emptyFn = function () { };
 
-    var namespace = function (namespace) {
+    var hasInterface = function (methodNames, obj) {
+        return methodNames.every(function (name) {
+            return obj.hasOwnProperty(name) && typeof obj[name] === "function";
+        });
+    };
+
+    var namespace = function (namespace, setTo) {
         var obj = namespace;
         var a = obj.split('.');
         var length = a.length;
         var tmpObj;
         var built = false;
+
+        setTo || {}
 
         for (var x = 0; x < length; x++) {
             if (x === 0) {
@@ -28,6 +36,9 @@
                 }
             }
         }
+
+        tmpObj = setTo;
+
         return built;
     };
 
@@ -557,9 +568,11 @@
                     loading[namespace] = self.loadScript(path);
                 }
 
-                return loading[namespace].then().ifError(function () {
+                var onIncomplete = function () {
                     delete loading[namespace];
-                });
+                };
+
+                return loading[namespace].then().ifError(onIncomplete).ifCanceled(onIncomplete);
             };
 
             self.loadScript = function (path) {
@@ -720,11 +733,57 @@
 
     BASE = {};
 
+    var Sweeper = function () {
+        var self = this;
+
+        var dependenciesForCallbacks = [];
+        self.sweep = function () {
+            var dependencies;
+            // This is trickery, so be careful. Modifying an array while iterating.
+            for (var x = 0 ; x < dependenciesForCallbacks.length; x++) {
+                var dependencies = dependenciesForCallbacks[x];
+
+                if (dependencies.executeIfReady()) {
+                    dependenciesForCallbacks.splice(x, 1);
+                    x = 0;
+                }
+            }
+        };
+        self.addDependencies = function (dependencies) {
+            dependenciesForCallbacks.push(dependencies);
+        };
+    };
+
+    var Dependencies = function (namespaces, callback) {
+        var self = this;
+
+        var isReady = function () {
+            return namespaces.slice(0).every(function (namespace) {
+                return isObject(namespace);
+            });
+        };
+
+        self.executeIfReady = function () {
+            var calledCallback = false;
+
+            if (isReady()) {
+                callback();
+                calledCallback = true;
+            }
+
+            return calledCallback;
+        };
+    };
+
+    var sweeper = new Sweeper();
+
     BASE.require = function (namespaces, callback) {
         callback = callback || function () { };
         var loader = BASE.require.loader;
 
         if (Array.isArray(namespaces)) {
+            var dependencies = new Dependencies(namespaces, callback);
+            sweeper.addDependencies(dependencies);
 
             return new Future(function (setValue, setError) {
                 var task = new Task();
@@ -739,7 +798,7 @@
                     if (hasError) {
                         setError("Failed to load all dependencies.");
                     } else {
-                        callback();
+                        sweeper.sweep();
                         setValue(undefined);
                     }
                 });
@@ -760,6 +819,11 @@
         "extend": {
             get: function () {
                 return extend;
+            }
+        },
+        "hasInterface": {
+            get: function () {
+                return hasInterface;
             }
         },
         "Loader": {
