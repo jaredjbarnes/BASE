@@ -1,6 +1,6 @@
-﻿BASE.require(["BASE.util.GUID"], function () {
+﻿BASE.require(["BASE.util.Guid"], function () {
 
-    var GUID = BASE.util.GUID.create;
+    var Guid = BASE.util.Guid.create;
 
     BASE.namespace("BASE.collections");
 
@@ -27,7 +27,7 @@
                 }
 
                 if (!key._hash) {
-                    key._hash = GUID();
+                    key._hash = Guid();
                 }
 
                 keyToObjectKey[key._hash] = key;
@@ -100,6 +100,15 @@
                 });
 
                 return keys;
+            };
+
+            self.getValues = function () {
+                var values = [];
+                var keys = self.getKeys();
+                keys.forEach(function (key) {
+                    values.push(self.get(key));
+                });
+                return values;
             };
 
             self.copy = function () {
