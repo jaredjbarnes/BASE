@@ -6,38 +6,25 @@
 
     var hasInterface = function (methodNames, obj) {
         return methodNames.every(function (name) {
-            return obj.hasOwnProperty(name) && typeof obj[name] === "function";
+            return typeof obj[name] === "function";
         });
     };
 
-    var namespace = function (namespace, setTo) {
+    var namespace = function (namespace) {
         var obj = namespace;
         var a = obj.split('.');
         var length = a.length;
-        var tmpObj;
+        var tmpObj = global;
         var built = false;
 
-        setTo || {}
-
         for (var x = 0; x < length; x++) {
-            if (x === 0) {
-                if (typeof global[a[0]] === 'undefined') {
-                    tmpObj = global[a[0]] = {};
-                    built = true;
-                } else {
-                    tmpObj = global[a[0]];
-                }
+            if (typeof tmpObj[a[x]] === 'undefined') {
+                tmpObj = tmpObj[a[x]] = {};
+                built = true;
             } else {
-                if (typeof tmpObj[a[x]] === 'undefined') {
-                    tmpObj = tmpObj[a[x]] = {};
-                    built = true;
-                } else {
-                    tmpObj = tmpObj[a[x]];
-                }
+                tmpObj = tmpObj[a[x]];
             }
         }
-
-        tmpObj = setTo;
 
         return built;
     };
@@ -89,15 +76,85 @@
     };
 
     var extend = function (SubClass, SuperClass) {
+
+        if (typeof SubClass !== "function") {
+            throw new TypeError("SubClass needs to be a function.");
+        }
+
+        if (typeof SuperClass !== "function") {
+            throw new TypeError("SuperClass needs to be a function.");
+        }
+
         function __() { this.constructor = SubClass; }
         __.prototype = SuperClass.prototype;
+
         SubClass.prototype = new __();
+        SubClass.prototype.SuperConstructor = SuperClass;
+        SubClass.prototype.Constructor = SubClass;
     };
 
     var assertInstance = function (instance) {
         if (instance === global) {
-            throw new Error("Constructor run in the context of the global object.");
+            throw new TypeError("Constructor was run in the context of the global object.");
         }
+    };
+
+    var Observer = function (unbind, callback) {
+        var self = this;
+
+        var emptyState = {
+            start: emptyFn,
+            stop: emptyFn,
+            notify: emptyFn,
+            dispose: emptyFn
+        };
+
+        var disposableState = Object.create(emptyState, {
+            dispose: {
+                value: function () {
+                    unbind();
+                }
+            }
+        });
+
+        var startedState = Object.create(disposableState, {
+            stop: {
+                value: function () {
+                    state = stoppedState;
+                }
+            },
+            notify: {
+                value: function () {
+                    callback.apply(null, arguments);
+                }
+            }
+        });
+
+        var stoppedState = Object.create(disposableState, {
+            start: {
+                value: function () {
+                    state = startedState;
+                }
+            }
+        });
+
+        var state = startedState;
+
+        self.stop = function () {
+            return state.stop();
+        };
+        self.start = function () {
+            return state.start();
+        };
+
+        self.notify = function () {
+            return state.notify.apply(state, arguments);
+        };
+
+        self.dispose = function () {
+            state.dispose();
+            state = emptyState;
+        };
     };
 
     var Observable = (function () {
@@ -106,83 +163,65 @@
 
             assertInstance(self);
 
-            Object.defineProperties(self, {
-                _globalObservers: {
-                    enumerable: false,
-                    value: []
-                },
-                _typeObservers: {
-                    enumerable: false,
-                    value: {}
+            var explicitObservers = {};
+            var globalObservers = [];
+
+            var getObservers = function (type) {
+                var observers = explicitObservers[type];
+                if (!observers) {
+                    observers = explicitObservers[type] = [];
                 }
-            });
+
+                return observers;
+            };
+
+            var makeObserver = function (observers, callback) {
+                var observer = new Observer(function () {
+                    var index = observers.indexOf(observer);
+                    observers.splice(index, 1);
+                }, callback);
+
+                observers.push(observer);
+
+                return observer;
+            };
+
+            self.observe = function (type, callback) {
+
+                if (typeof type === "undefined") {
+                    throw new Error("Undefined argument error: expected type.");
+                }
+
+                if (typeof callback === "undefined") {
+                    throw new Error("Undefined argument error: expected callback.");
+                }
+
+                var observers = getObservers(type);
+
+                return makeObserver(observers, callback);
+            };
+
+            self.observeAll = function (callback) {
+                if (typeof callback === "undefined") {
+                    throw new Error("Undefined argument error: expected callback.");
+                }
+
+                return makeObserver(globalObservers, callback);
+            };
+
+            self.notify = function (event) {
+                var observers = getObservers(event.type);
+                var notify = function (observer) {
+                    observer.notify(event);
+                };
+
+                observers.forEach(notify);
+                globalObservers.forEach(notify);
+                return self;
+            };
+
             return this;
         }
-
-        Observable.prototype.observe = function (type, callback) {
-            if (typeof type === "undefined" || typeof callback !== "function") {
-                throw new Error("Invalid arguments.");
-            }
-
-            if (!this._typeObservers[type]) {
-                this._typeObservers[type] = [];
-            }
-            this._typeObservers[type].push(callback);
-            return this;
-        };
-
-        Observable.prototype.observeAll = function (callback) {
-            if (typeof callback !== "function") {
-                throw new Error("Invalid arguments.");
-            }
-
-            this._globalObservers.push(callback);
-        };
-
-        Observable.prototype.unobserve = function (type, callback) {
-            if (!this._typeObservers[type]) {
-                this._typeObservers[type] = [];
-            }
-            var observers = this._typeObservers[type];
-            var index = observers.indexOf(callback);
-            if (index >= 0) {
-                observers.splice(index, 1);
-            }
-
-            return this;
-        };
-
-        Observable.prototype.unobserveAll = function (callback) {
-            var index = this._globalObservers.indexOf(callback);
-            if (index >= 0) {
-                this._globalObservers.splice(index, 1);
-            }
-            return this;
-        };
-
-        Observable.prototype.notify = function (event) {
-            var self = this;
-
-            if (typeof event === "string") {
-                event = { type: event };
-            }
-
-            var globalObservers = this._globalObservers.slice(0);
-            var typeObservers = [];
-
-            if (this._typeObservers[event.type]) {
-                typeObservers = this._typeObservers[event.type].slice(0);
-            }
-
-            globalObservers.forEach(function (observer) {
-                observer.call(self, event);
-            });
-            typeObservers.forEach(function (observer) {
-                observer.call(self, event);
-            });
-
-            return this;
-        };
         return Observable;
     }());
 
@@ -536,7 +575,6 @@
                 return self;
             };
 
-            return self;
         };
 
         return Task;
@@ -731,7 +769,7 @@
 
     }(Loader));
 
-    BASE = {};
+    namespace("BASE");
 
     var Sweeper = function () {
         var self = this;
@@ -745,6 +783,7 @@
 
                 if (dependencies.executeIfReady()) {
                     dependenciesForCallbacks.splice(x, 1);
+                    //Start the loop over, because there might be some more callback ready.
                     x = 0;
                 }
             }
@@ -815,6 +854,21 @@
         BASE.require.loader = new NodeLoader();
     }
 
+    namespace("BASE.async");
+
+    Object.defineProperties(BASE.async, {
+        "Future": {
+            get: function () {
+                return Future;
+            }
+        },
+        "Task": {
+            get: function () {
+                return Task;
+            }
+        }
+    });
+
     Object.defineProperties(BASE, {
         "extend": {
             get: function () {
@@ -834,16 +888,6 @@
         "Observable": {
             get: function () {
                 return Observable;
-            }
-        },
-        "Future": {
-            get: function () {
-                return Future;
-            }
-        },
-        "Task": {
-            get: function () {
-                return Task;
             }
         },
         "namespace": {
@@ -866,7 +910,6 @@
                 return clone;
             }
         }
-
     });
 
 }());
