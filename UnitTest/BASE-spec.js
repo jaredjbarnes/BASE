@@ -5,12 +5,28 @@ BASE.require.loader.root = "./";
 
 describe("BASE Spec", function () {
 
+    it("Test two objects, one to succeed, and the other to fail.", function () {
+
+        var obj1 = {
+            method: function () { }
+        };
+        var obj2 = {
+            otherMethod: function () { }
+        };
+
+        runs(function () {
+            expect(BASE.hasInterface(["method"], obj1)).toBe(true);
+            expect(BASE.hasInterface(["method"], obj2)).toBe(false);
+        });
+
+    });
+
     it("Testing Observable, by observing, notifing, then unobserving and notifing again.", function () {
 
         var called = 0;
         var all = 0;
 
-        var observable = new BASE.util.Observable();
+        var observable = new BASE.Observable();
         var observe = function () {
             called++;
         };
@@ -19,11 +35,11 @@ describe("BASE Spec", function () {
             all++;
         };
 
-        observable.observe("something", observe);
-        observable.observeAll(observeAll);
+        var somethingObserver = observable.observe("something", observe);
+        var allObserver = observable.observeAll(observeAll);
         observable.notify({ type: "something" });
-        observable.unobserve("something", observe);
-        observable.unobserveAll(observeAll);
+        somethingObserver.dispose();
+        allObserver.dispose();
         observable.notify({ type: "something" });
 
         runs(function () {
@@ -238,10 +254,10 @@ describe("BASE Spec", function () {
     });
 
 
-    it("Test BASE.require", function () {
+    it("Test BASE.require for valid namespace", function () {
         var done = false;
 
-        BASE.require(["BASE.util.GUID"]).then(function () {
+        BASE.require(["BASE.util.Guid"]).then(function () {
             done = true;
         });
 
@@ -250,11 +266,11 @@ describe("BASE Spec", function () {
         });
 
         runs(function () {
-            expect(BASE.getObject("BASE.util.GUID")).toBe(BASE.util.GUID);
+            expect(BASE.getObject("BASE.util.Guid")).toBe(BASE.util.Guid);
         });
     });
 
-    it("Test BASE.require", function () {
+    it("Test BASE.require for invalid namespace.", function () {
         var done = false;
 
         BASE.require(["BASE.somefake.namespace"]).ifError(function () {
