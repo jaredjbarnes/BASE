@@ -12,14 +12,9 @@
 
             Super.call(self, message);
 
-            var _validationErrors = validationErrors;
-            Object.defineProperty(self, "validationErrors", {
-                get: function () {
-                    return _validationErrors;
-                }
-            });
+            self.validationErrors = validationErrors;
 
-            self.throw = function (dataContext) {
+            self["throw"] = function (dataContext) {
 
             };
 

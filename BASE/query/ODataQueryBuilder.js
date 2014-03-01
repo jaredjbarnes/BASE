@@ -84,11 +84,11 @@
             return "(" + joined + ")";
         };
 
-        ODataQueryBuilder.prototype["equal"] = function (left, right) {
+        ODataQueryBuilder.prototype["equalTo"] = function (left, right) {
             return "(" + left + " eq " + right + ")";
         };
 
-        ODataQueryBuilder.prototype["notEqual"] = function (left, right) {
+        ODataQueryBuilder.prototype["notEqualTo"] = function (left, right) {
             return "(" + left + " ne " + right + ")";
         };
 
@@ -181,5 +181,5 @@
         };
 
         return ODataQueryBuilder;
-    }(BASE.util.Observable));
+    }(Object));
 });

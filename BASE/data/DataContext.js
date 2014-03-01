@@ -1,16 +1,16 @@
 BASE.require([
     "BASE.collections.MultiKeyMap",
     "BASE.collections.Hashmap",
-    "BASE.util.ObservableEvent",
-    "BASE.util.Observable",
+    "BASE.behaviors.Observable",
     "BASE.data.ObjectRelationManager",
     "BASE.data.NullService",
     "BASE.data.DataSet",
-    "BASE.collections.ObservableArray",
     "BASE.async.Future",
     "BASE.async.Task",
     "BASE.query.Queryable",
-    "Array.prototype.asQueryable"
+    "Array.prototype.asQueryable",
+    "Object.keys",
+    "Array.prototype.forEach"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -19,7 +19,6 @@ BASE.require([
     var Task = BASE.async.Task;
     var Hashmap = BASE.collections.Hashmap;
     var Observable = BASE.util.Observable;
-    var ObservableEvent = BASE.util.ObservableEvent;
 
     BASE.data.DataContext = (function (Super) {
 
@@ -30,7 +29,7 @@ BASE.require([
                 return new DataContext();
             }
 
-            Super.call(self);
+            BASE.behaviors.Observable.call(self);
 
             var _orm = null;
             var _relationships = null;
@@ -47,32 +46,25 @@ BASE.require([
                 });
             };
 
-            Object.defineProperties(self, {
-                "orm": {
-                    get: function () {
-                        return _orm;
-                    }
-                },
-                "service": {
-                    get: function () {
-                        return _service;
-                    },
-                    set: function (value) {
-                        var oldValue = _service;
-                        if (value !== oldValue) {
-                            _service = value;
+            self.getOrm = function () {
+                return _orm;
+            };
 
-                            _orm = new ObjectRelationManager(value.relationships);
-                            value.dataContext = self;
-                        }
-                    }
-                },
-                "mappingEntities": {
-                    get: function () {
-                        return _mappingEntities;
-                    }
+            self.getService = function() {
+                return _service;
+            };
+
+            self.setService = function(value) {
+                var oldValue = _service;
+                if (value !== oldValue) {
+                    _service = value;
+
+                    _orm = new ObjectRelationManager(value.relationships);
+                    value.dataContext = self;
                 }
-            });
+            };
+
+            self.mappingEntities = _mappingEntities;
 
             self.changeTracker = {
                 loaded: new BASE.collections.Hashmap(),
@@ -99,7 +91,7 @@ BASE.require([
 
             self.save = function (entity) {
                 return new Future(function (setValue, setError) {
-                    var dependsOn = self.orm.dependsOn(entity);
+                    var dependsOn = self.getOrm().dependsOn(entity);
                     var task = new Task();
 
                     dependsOn.forEach(function (sourceEntity) {
@@ -110,23 +102,23 @@ BASE.require([
                         var pendingSave = pendingSavedObjects.get(entity);
                         // If its already pending wait for its return by observing and reply back.
                         if (pendingSave) {
-                            pendingSave.observe(function (e) {
+                            pendingSave.observe("saved", function (e) {
                                 setValue(e.response);
-                            }, "saved");
+                            });
 
-                            pendingSave.observe(function (e) {
+                            pendingSave.observe("error", function (e) {
                                 setError(e.response);
-                            }, "error");
+                            });
                         } else {
                             // We need to make the pending save object, its simply an observable object, so we can attatch events to it.
                             pendingSave = new Observable();
                             pendingSavedObjects.add(entity, pendingSave);
 
-                            entity.changeTracker.save().then(function (response) {
+                            entity.getChangeTracker().save().then(function (response) {
                                 setValue(response);
 
                                 // Notify other entities that the object has been saved.
-                                var savedEvent = new ObservableEvent("saved");
+                                var savedEvent = { type: "saved" };
                                 savedEvent.response = response;
                                 pendingSave.notify(savedEvent);
 
@@ -136,7 +128,7 @@ BASE.require([
                                 setError(e);
 
                                 // Notify other entities that the object has been error.
-                                var errorEvent = new ObservableEvent("error");
+                                var errorEvent = { type: "error" };
                                 errorEvent.response = e;
                                 pendingSave.notify(errorEvent);
 
@@ -149,7 +141,39 @@ BASE.require([
             };
 
             self.throwError = function (error) {
-                error.throw(self);
+                error["throw"](self);
+            };
+
+            var handleEntityError = function (entity, e) {
+                var errorEvent;
+
+                if (e instanceof BASE.data.UnauthorizedError) {
+                    entity.notify({
+                        type: "saveUnauthorizedError",
+                        error: e
+                    });
+                } else if (e instanceof BASE.data.ForbiddenError) {
+                    entity.notify({
+                        type: "saveForbiddenError",
+                        error: e
+                    });
+                } else if (e instanceof BASE.data.NetworkError) {
+                    entity.notify({
+                        type: "saveNetworkError",
+                        error: e
+                    });
+                } else if (e instanceof BASE.data.EntityNotFoundError) {
+                    entity.notify({
+                        type: "saveEntityNotFoundError",
+                        error: e
+                    });
+                }
+
+                entity.notify({
+                    type: "saveError",
+                    error: e
+                });
+
             };
 
             self.saveChanges = function () {
@@ -164,18 +188,24 @@ BASE.require([
                     // We need to save each entity in each bucket, and wait for a return.
                     removed.getKeys().forEach(function (key) {
                         var entity = removed.get(key);
-                        task.add(self.save(entity));
+                        task.add(self.save(entity).ifError(function (e) {
+                            handleEntityError(entity, e);
+                        }));
                     });
 
                     updated.getKeys().forEach(function (key) {
                         var entity = updated.get(key);
-                        task.add(self.save(entity));
+                        task.add(self.save(entity).ifError(function (e) {
+                            handleEntityError(entity, e);
+                        }));
                     });
 
                     added.getKeys().forEach(function (key) {
                         var entity = added.get(key);
 
-                        task.add(self.save(entity));
+                        task.add(self.save(entity).ifError(function (e) {
+                            handleEntityError(entity, e);
+                        }));
                     });
 
                     task.start().whenAll(function (futures) {
@@ -205,5 +235,5 @@ BASE.require([
 
         return DataContext;
 
-    }(BASE.util.Observable));
+    }(Object));
 });

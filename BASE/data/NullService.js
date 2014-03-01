@@ -8,19 +8,7 @@
                 return new NullService();
             }
 
-            Super.call(self);
-
-            // This method allows for optimized reads of a many to many property.
-            self.readManyToMany = function (entity, property, queryable) {
-                var PropertyType = queryable.Type;
-                var EntityType = entity.constructor;
-
-                //Do what you need to here.
-
-            };
-
-            // This method allows the 
-            self.read = function (Type, queryable) {
+            self.addEntity = function (entity) {
                 return new BASE.async.Future(function (setValue) {
                     setTimeout(function () {
                         setValue({ message: "Added!", dto: { id: (Math.random() * 10000).toFixed(5) } });
@@ -28,15 +16,7 @@
                 });
             };
 
-            self.add = function (entity) {
-                return new BASE.async.Future(function (setValue) {
-                    setTimeout(function () {
-                        setValue({ message: "Added!", dto: { id: (Math.random() * 10000).toFixed(5) } });
-                    }, 0);
-                });
-            };
-
-            self.update = function (entity) {
+            self.updateEntity = function (entity) {
                 return new BASE.async.Future(function (setValue) {
                     setTimeout(function () {
                         setValue({ message: "Updated!" });
@@ -45,7 +25,7 @@
 
             };
 
-            self.remove = function (entity) {
+            self.removeEntity = function (entity) {
                 return new BASE.async.Future(function (setValue) {
                     setTimeout(function () {
                         setValue({ message: "Remove!" });
@@ -81,5 +61,5 @@
         BASE.extend(NullService, Super);
 
         return NullService;
-    }(BASE.util.Observable));
+    }(Object));
 });

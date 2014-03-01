@@ -1,4 +1,4 @@
-﻿BASE.require(["BASE.util.Observable", "BASE.query.Provider"], function () {
+﻿BASE.require(["BASE.behaviors.Observable", "BASE.query.Provider"], function () {
     BASE.namespace("BASE.data");
 
     BASE.data.Service = (function (Super) {
@@ -8,27 +8,30 @@
                 return new Service();
             }
 
-            Super.call(self);
+            BASE.behaviors.Observerable.call(self);
 
             var _relationships = null;
-            Object.defineProperty(self, "relationships", {
-                get: function () {
-                    return _relationships;
-                },
-                set: function (value) {
-                    var oldValue = _relationships;
-                    if (value !== _relationships) {
-                        _relationships = value;
-                        self.notify(new BASE.util.PropertyChangedEvent("relationships", oldValue, value));
-                    }
+
+            self.getRelationships = function () {
+                return _relationships;
+            };
+
+            self.setRelationships = function (relationships) {
+                var oldValue = _relationships;
+                if (oldValue != relationships) {
+                    _relationships = relationships;
+                    self.notify({
+                        type: "relationships",
+                        oldValue: oldValue,
+                        newValue: relationships
+                    });
                 }
-            });
+            };
 
             // Call this method to create an entity.
             self.createEntity = function (entity) {
                 var Type = entity.constructor;
             };
-
 
             self.updateEntity = function (entity) {
                 var Type = entity.constructor;
@@ -66,5 +69,5 @@
         BASE.extend(Service, Super);
 
         return Service;
-    }(BASE.util.Observable));
+    }(Object));
 });

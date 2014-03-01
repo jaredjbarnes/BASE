@@ -1,7 +1,6 @@
 ﻿BASE.require([
     "BASE.collections.MultiKeyMap",
     "BASE.collections.Hashmap",
-    "BASE.util.ObservableEvent",
     "BASE.util.Observable",
     "BASE.data.inflection"
 ], function () {
@@ -26,17 +25,91 @@
             Super.call(self);
 
             // We store all the relationships in these maps.
-            var _oneToOneRelationships = new BASE.collections.MultiKeyMap();
-            var _oneToManyRelationships = new BASE.collections.MultiKeyMap();
-            var _manyToManyRelationships = new BASE.collections.MultiKeyMap();
+            self.oneToOneRelationships = new BASE.collections.MultiKeyMap();
+            self.oneToManyRelationships = new BASE.collections.MultiKeyMap();
+            self.manyToManyRelationships = new BASE.collections.MultiKeyMap();
 
             // We store all the relationships here from the perspective of the targets.
-            var _oneToOneTargetRelationships = new BASE.collections.MultiKeyMap();
-            var _oneToManyTargetRelationships = new BASE.collections.MultiKeyMap();
-            var _manyToManyTargetRelationships = new BASE.collections.MultiKeyMap();
+            self.oneToOneTargetRelationships = new BASE.collections.MultiKeyMap();
+            self.oneToManyTargetRelationships = new BASE.collections.MultiKeyMap();
+            self.manyToManyTargetRelationships = new BASE.collections.MultiKeyMap();
 
             // We store the dependency properties of a Type in this map.
             var _dependsOn = new BASE.collections.MultiKeyMap();
+
+            // A utility for pulling relationships anywhere up the interitance chain
+            self.getRelationship = function (entity, property) {
+
+                var relationship = undefined;
+
+                var dig = function (object, collection) {
+                    relationship = collection.get(object.Constructor, property);
+                    if (!relationship && object.SuperConstructor) {
+                        dig(new object.SuperConstructor(), collection);
+                    }
+                };
+
+                [self.oneToOneRelationships,
+                    self.oneToManyRelationships,
+                    self.manyToManyRelationships,
+                    self.oneToOneTargetRelationships,
+                    self.oneToManyTargetRelationships,
+                    self.manyToManyTargetRelationships
+                ].forEach(function (collection) {
+                    if (!relationship) {
+                        dig(entity, collection);
+                    };
+                });
+
+                return relationship;
+            };
+
+            var _collectRelationships = function (entity, collection) {
+                var allTypeCollections = [];
+                var allRelationships = [];
+
+                var dig = function (object) {
+                    if (object.Constructor) {
+                        var relationships = collection.get(object.Constructor);
+                        allTypeCollections.push(relationships || new Hashmap());
+                        dig(new object.SuperConstructor());
+                    }
+                };
+
+                dig(entity);
+
+                allTypeCollections.forEach(function (typeCollection) {
+                    typeCollection.getKeys().forEach(function (relationship) {
+                        allRelationships.push(typeCollection.get(relationship));
+                    });
+                });
+
+                return allRelationships;
+            };
+
+            self.getOneToOnes = function (entity) {
+                return _collectRelationships(entity, self.oneToOneRelationships);
+            };
+
+            self.getOneToManys = function (entity) {
+                return _collectRelationships(entity, self.oneToManyRelationships);
+            };
+
+            self.getManyToManys = function (entity) {
+                return _collectRelationships(entity, self.manyToManyRelationships);
+            };
+
+            self.getOneToOneAsTargets = function (entity) {
+                return _collectRelationships(entity, self.oneToOneTargetRelationships);
+            };
+
+            self.getOneToManyAsTargets = function (entity) {
+                return _collectRelationships(entity, self.oneToManyTargetRelationships);
+            };
+
+            self.getManyToManyAsTargets = function (entity) {
+                return _collectRelationships(entity, self.manyToManyTargetRelationships);
+            };
 
             (function (relationships) {
                 var oneToOne = relationships.oneToOne || [];
@@ -45,10 +118,10 @@
 
                 oneToOne.forEach(function (relationship) {
                     // Add to the relationship map.
-                    _oneToOneRelationships.add(relationship.type, relationship.hasOne, relationship);
+                    self.oneToOneRelationships.add(relationship.type, relationship.hasOne, relationship);
 
                     // Add relationship from targets perspective.
-                    _oneToOneTargetRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    self.oneToOneTargetRelationships.add(relationship.ofType, relationship.withOne, relationship);
 
                     // Add dependency property
                     _dependsOn.add(relationship.ofType, relationship.withOne, relationship);
@@ -96,19 +169,19 @@
                     oneToMany.push(oneToManyTarget);
 
                     // Add the many to many relationships..
-                    _manyToManyRelationships.add(relationship.type, relationship.hasMany, relationship);
+                    self.manyToManyRelationships.add(relationship.type, relationship.hasMany, relationship);
 
                     // Add the many to many relationships from targets perspective.
-                    _manyToManyTargetRelationships.add(relationship.ofType, relationship.withMany, relationship);
+                    self.manyToManyTargetRelationships.add(relationship.ofType, relationship.withMany, relationship);
 
                 });
 
                 // Now that we have all the relationships iterate through the one to many, and add them.
                 oneToMany.forEach(function (relationship) {
-                    _oneToManyRelationships.add(relationship.type, relationship.hasMany, relationship);
+                    self.oneToManyRelationships.add(relationship.type, relationship.hasMany, relationship);
 
                     // Add the one to many relationships from targets perspective.
-                    _oneToManyTargetRelationships.add(relationship.ofType, relationship.withOne, relationship);
+                    self.oneToManyTargetRelationships.add(relationship.ofType, relationship.withOne, relationship);
 
                     // Add dependency property
                     _dependsOn.add(relationship.ofType, relationship.withOne, relationship);
@@ -116,45 +189,9 @@
 
             }(relationships));
 
-            Object.defineProperties(self, {
-                oneToOne: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _oneToOneRelationships
-                },
-                oneToMany: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _oneToManyRelationships
-                },
-                manyToMany: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _manyToManyRelationships
-                },
-                oneToOneAsTargets: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _oneToOneTargetRelationships
-                },
-                oneToManyAsTargets: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _oneToManyTargetRelationships
-                },
-                manyToManyAsTargets: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _manyToManyTargetRelationships
-                },
-                relationships: {
-                    get: function () {
-                        return relationships;
-                    }
-                }
-            });
+            self.relationships = relationships;
 
-            // This method allows you to send an entity, and it will return which entities,
+            // This method allows you to send an entity, and it will return which entities
             // need to be saved before this entity can be.
             self.dependsOn = function (entity) {
                 var dependsOn = [];
@@ -182,47 +219,5 @@
         BASE.extend(ObjectRelationManager, Super);
 
         return ObjectRelationManager;
-    }(BASE.util.Observable));
+    }(Object));
 });
-
-/*
-var relationships = {
-    ManyToMany: [
-        {
-            type: Person,
-            hasKey: "id",
-            hasForeignKey: "permissionId",
-            hasMany: "permissions",
-            ofType: Permission,
-            withKey: "id",
-            withForeignKey: "personId",
-            withMany: "people",
-            usingMappingType: PersonToPermission
-        }
-    ],
-    OneToMany: [
-        {
-            type: Application,
-            hasKey: "id",
-            hasMany: "permissions",
-            ofType: Permission,
-            withKey: "id",
-            withForeignKey: "appId",
-            withOne: "application",
-            optional: false, // false is default
-            cascadeDelete: false // false is default
-        }
-    ],
-    OneToOne: [
-        {
-            type: Person,
-            hasKey: "id",
-            hasOne: "ldapAccount",
-            ofType: LdapAccount,
-            withKey: "id",
-            withForeignKey: "personId",
-            withOne: "person"
-        }
-    ]
-};
-*/

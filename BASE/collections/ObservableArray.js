@@ -1,26 +1,22 @@
-BASE.require(["BASE.async.Future"], function () {
+BASE.require([], function () {
 
     BASE.namespace("BASE.collections");
 
     var ArrayChangedEvent = (function () {
         function ArrayChangedEvent(target, newItems, oldItems) {
-            this.type = "change";
             this.newItems = [];
             this.oldItems = [];
             this.newItems = newItems;
             this.oldItems = oldItems;
-            this.target = target;
         }
         return ArrayChangedEvent;
     })();
 
     BASE.collections.ObservableArray = function () {
         var self = this;
-        
-        BASE.assertInstance(self);
-
-        //Use the Observable supplied in BASE.js
-        BASE.Observable.call(self);
+        if (!(self instanceof BASE.collections.ObservableArray)) {
+            self = new BASE.collections.ObservableArray();
+        }
 
         for (var x = 0 ; x < arguments.length; x++) {
             self.push(arguments[x]);
@@ -52,7 +48,9 @@ BASE.require(["BASE.async.Future"], function () {
     };
     BASE.collections.ObservableArray.prototype.splice = function () {
         var result;
-        var newItems = Array.prototype.slice.apply(arguments, [2]);
+        var newItems = Array.prototype.slice.apply(arguments, [
+            2
+        ]);
         var oldItems;
         var event;
         result = Array.prototype.splice.apply(this, arguments);
@@ -94,6 +92,30 @@ BASE.require(["BASE.async.Future"], function () {
             result.push(self[x]);
         }
         return result;
+    };
+    BASE.collections.ObservableArray.prototype.notify = function (event) {
+        if (!this._observers) {
+            this._observers = [];
+        }
+        var observers = this._observers.slice();
+        observers.forEach(function (observer) {
+            observer(event);
+        });
+    };
+    BASE.collections.ObservableArray.prototype.observe = function (callback) {
+        if (!this._observers) {
+            this._observers = [];
+        }
+        this._observers.push(callback);
+    };
+    BASE.collections.ObservableArray.prototype.unobserve = function (callback) {
+        if (!this._observers) {
+            this._observers = [];
+        }
+        var index = this._observers.indexOf(callback);
+        if (index >= 0) {
+            this._observers.splice(index, 1);
+        }
     };
     BASE.collections.ObservableArray.prototype.add = BASE.collections.ObservableArray.prototype.push;
     BASE.collections.ObservableArray.prototype.remove = function (item) {

@@ -1,4 +1,7 @@
-﻿BASE.require(["BASE.collections.Hashmap"], function () {
+﻿BASE.require([
+    "BASE.collections.Hashmap",
+    "Array.prototype.forEach"
+], function () {
     BASE.namespace("BASE.collections");
 
     BASE.collections.MultiKeyMap = (function (Super) {

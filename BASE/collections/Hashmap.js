@@ -1,4 +1,6 @@
-﻿BASE.require(["BASE.util.Guid"], function () {
+﻿BASE.require([
+    "BASE.util.Guid"
+], function () {
 
     var Guid = BASE.util.Guid.create;
 
@@ -10,9 +12,9 @@
             if (!(self instanceof arguments.callee)) {
                 return new Hashmap();
             }
-            var hash = Object.create(null);
+            var hash = {};
             // This allows us to pull the keys back as Objects on getKeys();
-            var keyToObjectKey = Object.create(null);
+            var keyToObjectKey = {};
 
             self.add = function (key, object) {
 
@@ -86,7 +88,7 @@
                     return hash[key] ? true : false;
                 }
 
-                if (key._hash && hash[key._hash]) {
+                if (key._hash && hash.hasOwnProperty([key._hash])) {
                     return true;
                 }
                 return false;

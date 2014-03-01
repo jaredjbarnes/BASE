@@ -5,10 +5,11 @@
     "BASE.async.Future",
     "BASE.async.Task",
     "BASE.collections.Hashmap",
-    "BASE.util.PropertyChangedEvent",
     "BASE.collections.ObservableArray",
+    "BASE.behaviors.collections.ObservableArray",
     "BASE.query.Provider",
-    "BASE.query.ArrayProvider"
+    "BASE.query.ArrayProvider",
+    "BASE.behaviors.Observable"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -18,6 +19,15 @@
     var MultiKeyMap = BASE.collections.MultiKeyMap;
     var Provider = BASE.query.Provider;
     var ArrayProvider = BASE.query.ArrayProvider;
+    var ObservableArrayBehavior = BASE.behaviors.collections.ObservableArray;
+
+    var makeSetterName = function (name) {
+        return "set" + name.substr(0, 1).toUpperCase() + name.substr(1);
+    };
+
+    var makeGetterName = function () {
+        return "get" + name.substr(0, 1).toUpperCase() + name.substr(1);
+    };
 
     BASE.data.EntityRelationManager = (function (Super) {
         var EntityRelationManager = function (entity) {
@@ -31,37 +41,42 @@
             // We set this value when the dataContext is set through a setter.
             var dataSet = null;
 
-            // Cache of listeners
-            var propertyListeners = new Hashmap();
+            //We save all of the observers to the hashmap in order to dispose if necessary.
+            var propertyObservers = new Hashmap();
 
-            
+            // Observing as Sources
+            // This wires up all "one to one" observing.
+            var observeOneToOne = function () {
 
-            // This builds listeners for each "one to one" properties in the entity, and saves the 
-            // listeners in a hash.
-            var getListenerForOneToOne = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
-
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
-
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.oneToOne.get(entity.constructor, property);
-
-                    listener = function (event) {
+                var relationships = self.getDataContext().getOrm().getOneToOnes(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasOne;
+                    var observer = entity.observe(property, function (event) {
                         var newEntity = event.newValue;
                         var oldEntity = event.oldValue;
 
+                        var item = newEntity || oldEntity;
+
                         // Grab the set of the target.
-                        var dataSet = _dataContext.getDataSet(relationship.ofType);
+                        var dataSet;
+                        if (item == null) {
+                            dataSet = _dataContext.getDataSet(relationship.ofType);
+                        } else {
+                            if (item instanceof relationship.ofType) {
+                                dataSet = _dataContext.getDataSet(item.constructor);
+                            } else {
+                                throw new Error("Entity type mismatch. " + item.constructor + " is not a " + relationship.ofType);
+                            }
+                        }
+
 
                         dataSet.add(newEntity);
 
                         // The value could be null, so we need to check.
                         if (oldEntity && oldEntity[relationship.withOne] === entity) {
-                            oldEntity[relationship.withOne] = null;
-                            oldEntity[relationship.withForeignKey] = null;
+                            oldEntity[makeSetterName(relationship.withOne)](null);
+                            oldEntity[makeSetterName(relationship.withForeignKey)](null);
 
                             // If the relationship is required remove it from the data set.
                             if (!relationship.optional) {
@@ -71,63 +86,83 @@
 
                         // The value could be null, so we need to check.
                         if (newEntity) {
-                            newEntity[relationship.withOne] = entity;
+                            newEntity[makeSetterName(relationship.withOne)](entity);
 
-                            // We need to assign the keys as well, but the source target may not be added yet.
-                            if (entity[relationship.hasKey]) {
-                                // Just assign the foreignkey equal to the sources key.
-                                newEntity[relationship.withForeignKey] = entity[relationship.hasKey];
-                            } else {
-                                // We need to listen for the source entity to be saved.
-                                // Once the source is saved, update the foreign key.
-                                var idObserver = function () {
-                                    entity.unobserve(idObserver, relationship.hasKey);
-                                    // Now assign the foreignkey equal to the sources key.
-                                    newEntity[relationship.withForeignKey] = entity[relationship.hasKey];
-                                };
-                                entity.observe(idObserver, relationship.hasKey);
+                            // The target can have the foreign key on it so we check it.
+                            if (relationship.withForeignKey) {
+                                // We need to assign the keys as well, but the source target may not be added yet.
+                                if (entity[relationship.hasKey]) {
+                                    // Just assign the foreignkey equal to the sources key.
+                                    newEntity[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
+                                } else {
+                                    // We need to listen for the source entity to be saved.
+                                    // Once the source is saved, update the foreign key.
+                                    var idCallback = function () {
+                                        idObserver.dispose();
+                                        // Now assign the foreignkey equal to the sources key.
+                                        newEntity[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
+                                    };
+                                    var idObserver = entity.observe(relationship.hasKey, idCallback);
 
-                                newEntity.observe(function observer() {
-                                    newEntity.unobserve(observer, relationship.withOne);
-                                    // Only un-observe if the entity has already been saved
-                                    if (entity.id !== null) {
-                                        entity.unobserve(idObserver, relationship.hasKey);
-                                    }
-                                }, relationship.withOne);
+                                    var observer = newEntity.observe(relationship.withOne, function () {
+                                        observer.dispose();
+                                        // Only un-observe if the entity has already been saved
+                                        if (entity.id !== null) {
+                                            idObserver.dispose();
+                                        }
+                                    });
+                                }
                             }
                         }
 
-                    };
-
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
-
-                return listener;
+                    });
+                    propertyObservers.add(property, observer);
+                });
             };
 
-            // This builds listeners for each "one to many" properties in the entity, and saves the 
-            // listeners in a hash.
-            var getListenerForOneToMany = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
+            // This unwires up all "one to one" observing.
+            var unobserveOneToOne = function () {
+                var relationships = self.getDataContext().getOrm().getOneToOnes(entity) || new Hashmap();
+                // Unobserve from the array.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasOne;
+                    var observer = propertyObservers.get(property).dispose();
+                    if (observer) {
+                        observer.dispose();
+                    }
+                });
+            };
 
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
+            // This wires up all "one to many" observing.
+            var observeOneToMany = function () {
 
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.oneToMany.get(entity.constructor, property);
-                    var dataSet = _dataContext.getDataSet(relationship.ofType);
-
-                    listener = function (event) {
+                var relationships = self.getDataContext().getOrm().getOneToManys(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    ObservableArrayBehavior.call(entity[property]);
+                    var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
+
+                            var dataSet;
+                            if (item == null) {
+                                dataSet = _dataContext.getDataSet(relationship.ofType);
+                            } else {
+                                if (item instanceof relationship.ofType) {
+                                    dataSet = _dataContext.getDataSet(item.constructor);
+                                } else {
+                                    throw new Error("Entity type mismatch. " + item.constructor + " is not a " + relationship.ofType);
+                                }
+                            }
+
+                            var dataSet = _dataContext.getDataSet(item.constructor);
+
                             // We need to check to see if the entity on the target is still the old entity.
                             if (item[relationship.withOne] === entity) {
                                 // Remove the reference from the entity.
-                                item[relationship.withOne] = null;
-                                item[relationship.withForeignKey] = null;
+                                item[makeSetterName(relationship.withOne)](null);
+                                item[makeSetterName(relationship.withForeignKey)](null);
 
                                 // If the relationship is required remove it from the data set.
                                 if (!relationship.optional) {
@@ -137,64 +172,84 @@
 
                             // The value can be set to null, so if the new value is null remove the foreign key as well.
                             if (item[relationship.withOne] === null) {
-                                item[relationship.withForeignKey] = null;
+                                item[makeSetterName(relationship.withForeignKey)](null);
                             }
                         });
 
                         // Add the ties between the object.
                         event.newItems.forEach(function (item) {
+
+                            var dataSet;
+                            if (item == null) {
+                                dataSet = _dataContext.getDataSet(relationship.ofType);
+                            } else {
+                                if (item instanceof relationship.ofType) {
+                                    dataSet = _dataContext.getDataSet(item.constructor);
+                                } else {
+                                    throw new Error("Entity type mismatch. " + item.constructor + " is not a " + relationship.ofType);
+                                }
+                            }
+
                             // Add the reference to the entity.
-                            item[relationship.withOne] = entity;
+                            item[makeSetterName(relationship.withOne)](entity);
 
                             // We need to assign the keys as well, but the source target may not be added yet.
                             if (entity[relationship.hasKey]) {
                                 // Just assign the foreignkey equal to the sources key.
-                                item[relationship.withForeignKey] = entity[relationship.hasKey];
+                                item[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
                             } else {
                                 // We need to listen for the source entity to be saved.
                                 // Once the source is saved, update the foreign key.
-                                var idObserver = function () {
-                                    entity.unobserve(idObserver, relationship.hasKey);
+                                var idCallback = function () {
+                                    idObserver.dispose();
                                     // Now assign the foreignkey equal to the sources key.
-                                    item[relationship.withForeignKey] = entity[relationship.hasKey];
+                                    item[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
                                 };
-                                entity.observe(idObserver, relationship.hasKey);
 
-                                item.observe(function observer() {
-                                    item.unobserve(observer, relationship.withOne);
+                                var idObserver = entity.observe(relationship.hasKey, idCallback);
+
+                                var observer = item.observe(relationship.withOne, function observer() {
+                                    observer.dispose();
                                     // Only un-observe if the entity has already been saved
                                     if (entity.id !== null) {
-                                        entity.unobserve(idObserver, relationship.hasKey);
+                                        idObserver.dispose();
                                     }
-                                }, relationship.withOne);
+                                });
                             }
 
                             // Add the entity
                             dataSet.add(item);
                         });
-                    };
+                    });
+                    propertyObservers.add(property, observer);
+                });
 
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
-
-                return listener;
             };
 
-            // This builds listeners for each "many to many" properties in the entity, and also saves 
-            // the listeners in a hash.
-            var getListenerForManyToMany = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
+            // This unwires up all "one to many" observing.
+            var unobserveOneToMany = function () {
 
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
+                var relationships = self.getDataContext().getOrm().getOneToManys(entity) || new Hashmap();
+                // Unobserve from the array.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    var observer = propertyObservers.get(property);
+                    if (observer) {
+                        observer.dispose();
+                    }
+                });
 
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.manyToMany.get(entity.constructor, property);
+            };
 
-                    listener = function (event) {
+            // This wires up all "many to many" observing.
+            var observeManyToMany = function () {
+
+                var relationships = self.getDataContext().getOrm().getManyToManys(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    ObservableArrayBehavior.call(entity[property]);
+                    var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
                             // Get the array on the target, so we can work with it.
@@ -209,7 +264,7 @@
                             }
 
                             // Find the mapping entity.
-                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, item);
+                            var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(entity, item);
 
                             // Since this is many to many remove the mapping entity.
                             var mappingDataSet = _dataContext.getDataSet(mappingEntity.constructor);
@@ -235,119 +290,184 @@
                             }
 
                             // We need to create the mapping type entity.
-                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, target) || new relationship.usingMappingType();
+                            var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(entity, target)
+                            var sourceMappingRelationship = relationship.sourceMappingRelationship;
+                            var targetMappingRelationship = relationship.targetMappingRelationship;
+
+                            if (!mappingEntity) {
+
+                                // We need to make sure that the mapping entities use these properties.
+                                mappingEntity = new relationship.usingMappingType();
+                                mappingEntity[relationship.withForeignKey] = null;
+                                mappingEntity[relationship.hasForeignKey] = null;
+                                mappingEntity[sourceMappingRelationship.withOne] = null;
+                                mappingEntity[targetMappingRelationship.withOne] = null;
+
+                                BASE.behaviors.data.Entity.call(mappingEntity);
+                            }
 
                             // Assign the data context.
-                            mappingEntity.changeTracker.dataContext = _dataContext;
+                            mappingEntity.getChangeTracker().setDataContext(_dataContext);
 
                             // Add it to the map for quick access on removal.
-                            entity.changeTracker.dataContext.mappingEntities.add(entity, target, mappingEntity);
+                            entity.getChangeTracker().getDataContext().mappingEntities.add(entity, target, mappingEntity);
 
                             // This will ensure that we get the mapping entity that has been loaded into the data context.
                             mappingEntity = _dataContext.getDataSet(mappingEntity.constructor).add(mappingEntity);
 
                             // This should always be up to date.
-                            Object.defineProperty(mappingEntity, relationship.withForeignKey, {
-                                configurable: true,
-                                enumerable: true,
-                                get: function () {
-                                    return entity.id;
-                                },
-                                set: function () { }
-                            });
+                            mappingEntity[makeSetterName(relationship.withForeignKey)](entity.id);
 
                             // This should always be up to date.
-                            Object.defineProperty(mappingEntity, relationship.hasForeignKey, {
-                                configurable: true,
-                                enumerable: true,
-                                get: function () {
-                                    return target.id;
-                                },
-                                set: function () { }
-                            });
+                            mappingEntity[makeSetterName(relationship.hasForeignKey)](target.id);
 
                             // Assign the mapping entity to the entity.
-                            var sourceMappingRelationship = relationship.sourceMappingRelationship;
-                            mappingEntity[sourceMappingRelationship.withOne] = entity;
+                            mappingEntity[makeSetterName(sourceMappingRelationship.withOne)](entity);
 
                             // Assign the mapping entity to the entity.
-                            var targetMappingRelationship = relationship.targetMappingRelationship;
-                            mappingEntity[targetMappingRelationship.withOne] = target;
+                            mappingEntity[makeSetterName(targetMappingRelationship.withOne)](target);
 
                             // We need to remove the mapping entity from the hash when its been detached.
                             // This is also necessary to avoid memory leaks.
-                            entity.changeTracker.observe(function (event) {
+                            entity.getChangeTracker().observe("state", function (event) {
                                 // If the new value is DETATCHED (0) then remove it from the hash.
                                 if (event.newValue === 0) {
                                     // Remove the mapping Entity from the map for quick access on removal.
-                                    entity.changeTracker.dataContext.mappingEntities.remove(entity, target);
+                                    entity.getChangeTracker().getDataContext().mappingEntities.remove(entity, target);
                                 }
-                            }, "state");
+                            });
 
                         });
-                    };
+                    });
+                    propertyObservers.add(property, observer);
+                });
 
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
-
-                return listener;
             };
 
-            // These next methods are here to help the source entity to be updtated, if this entity is
-            // the target.
-            var getListenerForOneToOneAsTargets = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
+            // This unwires up all "many to many" observing.
+            var unobserveManyToMany = function () {
 
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
+                var relationships = self.getDataContext().getOrm().getManyToManys(entity) || new Hashmap();
+                // Unobserve from the array.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    var observer = propertyObservers.get(property);
+                    if (observer) {
+                        observer.dispose();
+                    }
+                });
 
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.oneToOneAsTargets.get(entity.constructor, property);
-                    var dataSet = _dataContext.getDataSet(relationship.type);
+            };
 
-                    listener = function (event) {
+            // Observing as Targets
+            // This wires up all "one to one" observing as targets.
+            var observeOneToOneAsTargets = function () {
+
+                var relationships = self.getDataContext().getOrm().getOneToOneAsTargets(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withOne;
+                    var observer = entity.observe(property, function (event) {
                         var newEntity = event.newValue;
                         var oldEntity = event.oldValue;
 
-                        // The value could be null, so we need to check.
-                        if (oldEntity && oldEntity[relationship.hasOne] === entity) {
-                            oldEntity[relationship.hasOne] = null;
-                        }
+                        var item = newEntity || oldEntity;
 
-                        // The value could be null, so we need to check.
-                        if (newEntity) {
-                            newEntity[relationship.hasOne] = entity;
+                        // Grab the set of the target.
+                        var dataSet;
+                        if (item == null) {
+                            dataSet = _dataContext.getDataSet(relationship.type);
+                        } else {
+                            if (item instanceof relationship.type) {
+                                dataSet = _dataContext.getDataSet(item.constructor);
+                            } else {
+                                throw new Error("Entity type mismatch. " + item.constructor + " is not a " + relationship.type);
+                            }
                         }
 
                         dataSet.add(newEntity);
 
-                    };
+                        // The value could be null, so we need to check.
+                        if (oldEntity && oldEntity[relationship.hasOne] === entity) {
+                            oldEntity[makeSetterName(relationship.hasOne)](null);
+                        }
 
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
+                        // The value could be null, so we need to check.
+                        if (newEntity) {
+                            newEntity[makeSetterName(relationship.hasOne)](entity);
 
-                return listener;
+                            // The source can have the foreign key on it so we check it.
+                            if (relationship.hasForeignKey) {
+                                // We need to assign the keys as well, but the target target may not be added yet.
+                                if (entity[relationship.withKey]) {
+                                    // Just assign the foreignkey equal to the targets key.
+                                    newEntity[makeSetterName(relationship.hasForeignKey)](entity[relationship.withKey]);
+                                } else {
+                                    // We need to listen for the source entity to be saved.
+                                    // Once the source is saved, update the foreign key.
+                                    var idCallback = function () {
+                                        idObserver.dispose();
+                                        // Now assign the foreignkey equal to the sources key.
+                                        newEntity[makeSetterName(relationship.withHasKey)](entity[relationship.withKey]);
+                                    };
+                                    var idObserver = entity.observe(relationship.withKey, idCallback);
+
+                                    var observer = newEntity.observe(relationship.hasOne, function () {
+                                        observer.dispose();
+                                        // Only un-observe if the entity has already been saved
+                                        if (entity.id !== null) {
+                                            idObserver.dispose();
+                                        }
+                                    });
+                                }
+                            }
+
+                        }
+
+                    });
+
+                    propertyObservers.add(property, observer);
+                });
+
             };
 
-            var getListenerForOneToManyAsTargets = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
+            // This unwires up all "one to one" observing as targets.
+            var unobserveOneToOneAsTargets = function () {
 
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
+                var relationships = self.getDataContext().getOrm().getOneToOneAsTargets(entity) || new Hashmap();
+                // Unobserve from the array.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withOne;
+                    var observer = propertyObservers.get(property);
+                    if (observer) {
+                        observer.dispose();
+                    }
+                });
 
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.oneToManyAsTargets.get(entity.constructor, property);
-                    var dataSet = _dataContext.getDataSet(relationship.type);
+            };
 
-                    listener = function (event) {
+            // This wires up all "one to many" observing as targets.
+            var observeOneToManyAsTargets = function () {
+
+                var relationships = self.getDataContext().getOrm().getOneToManyAsTargets(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withOne;
+                    var observer = entity.observe(property, function (event) {
                         var oldSource = event.oldValue;
                         var newSource = event.newValue;
+
+                        var newDataSet;
+                        if (event.newValue == null) {
+                            newDataSet = _dataContext.getDataSet(relationship.type);
+                        } else {
+                            if (event.newValue instanceof relationship.type) {
+                                newDataSet = _dataContext.getDataSet(event.newValue.constructor);
+                            } else {
+                                throw new Error("Entity type mismatch. " + event.newValue.constructor + " is not a " + relationship.type);
+                            }
+                        }
+
 
                         // This old source may be null.
                         if (oldSource) {
@@ -370,30 +490,39 @@
                                 newSourceArray.push(entity);
                             }
 
-                            dataSet.add(newSource);
+                            newDataSet.add(newSource);
                         }
 
-                    };
+                    });
+                    propertyObservers.add(property, observer);
+                });
 
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
-
-                return listener;
             };
 
-            var getListenerForManyToManyAsTargets = function (property) {
-                // Try to get the listener.
-                var listener = propertyListeners.get(property);
+            // This unwires up all "one to many" observing as targets.
+            var unobserveOneToManyAsTargets = function () {
 
-                // Check to see if the listener doesn't already exist, and make it.
-                // Otherwise just serve the listener found in the hash.
-                if (!listener) {
+                var relationships = self.getDataContext().getOrm().getOneToManyAsTargets(entity) || new Hashmap();
+                // Unobserve from the array.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withOne;
+                    var observer = propertyObservers.get(property);
+                    if (observer) {
+                        observer.dispose();
+                    }
+                });
 
-                    // Grab the relationship once, and use it in the callback.
-                    var relationship = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor, property);
+            };
 
-                    listener = function (event) {
+            // This wires up all "many to many" observing as targets.
+            var observeManyToManyAsTargets = function () {
+
+                var relationships = self.getDataContext().getOrm().getManyToManyAsTargets(entity) || new Hashmap();
+                // Observe the array for changes.
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withMany;
+                    ObservableArrayBehavior.call(entity[property]);
+                    var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
                             // Get the array on the source, so we can work with it.
@@ -422,148 +551,26 @@
                             }
 
                         });
-                    };
-
-                    // Add the listener to the hash.
-                    propertyListeners.add(property, listener);
-                }
-
-                return listener;
-            };
-
-            // Observing as Sources
-
-            // This wires up all "one to one" observing.
-            var observeOneToOne = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToOne.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity.observe(getListenerForOneToOne(property), property);
+                    });
+                    propertyObservers.add(property, observer);
                 });
-            };
 
-            // This unwires up all "one to one" observing.
-            var unobserveOneToOne = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToOne.get(entity.constructor) || new Hashmap();
-
-                // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity.unobserve(getListenerForOneToOne(property), property);
-                });
-            };
-
-            // This wires up all "one to many" observing.
-            var observeOneToMany = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToMany.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].observe(getListenerForOneToMany(property));
-                });
-            };
-
-            // This unwires up all "one to many" observing.
-            var unobserveOneToMany = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToMany.get(entity.constructor) || new Hashmap();
-
-                // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].unobserve(getListenerForOneToMany(property));
-                });
-            };
-
-            // This wires up all "many to many" observing.
-            var observeManyToMany = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.manyToMany.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].observe(getListenerForManyToMany(property));
-                });
-            };
-
-            // This unwires up all "many to many" observing.
-            var unobserveManyToMany = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.manyToMany.get(entity.constructor) || new Hashmap();
-
-                // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].unobserve(getListenerForManyToMany(property));
-                });
-            };
-
-            // Observing as Targets
-            // This wires up all "one to one" observing as targets.
-            var observeOneToOneAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToOneAsTargets.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity.observe(getListenerForOneToOneAsTargets(property), property);
-                });
-            };
-
-            // This unwires up all "one to one" observing as targets.
-            var unobserveOneToOneAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToOneAsTargets.get(entity.constructor) || new Hashmap();
-
-                // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity.unobserve(getListenerForOneToOneAsTargets(property), property);
-                });
-            };
-
-            // This wires up all "one to many" observing as targets.
-            var observeOneToManyAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToManyAsTargets.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity.observe(getListenerForOneToManyAsTargets(property), property);
-                });
-            };
-
-            // This unwires up all "one to many" observing as targets.
-            var unobserveOneToManyAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.oneToManyAsTargets.get(entity.constructor) || new Hashmap();
-
-                // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity.unobserve(getListenerForOneToManyAsTargets(property), property);
-                });
-            };
-
-            // This wires up all "many to many" observing as targets.
-            var observeManyToManyAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor) || new Hashmap();
-
-                // Observe the array for changes.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].observe(getListenerForManyToManyAsTargets(property));
-                });
             };
 
             // This unwires up all "many to many" observing as targets.
             var unobserveManyToManyAsTargets = function () {
-                // Retrieve all the One to Many relationships from the orm.
-                var relationships = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor) || new Hashmap();
 
+                var relationships = self.getDataContext().getOrm().getManyToManyAsTargets(entity) || new Hashmap();
                 // Unobserve from the array.
-                relationships.getKeys().forEach(function (property) {
-                    entity[property].unobserve(getListenerForManyToManyAsTargets(property));
+                relationships.forEach(function (relationship) {
+                    var property = relationship.withMany;
+                    var observer = propertyObservers.get(property);
+
+                    if (observer) {
+                        observer.dispose();
+                    }
                 });
+
             };
 
             // This wires everything together to manage relationships through observing.
@@ -599,12 +606,12 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.dataContext.orm.oneToMany.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor, property);
 
                     factory = function () {
                         var provider;
                         // The service provider doesn't need to work until the entity is loaded.
-                        if (entity.changeTracker.state === BASE.data.EntityChangeTracker.LOADED) {
+                        if (entity.getChangeTracker().getState() === BASE.data.EntityChangeTracker.LOADED) {
 
                             var provider = _dataContext.service.getTargetProvider(entity, property);
                             var oldExecute = provider.execute;
@@ -657,21 +664,19 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.dataContext.orm.manyToMany.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor, property);
 
                     factory = function () {
                         var provider;
                         // The service provider doesn't need to work until the entity is loaded.
-                        if (entity.changeTracker.state === BASE.data.EntityChangeTracker.LOADED) {
+                        if (entity.getChangeTracker().getState() === BASE.data.EntityChangeTracker.LOADED) {
                             var provider = _dataContext.service.getTargetProvider(entity, property);
                             var oldExecute = provider.execute;
 
                             // We override the execute method to customize our provider.
                             provider.toArray = provider.execute = function (queryable) {
 
-
-
-                                //BLah
+                                //Blah
                                 return new Future(function (setValue, setError) {
 
                                     oldExecute.call(provider, queryable).then(function (dtos) {
@@ -687,32 +692,27 @@
                                             // to LOADED, set it's it, and let the observer take care of the rest.
 
                                             // We need to create the mapping type entity, or get it from the already loaded hash.
-                                            var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(entity, target) || new relationship.usingMappingType();
+                                            var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(entity, target) || new relationship.usingMappingType();
 
                                             // Assign the data context.
-                                            mappingEntity.changeTracker.dataContext = _dataContext;
+                                            mappingEntity.getChangeTracker().setDataContext(_dataContext);
 
                                             // Change the state of the mapping entity to LOADED before we add it to the state.
-                                            mappingEntity.changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
+                                            mappingEntity.getChangeTracker().changeState(BASE.data.EntityChangeTracker.LOADED);
 
                                             // Assign the id of the mapping entity as a concatenation of both entity's ids.
-                                            Object.defineProperty(mappingEntity, "id", {
-                                                get: function () {
-                                                    return entity.id + "|" + target.id;
-                                                },
-                                                set: function () { }
-                                            });
+                                            mappingEntity[makeSetterName(id)](entity.id + "|" + target.id);
 
                                             // Assign the mapping entity to the entity.
                                             var sourceMappingRelationship = relationship.sourceMappingRelationship;
-                                            mappingEntity[sourceMappingRelationship.withOne] = entity;
+                                            mappingEntity[makeSetterName(sourceMappingRelationship.withOne)](entity);
 
                                             // Assign the mapping entity to the entity.
                                             var targetMappingRelationship = relationship.targetMappingRelationship;
-                                            mappingEntity[targetMappingRelationship.withOne] = target;
+                                            mappingEntity[makeSetterName(targetMappingRelationship.withOne)](target);
 
                                             // Add the mapping to the hash.
-                                            entity.changeTracker.dataContext.mappingEntities.add(entity, target, mappingEntity);
+                                            entity.getChangeTracker().getDataContext().mappingEntities.add(entity, target, mappingEntity);
 
                                             // Add the target to the entity's array.
                                             var index = entity[property].indexOf(target);
@@ -750,7 +750,7 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor, property);
 
                     factory = function () {
                         var provider = _dataContext.service.getTargetProvider(entity, property);
@@ -770,25 +770,19 @@
                                         // to LOADED, set it's it, and let the observer take care of the rest.
 
                                         // We need to create the mapping type entity, or get it from the already loaded hash.
-                                        var mappingEntity = entity.changeTracker.dataContext.mappingEntities.get(source, entity) || new relationship.usingMappingType();
+                                        var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(source, entity) || new relationship.usingMappingType();
 
                                         // Assign the data context.
-                                        mappingEntity.changeTracker.dataContext = _dataContext;
+                                        mappingEntity.getChangeTracker().setDataContext(_dataContext);
 
                                         // Change the state of the mapping entity to LOADED before we add it to the state.
-                                        mappingEntity.changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
+                                        mappingEntity.getChangeTracker().changeState(BASE.data.EntityChangeTracker.LOADED);
 
                                         // Assign the id of the mapping entity as a concatenation of both entity's ids.
-                                        Object.defineProperty(mappingEntity, "id", {
-                                            enumerable: false,
-                                            set: function (val) { },
-                                            get: function () {
-                                                return source.id + "|" + entity.id;
-                                            }
-                                        });
+                                        mappingEntity[makeSetterName(id)](source.id + "|" + entity.id);
 
                                         // Add the mapping to the hash.
-                                        entity.changeTracker.dataContext.mappingEntities.add(source, entity, mappingEntity);
+                                        entity.getChangeTracker().getDataContext().mappingEntities.add(source, entity, mappingEntity);
 
                                         // Add the source to the entity's array.
                                         var index = entity[property].indexOf(source);
@@ -820,9 +814,9 @@
 
             // This assigns the provider factories for all the array relationships.
             var assignProviderFactories = function () {
-                var oneToManyRelationships = self.dataContext.orm.oneToMany.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationships = self.dataContext.orm.manyToMany.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationshipsAsTargets = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor) || new Hashmap();
+                var oneToManyRelationships = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor) || new Hashmap();
+                var manyToManyRelationships = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor) || new Hashmap();
+                var manyToManyRelationshipsAsTargets = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor) || new Hashmap();
 
                 oneToManyRelationships.getKeys().forEach(function (key) {
                     var relationship = oneToManyRelationships.get(key);
@@ -832,7 +826,7 @@
                     // In case of the relationship being created by a many to many, 
                     // The property may be undefined. So we need to create a ObservableArray if so.
                     if (typeof entity[property] === "undefined") {
-                        entity[property] = new BASE.collections.ObservableArray();
+                        entity[property] = [];
                     }
 
                     // Get the old Factory, so we can assign it back it the entity is DETATCHED again.
@@ -840,11 +834,7 @@
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: factory
-                    });
+                    entity[property].providerFactory = factory;
                 });
 
                 manyToManyRelationships.getKeys().forEach(function (key) {
@@ -857,11 +847,7 @@
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: factory
-                    });
+                    entity[property].providerFactory = factory;
                 });
 
                 manyToManyRelationshipsAsTargets.getKeys().forEach(function (key) {
@@ -874,19 +860,15 @@
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: factory
-                    });
+                    entity[property].providerFactory = factory;
                 });
             };
 
             // This unassigns the provider factories for all the array relationships.
             var unassignProviderFactories = function () {
-                var oneToManyRelationships = self.dataContext.orm.oneToMany.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationships = self.dataContext.orm.manyToMany.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationshipsAsTargets = self.dataContext.orm.manyToManyAsTargets.get(entity.constructor) || new Hashmap();
+                var oneToManyRelationships = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor) || new Hashmap();
+                var manyToManyRelationships = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor) || new Hashmap();
+                var manyToManyRelationshipsAsTargets = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor) || new Hashmap();
 
                 oneToManyRelationships.getKeys().forEach(function (key) {
                     var relationship = oneToManyRelationships.get(key);
@@ -894,11 +876,7 @@
                     var oldFactory = defaultproviderFactories.get(property);
 
                     // Assign the old factory back.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: oldFactory
-                    });
+                    entity[property].providerFactory = oldFactory;
                 });
 
                 manyToManyRelationships.getKeys().forEach(function (key) {
@@ -907,11 +885,7 @@
                     var oldFactory = defaultproviderFactories.get(property);
 
                     // Assign the old factory back.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: oldFactory
-                    });
+                    entity[property].providerFactory = oldFactory;
                 });
 
                 manyToManyRelationshipsAsTargets.getKeys().forEach(function (key) {
@@ -920,32 +894,24 @@
                     var oldFactory = defaultproviderFactories.get(property);
 
                     // Assign the old factory back.
-                    Object.defineProperty(entity[property], "providerFactory", {
-                        configurable: true,
-                        enumerable: false,
-                        value: oldFactory
-                    });
+                    entity[property].providerFactory = oldFactory;
                 });
             };
 
             var _dataContext = null;
-            Object.defineProperties(self, {
-                "dataContext": {
-                    get: function () {
-                        return _dataContext;
-                    },
-                    set: function (value) {
-                        if (value !== _dataContext) {
-                            _dataContext = value;
+            self.getDataContext = function () {
+                return _dataContext;
+            };
+            self.setDataContext = function (value) {
+                if (value !== _dataContext) {
+                    _dataContext = value;
 
-                            // This data context can be set to null, if the entity is DETATCHED.
-                            if (value) {
-                                dataSet = _dataContext.getDataSet(entity.constructor);
-                            }
-                        }
+                    // This data context can be set to null, if the entity is DETATCHED.
+                    if (value) {
+                        dataSet = _dataContext.getDataSet(entity.constructor);
                     }
                 }
-            });
+            };
 
             var _started = false;
 

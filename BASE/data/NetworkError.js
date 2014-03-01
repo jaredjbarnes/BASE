@@ -12,7 +12,7 @@
 
             Super.call(self, message);
 
-            self.throw = function (dataContext) {
+            self["throw"] = function (dataContext) {
 
             };
 

@@ -1,16 +1,14 @@
 ﻿BASE.require([
-    "BASE.util.Observable",
     "BASE.async.Future",
     "BASE.async.Task",
-    "BASE.util.PropertyChangedEvent",
     "BASE.collections.Hashmap",
-    "Array.prototype.where",
     "BASE.data.EntityRelationManager",
-    "BASE.data.states.DetatchedState",
+    "BASE.data.states.DetachedState",
     "BASE.data.states.AddedState",
     "BASE.data.states.LoadedState",
     "BASE.data.states.UpdatedState",
-    "BASE.data.states.RemovedState"
+    "BASE.data.states.RemovedState",
+    "BASE.behaviors.Observable"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -18,9 +16,8 @@
     var Task = BASE.async.Task;
     var Hashmap = BASE.collections.Hashmap;
     var EntityRelationManager = BASE.data.EntityRelationManager;
-    var PropertyChangedEvent = BASE.util.PropertyChangedEvent;
 
-    var DetatchedState = BASE.data.states.DetatchedState;
+    var DetachedState = BASE.data.states.DetachedState;
     var AddedState = BASE.data.states.AddedState;
     var LoadedState = BASE.data.states.LoadedState;
     var UpdatedState = BASE.data.states.UpdatedState;
@@ -33,7 +30,8 @@
                 return new EntityChangeTracker(entity);
             }
 
-            Super.call(self);
+            self.entity = entity;
+            BASE.behaviors.Observable.apply(self);
 
             // This dataSet will be used to load entities in.
             var dataSet = null;
@@ -43,9 +41,9 @@
                 // Check to see if we are part of a context.
                 if (_dataContext) {
                     // Check if the property changed is a "one to one" relationship.
-                    var oneToOne = _dataContext.orm.oneToOne.get(entity.constructor, event.property);
-                    var oneToOneTarget = _dataContext.orm.oneToOneAsTargets.get(entity.constructor, event.property);
-                    var oneToManyAsTarget = _dataContext.orm.oneToManyAsTargets.get(entity.constructor, event.property);
+                    var oneToOne = _dataContext.getOrm().oneToOneRelationships.get(entity.constructor, event.property);
+                    var oneToOneTarget = _dataContext.getOrm().oneToOneTargetRelationships.get(entity.constructor, event.property);
+                    var oneToManyAsTarget = _dataContext.getOrm().oneToManyTargetRelationships.get(entity.constructor, event.property);
 
                     // If its not a relationship save changes.
                     if (!oneToOne && !oneToOneTarget && !oneToManyAsTarget) {
@@ -55,9 +53,9 @@
             };
 
             // Start listening for changes to the changeTracker.
-            entity.observe(onEntityUpdated);
+            var onEntityUpdatedObserver = entity.observeAll(onEntityUpdated);
 
-            var _changeState = function (state) {
+            self.changeState = function (state) {
                 // Ensure that the state parameter is legitimate.
                 if (typeof state !== "number") {
                     throw new Error("The state needs to be a number, please use the enum found on EntityChangeTracker class.");
@@ -86,111 +84,74 @@
                     _state.start();
 
                     // Notify observers of state changes.
-                    self.notify(new PropertyChangedEvent("state", oldCurrentState, state, self));
+                    self.notify({
+                        type: "state",
+                        property: "state",
+                        oldValue: oldCurrentState,
+                        newValue: state,
+                        target: self
+                    });
                 }
             };
 
             // This method will be called by the data context.
-            var _save = function () {
+            self.save = function () {
                 return _state.save();
             };
 
             // This method will be called by the data context.
-            var _add = function () {
+            self.add = function () {
                 _state.add();
             };
 
             // This method will be called by the data context.
-            var _remove = function () {
+            self.remove = function () {
                 _state.remove();
             };
 
-            var _sync = function (dto) {
+            self.sync = function (dto) {
                 // We need stop listening for property changes.
-                entity.unobserve(onEntityUpdated);
+                onEntityUpdatedObserver.stop();
 
                 _state.sync(dto);
 
                 // Start listening for changes again after we synced it.
-                entity.observe(onEntityUpdated);
+                onEntityUpdatedObserver.start();
             };
 
-            var _unload = function () {
+            self.unload = function () {
                 _state.unload();
             };
 
             var _dataContext = null;
-            Object.defineProperties(self, {
-                dataContext: {
-                    get: function () {
-                        if (!_dataContext) {
-                            throw new Error("No data context has been assigned to this tracker.");
-                        }
-                        return _dataContext;
-                    },
-                    set: function (value) {
-                        var oldValue = _dataContext;
-                        if (value !== _dataContext) {
-                            _dataContext = value;
-                            // The data context may be null if the entity is being removed from the context.
-                            if (_dataContext) {
-                                dataSet = _dataContext.getDataSet(entity.constructor);
-                            }
 
-                            entityRelationManager.dataContext = _dataContext;
-                            self.notify(new PropertyChangedEvent("dataContext", oldValue, value, self));
-                        }
-                    }
-                },
-                state: {
-                    get: function () {
-                        return _currentState;
-                    }
-                },
-                stateObject: {
-                    get: function () {
-                        return _state;
-                    }
-                },
-                changeState: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _changeState
-                },
-                add: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _add
-                },
-                sync: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _sync
-                },
-                remove: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _remove
-                },
-                save: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _save
-                },
-                entity: {
-                    get: function () { return entity; }
+            self.getDataContext = function () {
+                if (!_dataContext) {
+                    //throw new Error("No data context has been assigned to this tracker.");
                 }
-            });
+                return _dataContext;
+            };
+
+            self.setDataContext = function (value) {
+                var oldValue = _dataContext;
+                if (value !== _dataContext) {
+                    _dataContext = value;
+                    // The data context may be null if the entity is being removed from the context.
+                    if (_dataContext) {
+                        dataSet = _dataContext.getDataSet(entity.constructor);
+                    }
+
+                    entityRelationManager.setDataContext(_dataContext);
+                    self.notify({ type: "dataContext", oldValue: oldValue, newValue: value });
+                }
+            };
 
             // This is used to manage relationships between entities.
             // It can be used with the start and stop method on the ERM.
             var entityRelationManager = new EntityRelationManager(entity);
 
-            // This is the int value of the state.
-            var _currentState = 0;
-
             var _states = {
-                "0": new DetatchedState(self, entityRelationManager),
+                "0": new DetachedState(self, entityRelationManager),
                 "1": new LoadedState(self, entityRelationManager),
                 "2": new AddedState(self, entityRelationManager),
                 "3": new UpdatedState(self, entityRelationManager),
@@ -200,39 +161,46 @@
             // This is the actual state object.
             var _state = _states["0"];
 
+            // This is the int value of the state.
+            var _currentState = 0;
+
+            self.getState = function () {
+                return _currentState;
+            };
+
+            self.stateObject = _state;
+
+            self.changeStateToDetached = function () {
+                self.changeState(0);
+            };
+
+            self.changeStateToLoaded = function () {
+                self.changeState(1);
+            };
+
+            self.changeStateToAdded = function () {
+                self.changeState(2);
+            };
+
+            self.changeStateToUpdated = function () {
+                self.changeState(3);
+            };
+
+            self.changeStateToRemoved = function () {
+                self.changeState(4);
+            };
+
             return self;
         };
 
         BASE.extend(EntityChangeTracker, Super);
 
-        Object.defineProperties(EntityChangeTracker, {
-            "DETATCHED": {
-                get: function () {
-                    return 0;
-                }
-            },
-            "LOADED": {
-                get: function () {
-                    return 1;
-                }
-            },
-            "ADDED": {
-                get: function () {
-                    return 2;
-                }
-            },
-            "UPDATED": {
-                get: function () {
-                    return 3;
-                }
-            },
-            "REMOVED": {
-                get: function () {
-                    return 4;
-                }
-            }
-        });
+        EntityChangeTracker.DETACHED = 0;
+        EntityChangeTracker.LOADED = 1;
+        EntityChangeTracker.ADDED = 2;
+        EntityChangeTracker.UPDATED = 3;
+        EntityChangeTracker.REMOVED = 4;
 
         return EntityChangeTracker;
-    }(BASE.util.Observable));
+    }(Object));
 });

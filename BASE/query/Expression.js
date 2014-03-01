@@ -10,15 +10,7 @@
 
             Super.call(self);
 
-            Object.defineProperties(self, {
-                "nodeName": {
-                    enumerable: true,
-                    configurable: true,
-                    get: function () {
-                        return "expression";
-                    }
-                }
-            });
+            self.nodeName = "expression";
 
             self.copy = function () {
                 throw new Error("Meant to be overriden");
@@ -30,7 +22,7 @@
         BASE.extend(Expression, Super);
 
         return Expression;
-    }(BASE.util.Observable));
+    }(Object));
 
     var Expression = BASE.query.Expression;
 
@@ -43,25 +35,8 @@
 
             Super.call(self);
 
-            Object.defineProperties(self, {
-                "nodeName": {
-                    enumerable: true,
-                    configurable: true,
-                    get: function () {
-                        return nodeName;
-                    }
-                },
-                "value": {
-                    enumerable: true,
-                    configurable: true,
-                    get: function () {
-                        return value;
-                    },
-                    set: function (val) {
-                        value = val;
-                    }
-                }
-            });
+            self.value = value;
+            self.nodeName = nodeName;
 
             self.copy = function () {
                 return new ValueExpression(nodeName, value);
@@ -81,24 +56,8 @@
             }
             Super.call(self);
 
-            var _children = Array.prototype.slice.call(arguments, 1);
-
-            Object.defineProperties(self, {
-                "nodeName": {
-                    enumerable: true,
-                    configurable: true,
-                    get: function () {
-                        return nodeName;
-                    }
-                },
-                "children": {
-                    enumerable: true,
-                    configurable: true,
-                    get: function () {
-                        return _children;
-                    }
-                }
-            });
+            self.nodeName = nodeName;
+            self.children = Array.prototype.slice.call(arguments, 1);
 
             self.copy = function () {
                 var children = [];
@@ -128,7 +87,7 @@
         if (typeof value === "string") {
             return Expression.string(value);
         } else if (typeof value === "function") {
-            return Expression.function(value);
+            return Expression["function"](value);
         } else if (typeof value === "number") {
             return Expression.number(value);
         } else if (typeof value === "boolean") {
@@ -188,7 +147,7 @@
         return expression;
     };
 
-    Expression.function = function (value) {
+    Expression["function"] = function (value) {
         var expression = new ValueExpression("function");
         expression.value = value;
         return expression;
@@ -216,16 +175,16 @@
     // OperationExpression helpers
     //
 
-    Expression.equal = function () {
-        var expression = new OperationExpression("equal");
+    Expression.equalTo = function () {
+        var expression = new OperationExpression("equalTo");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });
         return expression;
     };
 
-    Expression.notEqual = function () {
-        var expression = new OperationExpression("notEqual");
+    Expression.notEqualTo = function () {
+        var expression = new OperationExpression("notEqualTo");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });
@@ -271,16 +230,16 @@
         return expression;
     };
 
-    Expression.greaterThanOrEqual = function () {
-        var expression = new OperationExpression("greaterThanOrEqual");
+    Expression.greaterThanOrEqualTo = function () {
+        var expression = new OperationExpression("greaterThanOrEqualTo");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });
         return expression;
     };
 
-    Expression.lessThanOrEqual = function () {
-        var expression = new OperationExpression("lessThanOrEqual");
+    Expression.lessThanOrEqualTo = function () {
+        var expression = new OperationExpression("lessThanOrEqualTo");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
             expression.children.push(arg);
         });

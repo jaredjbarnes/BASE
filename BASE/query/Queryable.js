@@ -19,63 +19,38 @@
 
             Super.call(self);
 
-            var _Type = Type || Object;
-            Object.defineProperty(self, "Type", {
-                enumerable: false,
-                get: function () {
-                    return _Type;
-                },
-                set: function (value) {
-                    if (value !== _Type) {
-                        _Type = value;
-                    }
-                }
-            });
+            self.Type = Type || Object;
 
-            var _provider = null;
-            Object.defineProperty(self, "provider", {
-                enumerable: false,
-                get: function () {
-                    return _provider;
-                },
-                set: function (value) {
-                    var oldValue = _provider;
-                    if (value !== _provider) {
-                        _provider = value;
-                    }
-                }
-            });
+            self.provider = null;
 
-            var _whereExpression = expression.where || null;
-            Object.defineProperty(self, "expression", {
-                enumerable: false,
-                get: function () {
-                    return {
-                        where: _whereExpression,
-                        take: _takeExpression,
-                        skip: _skipExpression,
-                        orderBy: _orderByExpression.length === 0 ? null : Expression.orderBy.apply(Expression, _orderByExpression)
-                    }
-                }
-            });
+            self.whereExpression = expression.where || null;
 
-            var _where = function (fn) {
+            self.getExpression = function() {
+                return {
+                    where: self.whereExpression,
+                    take: self.takeExpression,
+                    skip: self.skipExpression,
+                    orderBy: self.orderByExpression.length === 0 ? null : Expression.orderBy.apply(Expression, self.orderByExpression)
+                };
+            };
+
+            self.where = function (fn) {
                 fn = fn || function () { };
-                var expression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
+                var expression = fn.call(null, new ExpressionBuilder(Type));
 
                 if (!(expression instanceof Expression)) {
                     return self;
                 }
 
-                if (_whereExpression === null) {
-                    _whereExpression = Expression.where(expression);
+                if (self.whereExpression === null) {
+                    self.whereExpression = Expression.where(expression);
                 } else {
                     throw new Error("Cannot call \"where\" twice.");
                 }
                 return self;
             };
 
-            var _or = function (fn) {
+            self.or = function (fn) {
                 var rightExpression;
 
                 if (fn instanceof Expression) {
@@ -85,19 +60,19 @@
                     rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
                 }
 
-                if (_whereExpression) {
-                    var expressions = _whereExpression.children;
+                if (self.whereExpression) {
+                    var expressions = self.whereExpression.children;
                     expressions.push(rightExpression);
 
-                    _whereExpression = Expression.where(Expression.or.apply(Expression, expressions));
+                    self.whereExpression = Expression.where(Expression.or.apply(Expression, expressions));
                 } else {
-                    _whereExpression = Expression.where(rightExpression);
+                    self.whereExpression = Expression.where(rightExpression);
                 }
 
                 return self;
             };
 
-            var _and = function (fn) {
+            self.and = function (fn) {
                 if (fn instanceof Expression) {
                     rightExpression = Expression.and.apply(Expression, arguments);
                 } else {
@@ -105,30 +80,30 @@
                     rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
                 }
 
-                if (_whereExpression) {
-                    var expressions = _whereExpression.children;
+                if (self.whereExpression) {
+                    var expressions = self.whereExpression.children;
                     expressions.push(rightExpression);
 
-                    _whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
+                    self.whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
                 } else {
-                    _whereExpression = Expression.where(rightExpression);
+                    self.whereExpression = Expression.where(rightExpression);
                 }
 
                 return self;
             };
 
-            var _takeExpression = expression.take || null;
-            var _take = function (value) {
-                var expression = copyExpressionObject(self.expression);
+            self.takeExpression = expression.take || null;
+            self.take = function (value) {
+                var expression = copyExpressionObject(self.getExpression());
                 expression.take = Expression.take(Expression.constant(value));
                 var copy = createCopy(expression);
 
                 return copy;
             };
 
-            var _skipExpression = expression.skip || null;
-            var _skip = function (value) {
-                var expression = copyExpressionObject(self.expression);
+            self.skipExpression = expression.skip || null;
+            self.skip = function (value) {
+                var expression = copyExpressionObject(self.getExpression());
                 expression.skip = Expression.skip(Expression.constant(value));
 
                 var copy = createCopy(expression);
@@ -136,12 +111,12 @@
                 return copy;
             };
 
-            var _orderByExpression = expression.orderBy ? expression.orderBy.children : [];
-            var _orderByDesc = function (fn) {
-                var expression = copyExpressionObject(self.expression);
+            self.orderByExpression = expression.orderBy ? expression.orderBy.children : [];
+            self.orderByDesc = function (fn) {
+                var expression = copyExpressionObject(self.getExpression());
 
                 var orderBy = { children: [] };
-                _orderByExpression.forEach(function (expression) {
+                self.orderByExpression.forEach(function (expression) {
                     orderBy.children.push(expression.copy());
                 });
 
@@ -154,11 +129,11 @@
                 return copy;
             };
 
-            var _orderBy = function (fn) {
-                var expression = copyExpressionObject(self.expression);
+            self.orderBy = function (fn) {
+                var expression = copyExpressionObject(self.getExpression());
 
                 var orderBy = { children: [] };
-                _orderByExpression.forEach(function (expression) {
+                self.orderByExpression.forEach(function (expression) {
                     orderBy.children.push(expression.copy());
                 });
 
@@ -172,22 +147,12 @@
 
             };
 
-            var _toGuid = function (value) {
+            self.toGuid = function (value) {
                 return Expression.guid(Expression.constant(value));
             };
 
-            var _execute = function () {
-                /// <summary>Executes the queryable.</summary>
-                /// <returns type="BASE.async.Future"></returns>
-                if (_provider === null) {
-                    throw new Error("The queryable needs a provider property.");
-                } else {
-                    return _provider.execute(self.expression);
-                }
-            };
-
-            var _toArray = function (callback) {
-                var future = _provider.execute(self);
+            self.toArray = function (callback) {
+                var future = self.provider.execute(self);
                 if (typeof callback === "function") {
                     future.then(callback);
                 }
@@ -195,47 +160,47 @@
                 return future;
             };
 
-            var _count = function () {
-                return _provider.count(self);
+            self.count = function () {
+                return self.provider.count(self);
             };
 
-            var _all = function (func) {
-                return _provider.all(self, func);
+            self.all = function (func) {
+                return self.provider.all(self, func);
             };
 
-            var _any = function (func) {
-                return _provider.any(self, func);
+            self.any = function (func) {
+                return self.provider.any(self, func);
             };
 
-            var _firstOrDefault = function (func) {
-                return _provider.firstOrDefault(self, func);
+            self.firstOrDefault = function (func) {
+                return self.provider.firstOrDefault(self, func);
             };
 
-            var _lastOrDefault = function (func) {
-                return _provider.lastOrDefault(self, func);
+            self.lastOrDefault = function (func) {
+                return self.provider.lastOrDefault(self, func);
             };
 
-            var _first = function (func) {
-                return _provider.first(self, func);
+            self.first = function (func) {
+                return self.provider.first(self, func);
             };
 
-            var _last = function (func) {
-                return _provider.last(self, func);
+            self.last = function (func) {
+                return self.provider.last(self, func);
             };
 
-            var _select = function (forEachFunc) {
-                return _provider.select(self, forEachFunc);
+            self.select = function (forEachFunc) {
+                return self.provider.select(self, forEachFunc);
             };
 
-            var _contains = function (item) {
-                return _provider.contains(self, item);
+            self.contains = function (item) {
+                return self.provider.contains(self, item);
             };
 
-            var _include = function () {
-                return _provider.include(self, item);
+            self.include = function () {
+                return self.provider.include(self, item);
             };
 
-            var _ifNone = function (callback) {
+            self.ifNone = function (callback) {
                 self.count().then(function (count) {
                     if (count === 0) {
                         callback();
@@ -245,7 +210,7 @@
                 return self;
             };
 
-            var _ifAny = function (callback) {
+            self.ifAny = function (callback) {
                 self.toArray(function (a) {
                     if (a.length > 0) {
                         callback(a);
@@ -255,16 +220,16 @@
                 return self;
             };
 
-            var _intersects = function (compareToQueryable) {
+            self.intersects = function (compareToQueryable) {
                 if (compareToQueryable instanceof Array) {
                     compareToQueryable = compareToQueryable.asQueryable();
                 }
-                return _provider.intersects(self, compareToQueryable);
+                return self.provider.intersects(self, compareToQueryable);
             };
 
-            var _ofType = function (Type) {
+            self.ofType = function (Type) {
                 var queryable = new Queryable(Type);
-                queryable.provider = _provider;
+                queryable.provider = self.provider;
                 return queryable;
             };
 
@@ -288,137 +253,24 @@
                 return expression;
             };
 
-            var _copy = function () {
-                return createCopy(self.expression);
+            self.copy = function () {
+                return createCopy(self.getExpression());
             };
 
-            var _merge = function (queryable) {
-                var whereChildren = queryable.expression.where.children;
+            self.merge = function (queryable) {
+                var whereChildren = queryable.getExpression().where.children;
                 var rightExpression = Expression.and.apply(Expression, whereChildren);
-                if (_whereExpression) {
-                    var expressions = _whereExpression.children;
+                if (self.whereExpression) {
+                    var expressions = self.whereExpression.children;
                     expressions.push(rightExpression);
 
-                    _whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
+                    self.whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
                 } else {
-                    _whereExpression = Expression.where(rightExpression);
+                    self.whereExpression = Expression.where(rightExpression);
                 }
 
                 return self;
-            }
-
-            Object.defineProperties(self, {
-                toGuid: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _toGuid
-                },
-                where: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _where
-                },
-                or: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _or
-                },
-                and: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _and
-                },
-                merge: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _merge
-                },
-                take: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _take
-                },
-                skip: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _skip
-                },
-                all: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _all
-                },
-                any: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _any
-                },
-                first: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _first
-                },
-                last: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _last
-                },
-                firstOrDefault: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _firstOrDefault
-                },
-                lastOrDefault: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _lastOrDefault
-                },
-                count: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _count
-                },
-                select: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _select
-                },
-                contains: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _contains
-                },
-                intersects: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _intersects
-                },
-                orderBy: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _orderBy
-                },
-                orderByDesc: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _orderByDesc
-                },
-                toArray: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _toArray
-                },
-                ofType: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _ofType
-                },
-                copy: {
-                    enumerable: false,
-                    configurable: false,
-                    value: _copy
-                }
-            });
+            };
 
 
             return self;

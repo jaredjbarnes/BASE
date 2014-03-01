@@ -63,22 +63,19 @@
 
             var filteredArray = sourceArray.slice(0);
 
-            var _value = null;
-            Object.defineProperty(self, "value", {
-                get: function () {
-                    return filteredArray;
-                }
-            });
+            self.getValue = function() {
+                return filteredArray;
+            };
 
-            var _ascending = function (namespace) {
+            self.ascending = function (namespace) {
                 return new Ascending(namespace);
             };
 
-            var _descending = function (namespace) {
+            self.descending = function (namespace) {
                 return new Descending(namespace);
             };
 
-            var _greaterThan = function (left, right) {
+            self.greaterThan = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -89,14 +86,14 @@
                     } else {
                         obj = BASE.getObject(left.value, item);
                     }
-                    if (obj > right.value.value) {
+                    if (obj > right.value) {
                         results.push(item);
                     }
                 });
                 return results;
             };
 
-            var _lessThan = function (left, right) {
+            self.lessThan = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -107,14 +104,14 @@
                     } else {
                         obj = BASE.getObject(left.value, item);
                     }
-                    if (obj < right.value.value) {
+                    if (obj < right.value) {
                         results.push(item);
                     }
                 });
                 return results;
             };
 
-            var _greaterThanOrEqual = function (left, right) {
+            self.greaterThanOrEqualTo = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -125,14 +122,14 @@
                     } else {
                         obj = BASE.getObject(left.value, item);
                     }
-                    if (obj >= right.value.value) {
+                    if (obj >= right.value) {
                         results.push(item);
                     }
                 });
                 return results;
             };
 
-            var _lessThanOrEqual = function (left, right) {
+            self.lessThanOrEqualTo = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -143,14 +140,14 @@
                     } else {
                         obj = BASE.getObject(left.value, item);
                     }
-                    if (obj <= right.value.value) {
+                    if (obj <= right.value) {
                         results.push(item);
                     }
                 });
                 return results;
             };
 
-            _orderBy = function () {
+            self.orderBy = function () {
                 var self = this;
                 var orderByCriterions = Array.prototype.slice.call(arguments, 0);
 
@@ -170,7 +167,7 @@
                 return filteredArray;
             };
 
-            var _and = function () {
+            self.and = function () {
                 var results = [];
                 var children = Array.prototype.slice.call(arguments, 0);
                 children[0].forEach(function (item, index) {
@@ -186,12 +183,12 @@
                 return results;
             };
 
-            var _where = function () {
+            self.where = function () {
                 var self = this;
                 return sourceArray = filteredArray = self.and.apply(self, arguments);
             };
 
-            var _or = function () {
+            self.or = function () {
                 var results = [];
                 var children = Array.prototype.slice.call(arguments, 0);
                 var match = children.forEach(function (array, index) {
@@ -205,55 +202,55 @@
                 return results;
             };
 
-            var _string = function (value) {
+            self.string = function (value) {
                 return value;
             };
 
-            var _constant = function (expression) {
+            self.constant = function (expression) {
                 return expression;
             };
 
-            var _property = function (expression) {
+            self.property = function (expression) {
                 return expression;
             };
 
-            var _guid = function (value) {
+            self.guid = function (value) {
                 return value;
             };
 
-            var _null = function (value) {
+            self["null"] = function (value) {
                 return value;
             };
 
-            var _undefined = function (value) {
+            self["undefined"] = function (value) {
                 return value;
             };
 
-            var _number = function (value) {
+            self.number = function (value) {
                 return value;
             };
 
-            var _object = function (value) {
+            self.object = function (value) {
                 return value;
             };
 
-            var _date = function (value) {
+            self.date = function (value) {
                 return value;
             };
 
-            var _function = function (value) {
+            self["function"] = function (value) {
                 return value;
             };
 
-            var _boolean = function (value) {
+            self.boolean = function (value) {
                 return value;
             };
 
-            var _array = function (value) {
+            self.array = function (value) {
                 return value;
             };
 
-            var _startsWith = function (left, right) {
+            self.startsWith = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -271,7 +268,7 @@
                 return results;
             };
 
-            var _endsWith = function (left, right) {
+            self.endsWith = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -289,7 +286,7 @@
                 return results;
             };
 
-            var _substringOf = function (left, right) {
+            self.substringOf = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -309,7 +306,7 @@
                 return results;
             };
 
-            var _equal = function (left, right) {
+            self.equalTo = function (left, right) {
                 var results = [];
                 var self = this;
                 sourceArray.forEach(function (item) {
@@ -328,7 +325,7 @@
                 return results;
             };
 
-            var _notEqual = function (left, right) {
+            self.notEqualTo = function (left, right) {
                 var self = this;
 
                 var results = [];
@@ -349,7 +346,7 @@
                 return results;
             };
 
-            var _skip = function (valueExpression) {
+            self.skip = function (valueExpression) {
                 var self = this;
                 var value = valueExpression.value;
                 for (var x = 0 ; x < value && filteredArray.length > 0; x++) {
@@ -358,7 +355,7 @@
                 return filteredArray;
             };
 
-            var _take = function (valueExpression) {
+            self.take = function (valueExpression) {
                 var self = this;
                 var newFilteredArray = [];
                 var value = valueExpression.value;
@@ -369,43 +366,11 @@
                 return filteredArray = newFilteredArray;
             };
 
-            Object.defineProperties(self, {
-                "descending": { enumerable: false, configurable: false, value: _descending },
-                "ascending": { enumerable: false, configurable: false, value: _ascending },
-                "greaterThan": { enumerable: false, configurable: false, value: _greaterThan },
-                "lessThan": { enumerable: false, configurable: false, value: _lessThan },
-                "greaterThanOrEqual": { enumerable: false, configurable: false, value: _greaterThanOrEqual },
-                "lessThanOrEqual": { enumerable: false, configurable: false, value: _lessThanOrEqual },
-                "orderBy": { enumerable: false, configurable: false, value: _orderBy },
-                "and": { enumerable: false, configurable: false, value: _and },
-                "where": { enumerable: false, configurable: false, value: _where },
-                "or": { enumerable: false, configurable: false, value: _or },
-                "string": { enumerable: false, configurable: false, value: _string },
-                "constant": { enumerable: false, configurable: false, value: _constant },
-                "property": { enumerable: false, configurable: false, value: _property },
-                "guid": { enumerable: false, configurable: false, value: _guid },
-                "null": { enumerable: false, configurable: false, value: _null },
-                "undefined": { enumerable: false, configurable: false, value: _undefined },
-                "number": { enumerable: false, configurable: false, value: _number },
-                "object": { enumerable: false, configurable: false, value: _object },
-                "date": { enumerable: false, configurable: false, value: _date },
-                "function": { enumerable: false, configurable: false, value: _function },
-                "boolean": { enumerable: false, configurable: false, value: _boolean },
-                "array": { enumerable: false, configurable: false, value: _array },
-                "startsWith": { enumerable: false, configurable: false, value: _startsWith },
-                "endsWith": { enumerable: false, configurable: false, value: _endsWith },
-                "substringOf": { enumerable: false, configurable: false, value: _substringOf },
-                "equal": { enumerable: false, configurable: false, value: _equal },
-                "notEqual": { enumerable: false, configurable: false, value: _notEqual },
-                "skip": { enumerable: false, configurable: false, value: _skip },
-                "take": { enumerable: false, configurable: false, value: _take }
-            });
-
             return self;
         };
 
         BASE.extend(ArrayQueryBuilder, Super);
 
         return ArrayQueryBuilder;
-    }(BASE.util.Observable));
+    }(Object));
 });

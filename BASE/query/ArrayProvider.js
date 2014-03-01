@@ -30,13 +30,15 @@
                     var builder = new ArrayQueryBuilder(array.slice(0));
                     var parser = new ExpressionParser(builder);
 
-                    parser.parse(queryable.expression.where);
-                    parser.parse(queryable.expression.skip);
-                    parser.parse(queryable.expression.take);
-                    parser.parse(queryable.expression.orderBy);
+                    var expression = queryable.getExpression();
+
+                    parser.parse(expression.where);
+                    parser.parse(expression.skip);
+                    parser.parse(expression.take);
+                    parser.parse(expression.orderBy);
 
                     setTimeout(function () {
-                        setValue(builder.value);
+                        setValue(builder.getValue());
                     }, 0);
                 });
             };

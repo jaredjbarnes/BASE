@@ -1,22 +1,27 @@
 ﻿BASE.require([
+    "BASE.util.Observable",
     "BASE.collections.Hashmap"
 ], function () {
     BASE.namespace("BASE.collections");
-
+    var global = (function () { return this;}());
     BASE.collections.ObservableHashmap = (function (Super) {
         var ObservableHashmap = function () {
             var self = this;
-            
-            BASE.assertInstance(self);
+            if (self === global) {
+                throw new Error("ObservableHashmap's constructor was executed in the global scope.");
+            }
 
             Super.call(self);
             var _hashmap = new BASE.collections.Hashmap();
 
             self.add = function (key, object) {
                 var returnValue = _hashmap.add(key, object);
-                var event = { type: "itemAdded" };
-                event.item = object;
-                self.notify(event);
+
+                self.notify({
+                    type: "itemAdded",
+                    item: object
+                });
+
                 return returnValue;
             };
 
@@ -26,9 +31,10 @@
 
             self.remove = function (key) {
                 var returnValue = _hashmap.remove(key);
-                var event = { type: "itemRemoved" };
-                event.item = returnValue;
-                self.notify(event);
+                self.notify({
+                    type: "itemRemoved",
+                    item: returnValue
+                });
                 return returnValue;
             };
 
@@ -55,5 +61,5 @@
         BASE.extend(ObservableHashmap, Super);
 
         return ObservableHashmap;
-    }(BASE.Observable));
+    }(BASE.util.Observable));
 });

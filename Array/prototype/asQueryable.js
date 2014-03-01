@@ -9,7 +9,7 @@
         var self = this;
         Type = Type || self.Type;
         var queryable = new Queryable(Type || Object);
-        queryable.provider = self.providerFactory();
+        queryable.provider = self.getProviderFactory();
         return queryable;
     };
 
@@ -18,17 +18,6 @@
         return new ArrayProvider(self);
     };
 
-    Object.defineProperties(Array.prototype, {
-        "providerFactory": {
-            configurable: true,
-            enumerable: false,
-            value: _providerFactory
-        },
-        "asQueryable": {
-            enumerable: false,
-            value: _asQueryable
-        }
-    });
+    Array.prototype.getProviderFactory = _providerFactory;
+    Array.prototype.asQueryable = _asQueryable;
 });
-
-

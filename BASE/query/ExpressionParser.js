@@ -48,5 +48,5 @@
         BASE.extend(ExpressionParser, Super);
 
         return ExpressionParser;
-    }(BASE.util.Observable));
+    }(Object));
 });

@@ -1,14 +1,12 @@
 ﻿BASE.require([
     "BASE.util.Observable",
     "Element.prototype.region",
-    "BASE.async.Future",
-    "BASE.util.ObservableEvent"
+    "BASE.async.Future"
 ], function () {
 
     BASE.namespace("BASE.web");
 
     var Future = BASE.async.Future;
-    var ObservableEvent = BASE.util.ObservableEvent;
 
     BASE.web.Segue = (function (Super) {
         var Segue = function (fromElement, toElement) {
@@ -22,13 +20,13 @@
 
             self.enter = function (container, beforeElement) {
                 return Future.fromResult(undefined).then(function () {
-                    self.notify(new ObservableEvent("entered"));
+                    self.notify({ type: "entered" });
                 });
             };
 
             self.exit = function () {
                 return Future.fromResult(undefined).then(function () {
-                    self.notify(new ObservableEvent("exited"));
+                    self.notify({ type: "exited" });
                 });
             };
         };

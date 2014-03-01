@@ -16,7 +16,7 @@
 
     BASE.query.odata = {
         toString: function (queryable) {
-            var expression = queryable.expression;
+            var expression = queryable.getExpression();
             var parser = new ExpressionParser(new ODataQueryBuilder());
 
             var where = "";
@@ -35,7 +35,7 @@
 
             if (expression.take) {
                 take = parser.parse(expression.take);
-                defaultTake = expression.take.children[0].value
+                defaultTake = expression.take.children[0].value;
             }
 
             if (expression.orderBy) {

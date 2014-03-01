@@ -1,6 +1,5 @@
 ﻿BASE.require([
     "BASE.data.states.AbstractState",
-    "BASE.util.PropertyChangedEvent",
     "BASE.collections.Hashmap"
 ], function () {
     BASE.namespace("BASE.data.states");
@@ -10,9 +9,7 @@
     BASE.data.states.RemovedState = (function (Super) {
         var RemovedState = function (changeTracker, relationManager) {
             var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new RemovedState(changeTracker, relationManager);
-            }
+            BASE.assertNotGlobal(self);
 
             Super.call(self, changeTracker, relationManager);
 
@@ -38,28 +35,28 @@
 
             self.save = function () {
                 // Add the entity through the service.
-                changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
-                return changeTracker.dataContext.service.removeEntity(entity).then(function () {
-                    changeTracker.dataContext = null;
+                changeTracker.changeState(BASE.data.EntityChangeTracker.DETACHED);
+                return changeTracker.getDataContext().getService().removeEntity(entity).then(function () {
+                    changeTracker.setDataContext(null);
                 }).ifError(function (err) {
                     if (err instanceof BASE.data.EntityNotFoundError) {
-                        changeTracker.changeState(BASE.data.EntityChangeTracker.DETATCHED);
+                        changeTracker.changeState(BASE.data.EntityChangeTracker.DETACHED);
                     } else {
-                        changeTracker.dataContext.getDataSet(entity.constructor).load(entity);
+                        changeTracker.getDataContext().getDataSet(entity.constructor).load(entity);
                         changeTracker.changeState(BASE.data.EntityChangeTracker.REMOVED);
                     }
                 });
             };
 
             self.start = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.start();
                 dataContext.changeTracker.removed.add(entity, entity);
             };
 
             self.stop = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.stop();
                 dataContext.changeTracker.removed.remove(entity);

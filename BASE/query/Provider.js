@@ -1,8 +1,8 @@
 ﻿BASE.require([
     "BASE.async.Future",
-    "BASE.query.ExpressionBuilder",
     "BASE.query.ArrayQueryBuilder",
     "BASE.query.ExpressionParser",
+    "BASE.query.ExpressionBuilder"
 ], function () {
     BASE.namespace("BASE.query");
 

@@ -1,4 +1,7 @@
-﻿BASE.require(["BASE.util.Observable", "BASE.async.Future"], function () {
+﻿BASE.require([
+    "BASE.util.Observable",
+    "BASE.async.Future"
+], function () {
     BASE.namespace("BASE.web");
 
     BASE.web.ajax = {
@@ -36,13 +39,16 @@
                         }
                     }
                 }
+                try {
+                    xhr.open(settings.type, url, true);
+                    Object.keys(settings.headers).forEach(function (key) {
+                        xhr.setRequestHeader(key, settings.headers[key]);
+                    });
 
-                xhr.open(settings.type, url, true);
-                Object.keys(settings.headers).forEach(function (key) {
-                    xhr.setRequestHeader(key, settings.headers[key]);
-                });
-
-                xhr.send(settings.data);
+                    xhr.send(settings.data);
+                } catch (e) {
+                    setError(e);
+                }
             });
         },
         GET: function (url, settings) {

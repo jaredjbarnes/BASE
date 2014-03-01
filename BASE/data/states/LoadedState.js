@@ -1,12 +1,13 @@
-﻿BASE.require(["BASE.data.states.AbstractState", "BASE.util.PropertyChangedEvent"], function () {
+﻿BASE.require([
+    "BASE.data.states.AbstractState"
+], function () {
     BASE.namespace("BASE.data.states");
 
     BASE.data.states.LoadedState = (function (Super) {
         var LoadedState = function (changeTracker, relationManager) {
             var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new LoadedState(changeTracker, relationManager);
-            }
+
+            BASE.assertNotGlobal(self);
 
             Super.call(self, changeTracker, relationManager);
 
@@ -25,18 +26,18 @@
             };
 
             self.start = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.start();
                 dataContext.changeTracker.loaded.add(entity, entity);
             };
             self.stop = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.stop();
                 dataContext.changeTracker.loaded.remove(entity);
             };
-             
+
             return self;
         };
 

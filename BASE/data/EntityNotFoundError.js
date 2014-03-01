@@ -12,12 +12,7 @@
 
             Super.call(self, message);
 
-            var _entity = entity;
-            Object.defineProperty(self, "entity", {
-                get: function () {
-                    return _entity;
-                }
-            });
+            self.entity = entity;
 
             return self;
         };

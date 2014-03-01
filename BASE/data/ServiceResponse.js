@@ -12,12 +12,7 @@
 
             Super.call(self);
 
-            var _message = message;
-            Object.defineProperty(self, "message", {
-                get: function () {
-                    return _message;
-                }
-            });
+            self.message = message;
 
             self.toString = function () {
                 return self.message;

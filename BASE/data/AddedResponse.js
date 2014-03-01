@@ -6,18 +6,11 @@
     BASE.data.AddedResponse = (function (Super) {
         var AddedResponse = function (message, dto) {
             var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new AddedResponse(message, dto);
-            }
 
+            BASE.assertNotGlobal(self);
             Super.call(self, message);
 
-            var _dto = dto;
-            Object.defineProperty(self, "dto", {
-                get: function () {
-                    return _dto;
-                }
-            });
+            self.dto = dto;
 
             return self;
         };

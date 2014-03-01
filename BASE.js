@@ -4,7 +4,194 @@
 
     var emptyFn = function () { };
 
-    var hasInterface = function (methodNames, obj) {
+    if (!Object.hasOwnProperty("keys")) {
+        Object.keys = function (object) {
+            var name;
+            var result = [];
+            for (name in object) {
+                if (Object.prototype.hasOwnProperty.call(object, name)) {
+                    result.push(name);
+                }
+            }
+
+            return result;
+        };
+    }
+
+    if (!Array.hasOwnProperty("isArray")) {
+        Array.isArray = function(value) {
+            return Object.prototype.toString.call(value) === "[object Array]";
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("every")) {
+        Array.prototype.every = function (fn, thisp) {
+            var i;
+            var length = this.length;
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i) && !fn.call(thisp, this[i], i, this)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("some")) {
+        Array.prototype.some = function (fn, thisp) {
+            var i;
+            var length = this.length;
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i) && fn.call(thisp, this[i], i, this)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("filter")) {
+        Array.prototype.filter = function (fn, thisp) {
+            var i;
+            var length = this.length;
+            var result = [];
+            var value;
+
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i)) {
+                    value = this[i];
+                    if (fn.call(thisp, value, i, this)) {
+                        result.push(value);
+                    }
+                }
+            }
+            return result;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("indexOf")) {
+        Array.prototype.indexOf = function (searchElement, fromIndex) {
+            var i = fromIndex || 0;
+            var length = this.length;
+
+            while (i < length) {
+                if (this.hasOwnProperty(i) && this[i] === searchElement) {
+                    return i;
+                }
+                i += 1;
+            }
+            return -1;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("lastIndexOf")) {
+        Array.prototype.lastIndexOf = function (searchElement, fromIndex) {
+            var i = fromIndex;
+            if (typeof i !== "number") {
+                i = length - 1;
+            }
+
+            while (i >= 0) {
+                if (this.hasOwnProperty(i) && this[i] === searchElement) {
+                    return i;
+                }
+                i -= 1;
+            }
+            return -1;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("map")) {
+        Array.prototype.map = function (fn, thisp) {
+            var i;
+            var length = this.length;
+            var result = [];
+
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i)) {
+                    result[i] = fn.call(thisp, this[i], i, this);
+                }
+            }
+
+            return result;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("reduceRight")) {
+        Array.prototype.reduceRight = function (fn, initialValue) {
+            var i = this.length - 1;
+
+            while (i >= 0) {
+                if (this.hasOwnProperty(i)) {
+                    initialValue = fn.call(undefined, initialValue, this[i], i, this);
+                }
+                i -= 1
+            }
+
+            return initialValue;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("reduce")) {
+        Array.prototype.reduce = function (fn, initialValue) {
+            var i;
+            var length = this.length;
+
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i)) {
+                    initialValue = fn.call(undefined, initialValue, this[i], i, this);
+                }
+            }
+
+            return initialValue;
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("indexOf")) {
+        Array.prototype.indexOf = function (searchElement, fromIndex) {
+            var i = fromIndex || 0;
+            var length = this.length;
+
+            while (i < length) {
+                if (this.hasOwnProperty(i) && this[i] === searchElement) {
+                    return i;
+                }
+                i += 1;
+            }
+            return -1;
+        };
+    }
+
+    if (!Array.prototype.except) {
+        Array.prototype.except = function (array) {
+            array = Array.isArray(array) ? array : [];
+            return this.filter(function (n) {
+                return array.indexOf(n) === -1;
+            });
+        };
+    }
+
+    if (!Array.prototype.hasOwnProperty("forEach")) {
+        Array.prototype.forEach = function (fn, thisp) {
+            var i;
+            var length = this.length;
+
+            for (i = 0; i < length; i += 1) {
+                if (this.hasOwnProperty(i)) {
+                    fn.call(thisp, this[i], i, this);
+                }
+            }
+        };
+    }
+
+
+    var assertNotGlobal = function (instance) {
+        if (global === instance) {
+            throw new Error("Constructor executed in the scope of a constructor.");
+        }
+    };
+
+    var hasInterface = function (obj, methodNames) {
         return methodNames.every(function (name) {
             return typeof obj[name] === "function";
         });
@@ -47,6 +234,10 @@
             var obj;
 
             obj = context[a[0]];
+
+            if (typeof obj === "undefined") {
+                return undefined;
+            }
 
             for (var x = 1; x < length; x++) {
                 if (typeof obj[a[x]] === 'undefined') {
@@ -93,149 +284,135 @@
         SubClass.prototype.Constructor = SubClass;
     };
 
-    var assertInstance = function (instance) {
-        if (instance === global) {
-            throw new TypeError("Constructor was run in the context of the global object.");
-        }
-    };
-
-    var Observer = function (unbind, callback) {
+    var Observer = function (callback, unbind) {
         var self = this;
+        var state;
 
-        var emptyState = {
+        var defaultState = {
+            stop: function () {
+                state = stoppedState;
+            },
             start: emptyFn,
+            notify: function (e) {
+                callback(e);
+            },
+            dispose: function () {
+                unbind();
+                state = disposedState;
+            }
+        };
+
+        var disposedState = {
             stop: emptyFn,
+            start: emptyFn,
             notify: emptyFn,
             dispose: emptyFn
         };
 
-        var disposableState = Object.create(emptyState, {
-            dispose: {
-                value: function () {
-                    unbind();
-                }
-            }
-        });
-
-        var startedState = Object.create(disposableState, {
-            stop: {
-                value: function () {
-                    state = stoppedState;
-                }
+        var stoppedState = {
+            stop: emptyFn,
+            start: function () {
+                state = defaultState;
             },
-            notify: {
-                value: function () {
-                    callback.apply(null, arguments);
-                }
-            }
-        });
+            notify: emptyFn,
+            dispose: emptyFn
+        };
 
-        var stoppedState = Object.create(disposableState, {
-            start: {
-                value: function () {
-                    state = startedState;
-                }
-            }
-        });
+        state = defaultState;
 
-        var state = startedState;
+        self.notify = function(e) {
+            state.notify(e);
+        };
 
         self.stop = function () {
-            return state.stop();
+            state.stop();
         };
+
         self.start = function () {
-            return state.start();
+            state.start();
         };
 
-        self.notify = function () {
-            return state.notify.apply(state, arguments);
-        };
-
-        self.dispose = function () {
+        self.dispose = function() {
             state.dispose();
-            state = emptyState;
         };
     };
 
-    var Observable = (function () {
-        function Observable() {
-            var self = this;
+    var Observable = function () {
+        var self = this;
 
-            assertInstance(self);
+        var observers = {};
+        var globalObservers = [];
 
-            var explicitObservers = {};
-            var globalObservers = [];
+        var getObservers = function (type) {
+            var typeObservers = observers[type];
+            if (!typeObservers) {
+                typeObservers = observers[type] = [];
+            }
 
-            var getObservers = function (type) {
-                var observers = explicitObservers[type];
-                if (!observers) {
-                    observers = explicitObservers[type] = [];
-                }
+            return typeObservers;
+        };
 
-                return observers;
-            };
+        var makeObserver = function (observers, callback) {
+            var observer = new Observer(callback, function () {
+                var index = observers.indexOf(observer);
+                observers.splice(index, 1);
+            });
+            observers.push(observer);
+            return observer;
+        };
 
-            var makeObserver = function (observers, callback) {
-                var observer = new Observer(function () {
-                    var index = observers.indexOf(observer);
-                    observers.splice(index, 1);
-                }, callback);
+        self.observe = function (type, callback) {
+            var observers = getObservers(type);
+            return makeObserver(observers, callback);
+        };
 
-                observers.push(observer);
+        self.observeAll = function (callback) {
+            var observers = globalObservers;
+            return makeObserver(observers, callback);
+        };
 
-                return observer;
-            };
+        self.notify = function (e) {
+            var typeObservers = getObservers(e.type);
+            typeObservers.forEach(function (observer) {
+                observer.notify(e);
+            });
+            globalObservers.forEach(function (observer) {
+                observer.notify(e);
+            });
+        };
 
-            self.observe = function (type, callback) {
+        self.getGlobalObservers = function() {
+            return globalObservers;
+        };
 
-                if (typeof type === "undefined") {
-                    throw new Error("Undefined argument error: expected type.");
-                }
+        self.getObservers = getObservers;
+    };
 
-                if (typeof callback === "undefined") {
-                    throw new Error("Undefined argument error: expected callback.");
-                }
+    var Future = (function (Super) {
 
-                var observers = getObservers(type);
+        var emptyState = {
+            get: emptyFn,
+            then: emptyFn,
+            onComplete: emptyFn,
+            ifError: emptyFn,
+            ifCanceled: emptyFn,
+            ifTimedOut: emptyFn,
+            setTimeout: emptyFn,
+            cancel: emptyFn
+        };
 
-                return makeObserver(observers, callback);
-            };
-
-            self.observeAll = function (callback) {
-                if (typeof callback === "undefined") {
-                    throw new Error("Undefined argument error: expected callback.");
-                }
-
-                return makeObserver(globalObservers, callback);
-            };
-
-            self.notify = function (event) {
-                var observers = getObservers(event.type);
-                var notify = function (observer) {
-                    observer.notify(event);
-                };
-
-                observers.forEach(notify);
-                globalObservers.forEach(notify);
-                return self;
-            };
-
-            return this;
-        }
-        return Observable;
-    }());
-
-    var Future = (function () {
         var Future = function (getValue) {
             var self = this;
 
-            assertInstance(self);
+            BASE.assertNotGlobal(self);
 
-            var observers = new Observable();
+            var observers = new BASE.util.Observable();
 
             self.value = null;
             self.error = null;
             self.isComplete = false;
+
+            var timeout = null;
 
             var defaultState = {
                 get: function () {
@@ -282,6 +459,28 @@
                     };
                     observers.observe("ifCanceled", listener);
                 },
+                ifTimedOut: function (callback) {
+                    var listener = function (e) {
+                        callback();
+                    };
+                    observers.observe("ifTimedOut", listener);
+                },
+                setTimeout: function (milliseconds) {
+                    if (typeof milliseconds !== "number") {
+                        throw new Error("Expected milliseconds.");
+                    }
+
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function () {
+                        if (!self.isComplete) {
+                            self.isComplete = true;
+                            _state = timedOutState;
+                            observers.notify({ type: "ifTimedOut" });
+                            observers.notify({ type: "ifCanceled" });
+                            observers.notify({ type: "onComplete" });
+                        }
+                    }, milliseconds);
+                },
                 cancel: function () {
                     self.isComplete = true;
                     _state = canceledState;
@@ -290,53 +489,64 @@
                 }
             };
 
-            var retrievingState = {
-                get: emptyFn,
-                then: defaultState.then,
-                onComplete: defaultState.onComplete,
-                ifError: defaultState.ifError,
-                ifCanceled: defaultState.ifCanceled,
-                cancel: defaultState.cancel
-            };
 
-            var errorState = {
-                get: emptyFn,
-                then: emptyFn,
-                onComplete: function (callback) {
+            var RetrievingState = function () {
+                this.get = function () { };
+            };
+            RetrievingState.prototype = defaultState;
+            var retrievingState = new RetrievingState();
+
+
+            var CanceledState = function () {
+                this.onComplete = function (callback) {
                     callback();
-                },
-                ifError: function (callback) {
+                };
+                this.ifCanceled = function (callback) {
+                    callback();
+                };
+            };
+            CanceledState.prototype = emptyState;
+            var canceledState = new CanceledState();
+
+
+            var ErrorState = function () {
+                this.onComplete = function (callback) {
+                    callback();
+                };
+                this.ifError = function (callback) {
                     callback(self.error);
-                },
-                ifCanceled: emptyFn,
-                cancel: emptyFn
+                };
             };
+            ErrorState.prototype = emptyState;
+            var errorState = new ErrorState();
 
-            var canceledState = {
-                get: emptyFn,
-                then: emptyFn,
-                onComplete: function (callback) {
+            var TimedOutState = function () {
+                this.onComplete = function (callback) {
                     callback();
-                },
-                ifError: emptyFn,
-                ifCanceled: function (callback) {
+                };
+
+                this.ifCanceled = function (callback) {
                     callback();
-                },
-                cancel: emptyFn
+                };
+
+                this.ifTimeOut = function (callback) {
+                    callback();
+                };
             };
+            TimedOutState.prototype = emptyState;
+            var timedOutState = new TimedOutState();
 
-            var completeState = {
-                get: emptyFn,
-                then: function (callback) {
+            var CompleteState = function () {
+                this.then = function (callback) {
                     callback(self.value);
-                },
-                onComplete: function (callback) {
+                };
+                this.onComplete = function (callback) {
                     callback();
-                },
-                ifError: emptyFn,
-                ifCanceled: emptyFn,
-                cancel: emptyFn
+                };
             };
+            CompleteState.prototype = emptyState;
+
+            var completeState = new CompleteState();
 
             var _state = defaultState;
 
@@ -362,6 +572,16 @@
                 callback = callback || emptyFn;
                 _state.get();
                 _state.ifCanceled(callback);
+                return self;
+            };
+            self.ifTimedOut = function (callback) {
+                callback = callback || emptyFn;
+                _state.get();
+                _state.ifTimedOut(callback);
+                return self;
+            };
+            self.setTimeout = function (milliseconds) {
+                _state.setTimeout(milliseconds);
                 return self;
             };
             self.cancel = function () {
@@ -391,9 +611,9 @@
         var Task = function () {
             var self = this;
 
-            assertInstance(self);
+            BASE.assertNotGlobal(self);
 
-            var observers = new Observable;
+            var observers = new Observable();
 
             var futures = Array.prototype.slice.call(arguments, 0);
             var completedFutures = [];
@@ -405,19 +625,7 @@
                 }
             });
 
-            Object.defineProperties(self, {
-                "value": {
-                    get: function () {
-                        if (!_started) {
-                            self.start();
-                            return undefined;
-                        } else {
-                            return futures;
-                        }
-
-                    }
-                }
-            });
+            self.value = undefined;
 
             var _defaultState = {
                 whenAll: function (callback) {
@@ -559,8 +767,6 @@
                     _state = _startedState
                     if (futures.length > 0) {
                         futures.forEach(function (future) {
-                            var value = future.value;
-                            var error = future.error;
 
                             future.onComplete(function () {
                                 _notify(future);
@@ -575,6 +781,7 @@
                 return self;
             };
 
+            return self;
         };
 
         return Task;
@@ -585,7 +792,7 @@
         var Loader = function () {
             var self = this;
 
-            assertInstance(self);
+            assertNotGlobal(self);
 
             var files = {};
             var paths = {};
@@ -677,19 +884,15 @@
 
             };
 
-            Object.defineProperties(self, {
-                "root": {
-                    get: function () {
-                        return root;
-                    },
-                    set: function (value) {
-                        root = value;
-                        while (root.lastIndexOf("/") === root.length - 1) {
-                            root = root.substring(0, root.length - 1);
-                        }
-                    }
+            self.setRoot = function (value) {
+                root = value;
+                while (root.lastIndexOf("/") === root.length - 1) {
+                    root = root.substring(0, root.length - 1);
                 }
-            });
+            };
+            self.getRoot = function () {
+                return root;
+            };
 
         };
 
@@ -729,7 +932,7 @@
         var HtmlLoader = function () {
             var self = this;
 
-            assertInstance(self);
+            assertNotGlobal(self);
 
             Super.call(self);
 
@@ -750,12 +953,12 @@
                         setError(Error("Failed to load: \"" + path + "\"."));
                     };
 
-                    script.onreadystatechange = function () {
+                    script.onreadystatechange = function() {
                         if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadCalled) {
                             script.onloadCalled = true;
                             setValue(undefined);
                         }
-                    }
+                    };
 
                     script.src = src;
                     document.getElementsByTagName('head')[0].appendChild(script);
@@ -777,40 +980,69 @@
         var dependenciesForCallbacks = [];
         self.sweep = function () {
             var dependencies;
+            var readyDependency = null;
+            var readyDependencyIndex = -1;
             // This is trickery, so be careful. Modifying an array while iterating.
             for (var x = 0 ; x < dependenciesForCallbacks.length; x++) {
                 var dependencies = dependenciesForCallbacks[x];
 
-                if (dependencies.executeIfReady()) {
-                    dependenciesForCallbacks.splice(x, 1);
-                    //Start the loop over, because there might be some more callback ready.
-                    x = 0;
+                if (dependencies.isReady()) {
+                    // Found a ready dependency, stop the loop and save the index.
+                    readyDependencyIndex = x;
+                    break;
                 }
+            }
+
+            if (readyDependencyIndex >= 0) {
+                readyDependency = dependenciesForCallbacks[readyDependencyIndex];
+                dependenciesForCallbacks.splice(readyDependencyIndex, 1);
+                readyDependency.execute();
+                self.sweep();
             }
         };
         self.addDependencies = function (dependencies) {
             dependenciesForCallbacks.push(dependencies);
+        };
+        self.getStatus = function () {
+            var results = [];
+
+            dependenciesForCallbacks.forEach(function (dependency) {
+                results.push(dependency.getStatus());
+            });
+
+            return results;
         };
     };
 
     var Dependencies = function (namespaces, callback) {
         var self = this;
 
-        var isReady = function () {
-            return namespaces.slice(0).every(function (namespace) {
+        self.isReady = function () {
+            return namespaces.every(function (namespace) {
                 return isObject(namespace);
             });
         };
 
-        self.executeIfReady = function () {
-            var calledCallback = false;
+        self.getStatus = function () {
 
-            if (isReady()) {
-                callback();
-                calledCallback = true;
-            }
+            var result = {
+                loaded: [],
+                pending: []
+            };
 
-            return calledCallback;
+            namespaces.forEach(function (namespace) {
+                if (isObject(namespace)) {
+                    result.loaded.push(namespace);
+                } else {
+                    result.pending.push(namespace);
+                }
+            });
+
+            return result;
+        };
+
+        self.execute = function () {
+            callback();
         };
     };
 
@@ -848,6 +1080,8 @@
         }
     };
 
+    BASE.require.sweeper = sweeper;
+
     if (global["window"]) {
         BASE.require.loader = new HtmlLoader();
     } else {
@@ -855,61 +1089,19 @@
     }
 
     namespace("BASE.async");
+    namespace("BASE.util");
 
-    Object.defineProperties(BASE.async, {
-        "Future": {
-            get: function () {
-                return Future;
-            }
-        },
-        "Task": {
-            get: function () {
-                return Task;
-            }
-        }
-    });
+    BASE.async.Future = Future;
+    BASE.async.Task = Task;
+    BASE.util.Observable = Observable;
 
-    Object.defineProperties(BASE, {
-        "extend": {
-            get: function () {
-                return extend;
-            }
-        },
-        "hasInterface": {
-            get: function () {
-                return hasInterface;
-            }
-        },
-        "Loader": {
-            get: function () {
-                return Loader;
-            }
-        },
-        "Observable": {
-            get: function () {
-                return Observable;
-            }
-        },
-        "namespace": {
-            get: function () {
-                return namespace;
-            }
-        },
-        "isObject": {
-            get: function () {
-                return isObject;
-            }
-        },
-        "getObject": {
-            get: function () {
-                return getObject;
-            }
-        },
-        "clone": {
-            get: function () {
-                return clone;
-            }
-        }
-    });
+    BASE.extend = extend;
+    BASE.hasInterface = hasInterface;
+    BASE.Loader = Loader;
+    BASE.namespace = namespace;
+    BASE.isObject = isObject;
+    BASE.getObject = getObject;
+    BASE.clone = clone;
+    BASE.assertNotGlobal = assertNotGlobal;
 
 }());

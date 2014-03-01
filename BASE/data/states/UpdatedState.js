@@ -1,7 +1,6 @@
 ﻿BASE.require([
     "BASE.data.states.AbstractState",
-    "BASE.collections.Hashmap",
-    "BASE.util.PropertyChangedEvent"
+    "BASE.collections.Hashmap"
 ], function () {
     BASE.namespace("BASE.data.states");
 
@@ -10,20 +9,14 @@
     BASE.data.states.UpdatedState = (function (Super) {
         var UpdatedState = function (changeTracker, relationManager) {
             var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new UpdatedState(changeTracker, relationManager);
-            }
+            BASE.assertNotGlobal(self);
 
             Super.call(self, changeTracker, relationManager);
 
             var entity = changeTracker.entity;
             var entityChanges = new Hashmap();
 
-            Object.defineProperty(self, "entityChanges", {
-                get: function () {
-                    return entityChanges;
-                }
-            });
+            self.entityChanges = entityChanges;
 
             // Called to add this entity to the collection.
             self.add = function () {
@@ -43,7 +36,7 @@
             self.save = function () {
                 // Add the entity through the service.
                 changeTracker.changeState(BASE.data.EntityChangeTracker.LOADED);
-                return changeTracker.dataContext.service.updateEntity(entity, entityChanges).then(function () {
+                return changeTracker.getDataContext().getService().updateEntity(entity, entityChanges).then(function () {
                     entityChanges = new Hashmap();
                 }).ifError(function (err) {
                     if (err instanceof BASE.data.EntityNotFoundError) {
@@ -55,13 +48,13 @@
             };
 
             self.start = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.start();
                 dataContext.changeTracker.updated.add(entity, entity);
             };
             self.stop = function () {
-                var dataContext = changeTracker.dataContext;
+                var dataContext = changeTracker.getDataContext();
 
                 relationManager.stop();
                 dataContext.changeTracker.updated.remove(entity);

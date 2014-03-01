@@ -1,23 +1,59 @@
-﻿require("../../../BASE.js");
-BASE.require.loader.root("./");
+﻿BASE.require(["BASE.util.UnitTest", "BASE.async.Future"], function () {
+    BASE.namespace("UnitTest.BASE.async");
 
-BASE.require(["BASE.async.Task"], function () {
+    UnitTest.BASE.async.Task = (function (Super) {
+        var Task = function () {
+            var self = this;
+            if (!(self instanceof arguments.callee)) {
+                return new Task();
+            }
 
-    describe("BASE.async.Task Spec", function () {
+            Super.call(self, "UnitTest.BASE.async.Task");
 
-        it("Running three futures, and whenAll", function () {
+            function setupTimer(delay, id) {
+                return new BASE.async.Future(function (setValue, setError) {
+                    setTimeout(function () { setValue() }, delay);
+                });
+            }
 
-            var done = false;
-            var value;
+            self.execute = function () {
+                return new BASE.async.Future(function (setValue, setError) {
+                    // Run your test here and set the value or error upon completion.
 
-            var obj = new BASE.async.Task();
+                    allTimers = new BASE.async.Task();
 
-            runs(function () {
+                    var timer1 = setupTimer(1000);
+                    var timer2 = setupTimer(2000);
+                    var timer3 = setupTimer(3000);
 
-            });
+                    allTimers.add(timer1);
+                    allTimers.add(timer2);
+                    allTimers.add(timer3);
 
-        });
+                    var allFutures = [timer1, timer2, timer3];
 
-    });
+                    function onedone(future) {
+                        var index = allFutures.indexOf(future);
 
+                        allFutures.splice(index, 1);
+                    }
+
+                    function alldone(future) {
+                        self.assert(allFutures.length === 0, "Passed", "Failed");
+                        setValue(self);
+                    }
+
+                    allTimers.start().whenAny(onedone).whenAll(alldone);
+
+                    // or setError(self);
+                });
+            };
+
+            return self;
+        };
+
+        BASE.extend(Task, Super);
+
+        return Task;
+    }(BASE.util.UnitTest));
 });
