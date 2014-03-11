@@ -53,7 +53,7 @@
             };
 
             // Start listening for changes to the changeTracker.
-            var onEntityUpdatedObserver = entity.observeAll(onEntityUpdated);
+            var onEntityUpdatedObserver = entity.observeAllProperties(onEntityUpdated);
 
             self.changeState = function (state) {
                 // Ensure that the state parameter is legitimate.
@@ -168,7 +168,9 @@
                 return _currentState;
             };
 
-            self.stateObject = _state;
+            self.getStateObject = function () {
+                return _state;
+            };
 
             self.changeStateToDetached = function () {
                 self.changeState(0);

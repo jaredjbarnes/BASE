@@ -52,6 +52,9 @@
             return Expression.startsWith(Expression.property(namespace), Expression.string(value));
         };
 
+        self.toString = function () {
+            return namespace;
+        };
     };
 
     var ExpressionBuilder = function () {
@@ -69,6 +72,10 @@
         self.or = function () {
             return Expression.or.apply(Expression, arguments);
         };
+
+        self.value = function () {
+            return new PropertyExpression("");
+        }
     };
 
     BASE.query.ExpressionBuilder = ExpressionBuilder;

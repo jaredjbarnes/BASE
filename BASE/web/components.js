@@ -2,14 +2,17 @@
     "jQuery",
     "Array.prototype.forEach",
     "Element.prototype.replaceWith",
+    "String.prototype.trim",
     "BASE.async.Future",
     "BASE.async.Task",
+    "BASE.async.Continuation",
     "JSON",
     "BASE.util.Guid"
 ], function () {
 
     var Future = BASE.async.Future;
     var Task = BASE.async.Task;
+    var Continuation = BASE.async.Continuation;
     var Guid = BASE.util.Guid;
 
     BASE.namespace("BASE.web.components");
@@ -278,13 +281,16 @@
     };
 
     var componentCache = new ComponentCache();
+    var disallowedDiggers = "iframe, object, embed, [template]";
 
     var walkTheDomAsync = function (element, asyncOperation) {
         return new Future(function (setValue, setError) {
             var task = new Task();
-            $(element).children().each(function () {
-                task.add(walkTheDomAsync(this, asyncOperation));
-            });
+            if (!$(element).is(disallowedDiggers)) {
+                $(element).children().each(function () {
+                    task.add(walkTheDomAsync(this, asyncOperation));
+                });
+            }
             task.start().whenAll(function (childrenFutures) {
                 asyncOperation(element).then(setValue).ifError(setError);
             });
@@ -294,8 +300,8 @@
     var buildDomAsync = function (element, asyncOperation) {
         return new Future(function (setValue, setError) {
             var task = new Task();
-            var disallowedDiggers = ["IFRAME", "OBJECT", "EMBED"];
-            if (element.tagName && disallowedDiggers.indexOf(element.tagName.toUpperCase()) === -1) {
+
+            if (!$(element).is(disallowedDiggers)) {
                 $(element).contents().each(function () {
                     var childElement = this;
                     task.add(buildDomAsync(childElement, asyncOperation));
@@ -322,30 +328,54 @@
                 var $element = $(element);
 
                 var controllerName = $element.attr("controller");
+                var controllerFuture = BASE.async.Future.fromResult(null);
+                
+                // Instantiate the controller if applicable
                 if (controllerName && !$element.data("controller")) {
                     $element.data("controller", "loading...");
 
-                    BASE.require([controllerName], function () {
-                        var Controller = BASE.getObject(controllerName);
-                        var tags = {};
-                        var $component = $element.closest("[component]");
-                        var guid = $component.attr("cid");
+                    var controllerFuture = new BASE.async.Future(function (setValue, setError) {
+                        BASE.require([controllerName], function () {
+                            var Controller = BASE.getObject(controllerName);
+                            var tags = {};
+                            var $component = $element.closest("[component]");
+                            var guid = $component.attr("cid");
 
-                        $component.find("[owner='" + guid + "']").each(function () {
-                            var $this = $(this);
-                            if ($this.closest("[cid='" + guid + "']")[0] === $component[0]) {
-                                tags[$this.attr("tag")] = this;
-                            }
+                            $component.find("[owner='" + guid + "']").each(function () {
+                                var $this = $(this);
+                                if ($this.closest("[cid='" + guid + "']")[0] === $component[0]) {
+                                    tags[$this.attr("tag")] = this;
+                                }
+                            });
+
+                            var instance = new Controller(element, tags);
+                            $element.data("controller", instance);
+
+                            setValue(instance);
                         });
-
-
-                        var instance = new Controller(element, tags);
-                        $element.data("controller", instance);
-                        setValue();
                     });
-                } else {
-                    setValue();
                 }
+
+                // When the controller is set up, apply behaviors if applicable
+                var cont = new Continuation(controllerFuture).then(function (controller) {
+                    controller = controller || {};
+                    var applyList = $element.attr("apply");
+                    if (applyList) {
+                        var behaviors = applyList.split(";").map(function (b) { return b.trim(); });
+                        BASE.require(behaviors, function () {
+                            behaviors.forEach(function (b) {
+                                var Behavior = BASE.getObject(b);
+                                Behavior.call(controller, element);
+                            });
+                            setValue();
+                        });
+                    } else {
+                        setValue();
+                    }
+                    return Future.fromResult(null);
+                });
+
+                
             });
         });
     };
@@ -411,6 +441,13 @@
         return loadComponents.apply(null, arguments);
     };
 
+    BASE.web.components.loadComponent = function (url, content) {
+        var element = document.createElement("div");
+        $(element).attr("component", url).append($(content));
+
+        return loadComponents(element);
+    };
+
     BASE.web.components.createComponent = function (url) {
         var div = document.createElement("div");
         $(div).attr("component", url);
@@ -449,5 +486,9 @@
             });
         });
     });
+
+    jQuery.prototype.controller = function () {
+        return $(this[0]).data("controller");
+    };
 
 });

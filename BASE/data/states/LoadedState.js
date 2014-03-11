@@ -22,7 +22,7 @@
                 // Change the state to UPDATED.
                 changeTracker.changeState(BASE.data.EntityChangeTracker.UPDATED);
                 // Fire the event on the updated state.
-                changeTracker.stateObject.update(event);
+                changeTracker.getStateObject().update(event);
             };
 
             self.start = function () {

@@ -30,15 +30,15 @@
             window.onpopstate = _onPopState;
 
             self.onPopState = function (callback) {
-                self.observe(callback, "popState");
+                self.observeType("popState", callback);
             };
 
             self.onPushState = function (callback) {
-                self.observe(callback, "pushState");
+                self.observeType("pushState", callback);
             };
 
             self.onReplaceState = function (callback) {
-                self.observe(callback, "relaceState");
+                self.observeType("relaceState", callback);
             };
 
             self.back = function () {

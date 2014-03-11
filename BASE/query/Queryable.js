@@ -25,7 +25,7 @@
 
             self.whereExpression = expression.where || null;
 
-            self.getExpression = function() {
+            self.getExpression = function () {
                 return {
                     where: self.whereExpression,
                     take: self.takeExpression,
@@ -34,45 +34,7 @@
                 };
             };
 
-            self.where = function (fn) {
-                fn = fn || function () { };
-                var expression = fn.call(null, new ExpressionBuilder(Type));
-
-                if (!(expression instanceof Expression)) {
-                    return self;
-                }
-
-                if (self.whereExpression === null) {
-                    self.whereExpression = Expression.where(expression);
-                } else {
-                    throw new Error("Cannot call \"where\" twice.");
-                }
-                return self;
-            };
-
             self.or = function (fn) {
-                var rightExpression;
-
-                if (fn instanceof Expression) {
-                    rightExpression = Expression.or.apply(Expression, arguments);
-                } else {
-                    fn = fn || function () { };
-                    rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
-                }
-
-                if (self.whereExpression) {
-                    var expressions = self.whereExpression.children;
-                    expressions.push(rightExpression);
-
-                    self.whereExpression = Expression.where(Expression.or.apply(Expression, expressions));
-                } else {
-                    self.whereExpression = Expression.where(rightExpression);
-                }
-
-                return self;
-            };
-
-            self.and = function (fn) {
                 if (fn instanceof Expression) {
                     rightExpression = Expression.and.apply(Expression, arguments);
                 } else {
@@ -80,17 +42,45 @@
                     rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
                 }
 
-                if (self.whereExpression) {
-                    var expressions = self.whereExpression.children;
+                var expression = copyExpressionObject(self.getExpression());
+
+                if (expression.where) {
+                    var expressions = expression.children;
                     expressions.push(rightExpression);
 
-                    self.whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
+                    expression.where = Expression.where(Expression.or.apply(Expression, expressions));
                 } else {
-                    self.whereExpression = Expression.where(rightExpression);
+                    expression.where = Expression.where(rightExpression);
                 }
 
-                return self;
+                var copy = createCopy(expression);
+                return copy;
             };
+
+            self.where = function (fn) {
+                if (fn instanceof Expression) {
+                    rightExpression = Expression.and.apply(Expression, arguments);
+                } else {
+                    fn = fn || function () { };
+                    rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
+                }
+
+                var expression = copyExpressionObject(self.getExpression());
+
+                if (expression.where) {
+                    var expressions = expression.children;
+                    expressions.push(rightExpression);
+
+                    expression.where = Expression.where(Expression.and.apply(Expression, expressions));
+                } else {
+                    expression.where = Expression.where(rightExpression);
+                }
+
+                var copy = createCopy(expression);
+                return copy;
+            };
+
+            self.and = self.where;
 
             self.takeExpression = expression.take || null;
             self.take = function (value) {
@@ -120,7 +110,9 @@
                     orderBy.children.push(expression.copy());
                 });
 
-                orderBy.children.push(Expression.descending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+                var exp = fn.call(self, new ExpressionBuilder(Type));
+
+                orderBy.children.push(Expression.descending(Expression.property(exp.toString())));
 
                 expression.orderBy = orderBy;
 
@@ -137,7 +129,9 @@
                     orderBy.children.push(expression.copy());
                 });
 
-                orderBy.children.push(Expression.ascending(Expression.property(fn.call(self, new ExpressionBuilder(Type)).toString())));
+                var exp = fn.call(self, new ExpressionBuilder(Type));
+
+                orderBy.children.push(Expression.ascending(Expression.property(exp.toString())));
 
                 expression.orderBy = orderBy;
 

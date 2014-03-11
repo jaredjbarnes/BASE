@@ -59,7 +59,7 @@
                     }
 
                     if (entity.id === null) {
-                        var idObserver = entity.observe("id", function (e) {
+                        var idObserver = entity.observeProperty("id", function (e) {
                             if (newTarget && entity[property] === newTarget) {
                                 newTarget[withForeignKeySetter](e.newValue);
                             }
@@ -80,7 +80,7 @@
                     newValue: entity[property]
                 });
 
-                var observer = entity.observe(property, action);
+                var observer = entity.observeProperty(property, action);
                 oneToOneObservers.add(entity, property, observer);
             });
 
@@ -117,7 +117,7 @@
                     newValue: entity[property]
                 });
 
-                var observer = entity.observe(property, action);
+                var observer = entity.observeProperty(property, action);
                 oneToOneAsTargetObservers.add(entity, property, observer);
             });
 

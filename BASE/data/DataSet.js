@@ -92,7 +92,7 @@
 
                     // We also need to listen for changes to the id.
                     // So we can switch the entity to the loadedEntities hash.
-                    var idObserver = entity.observe("id", idCallback);
+                    var idObserver = entity.observeProperty("id", idCallback);
 
                     // Save the observer so the when the entity is removed we can detatch.
                     _idObservers.add(entity, idObserver);

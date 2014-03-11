@@ -1,5 +1,6 @@
 ﻿BASE.require([
-    "BASE.async.Future"
+    "BASE.async.Future",
+    "Date.fromISO"
 ], function () {
     BASE.namespace("BASE.data.states");
 
@@ -22,7 +23,7 @@
         // We'll use a much more specific model, since we know what a date looks like from the server.
         var dateRegex = /\d{4}-\d{2}-\d{2}/;
         if (dateRegex.test(value)) {
-            returnValue = new Date(value);
+            returnValue = Date.fromISO(value);
         }
 
         // Want to test for anything else?  Do it here.

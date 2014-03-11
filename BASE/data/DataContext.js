@@ -102,11 +102,11 @@ BASE.require([
                         var pendingSave = pendingSavedObjects.get(entity);
                         // If its already pending wait for its return by observing and reply back.
                         if (pendingSave) {
-                            pendingSave.observe("saved", function (e) {
+                            pendingSave.observeType("saved", function (e) {
                                 setValue(e.response);
                             });
 
-                            pendingSave.observe("error", function (e) {
+                            pendingSave.observeType("error", function (e) {
                                 setError(e.response);
                             });
                         } else {
@@ -121,6 +121,7 @@ BASE.require([
                                 var savedEvent = { type: "saved" };
                                 savedEvent.response = response;
                                 pendingSave.notify(savedEvent);
+                                notifyEntitySaved(entity);
 
                                 // Remove the pendingSave object from the hash, to prevent memory leak.
                                 pendingSavedObjects.remove(entity);
@@ -131,6 +132,7 @@ BASE.require([
                                 var errorEvent = { type: "error" };
                                 errorEvent.response = e;
                                 pendingSave.notify(errorEvent);
+                                handleEntityError(entity, e);
 
                                 // Remove the pendingSave object from the hash, to prevent memory leak.
                                 pendingSavedObjects.remove(entity);
@@ -142,6 +144,10 @@ BASE.require([
 
             self.throwError = function (error) {
                 error["throw"](self);
+            };
+
+            var notifyEntitySaved = function (entity) {
+                entity.notify({ type: "saved" });
             };
 
             var handleEntityError = function (entity, e) {
@@ -190,6 +196,8 @@ BASE.require([
                         var entity = removed.get(key);
                         task.add(self.save(entity).ifError(function (e) {
                             handleEntityError(entity, e);
+                        }).then(function(){
+                            notifyEntitySaved(entity);
                         }));
                     });
 
@@ -197,14 +205,17 @@ BASE.require([
                         var entity = updated.get(key);
                         task.add(self.save(entity).ifError(function (e) {
                             handleEntityError(entity, e);
+                        }).then(function () {
+                            notifyEntitySaved(entity);
                         }));
                     });
 
                     added.getKeys().forEach(function (key) {
                         var entity = added.get(key);
-
                         task.add(self.save(entity).ifError(function (e) {
                             handleEntityError(entity, e);
+                        }).then(function () {
+                            notifyEntitySaved(entity);
                         }));
                     });
 

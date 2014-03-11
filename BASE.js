@@ -19,7 +19,7 @@
     }
 
     if (!Array.hasOwnProperty("isArray")) {
-        Array.isArray = function(value) {
+        Array.isArray = function (value) {
             return Object.prototype.toString.call(value) === "[object Array]";
         };
     }
@@ -187,7 +187,7 @@
 
     var assertNotGlobal = function (instance) {
         if (global === instance) {
-            throw new Error("Constructor executed in the scope of a constructor.");
+            throw new Error("Constructor executed in the scope of the global object.");
         }
     };
 
@@ -284,9 +284,35 @@
         SubClass.prototype.Constructor = SubClass;
     };
 
-    var Observer = function (callback, unbind) {
+
+    var Observer = function (unbind, filter, map) {
         var self = this;
         var state;
+
+        var onEach = emptyFn;
+        var onError = emptyFn;
+        var observers = [];
+
+        filter = filter || function () {
+            return true;
+        };
+
+        map = map || function (item) {
+            return item;
+        };
+
+        if (typeof filter !== "function") {
+            throw new TypeError("Expected a function.");
+        }
+
+        if (typeof map !== "function") {
+            throw new TypeError("Expected a function.");
+        }
+
+        var dispose = function () {
+            unbind();
+            state = disposedState;
+        };
 
         var defaultState = {
             stop: function () {
@@ -294,12 +320,28 @@
             },
             start: emptyFn,
             notify: function (e) {
-                callback(e);
+
+                if (filter(e)) {
+
+                    var value = map(e);
+
+                    try {
+                        onEach(value);
+                    } catch (error) {
+                        if (onError === emptyFn) {
+                            throw (error);
+                        } else {
+                            onError(error);
+                        }
+                    }
+
+                    observers.slice(0).forEach(function (observer) {
+                        observer.notify(value);
+                    });
+                }
+
             },
-            dispose: function () {
-                unbind();
-                state = disposedState;
-            }
+            dispose: dispose
         };
 
         var disposedState = {
@@ -320,7 +362,7 @@
 
         state = defaultState;
 
-        self.notify = function(e) {
+        self.notify = function (e) {
             state.notify(e);
         };
 
@@ -332,60 +374,100 @@
             state.start();
         };
 
-        self.dispose = function() {
+        self.dispose = function () {
             state.dispose();
         };
+
+        self.filter = function (filter) {
+            var observer = new Observer(function () {
+                var index = observers.indexOf(observer);
+                if (index >= 0) {
+                    observers.splice(index, 1);
+                }
+                // This will prevent memoryleaks.
+                if (observers.length === 0 && onEach === emptyFn && onError === emptyFn) {
+                    dispose();
+                }
+            }, filter);
+            observers.push(observer);
+            return observer;
+        };
+
+        self.map = function (map) {
+            var observer = new Observer(function () {
+                var index = observers.indexOf(observer);
+                if (index >= 0) {
+                    observers.splice(index, 1);
+                }
+                // This will prevent memoryleaks.
+                if (observers.length === 0 && onEach === emptyFn && onError === emptyFn) {
+                    dispose();
+                }
+            }, undefined, map);
+            observers.push(observer);
+            return observer;
+        };
+
+        self.onEach = function (callback) {
+            onEach = callback;
+            return self;
+        };
+
+        self.onError = function (callback) {
+            onError = callback;
+            return self;
+        };
+
     };
 
     var Observable = function () {
         var self = this;
 
-        var observers = {};
-        var globalObservers = [];
+        BASE.assertNotGlobal(self);
 
-        var getObservers = function (type) {
-            var typeObservers = observers[type];
-            if (!typeObservers) {
-                typeObservers = observers[type] = [];
-            }
+        // If it already implements this get out.
+        if (BASE.hasInterface(self, ["observe", "observeType", "notify"])) {
+            return;
+        }
 
-            return typeObservers;
-        };
+        var observers = [];
 
-        var makeObserver = function (observers, callback) {
-            var observer = new Observer(callback, function () {
+        self.observe = function () {
+            var observer = new Observer(function () {
                 var index = observers.indexOf(observer);
-                observers.splice(index, 1);
+                if (index >= 0) {
+                    observers.splice(index, 1);
+                }
             });
             observers.push(observer);
             return observer;
         };
 
-        self.observe = function (type, callback) {
-            var observers = getObservers(type);
-            return makeObserver(observers, callback);
-        };
+        self.observeType = function (type, callback) {
 
-        self.observeAll = function (callback) {
-            var observers = globalObservers;
-            return makeObserver(observers, callback);
+            var observer = new Observer(function () {
+                var index = observers.indexOf(observer);
+                if (index >= 0) {
+                    observers.splice(index, 1);
+                }
+            });
+
+            var modifiedObserver = observer.filter(function (event) {
+                if (typeof event.type !== "undefined" && event.type === type) {
+                    return true;
+                }
+                return false;
+            }).onEach(callback);
+
+            observers.push(observer);
+            return modifiedObserver;
         };
 
         self.notify = function (e) {
-            var typeObservers = getObservers(e.type);
-            typeObservers.forEach(function (observer) {
-                observer.notify(e);
-            });
-            globalObservers.forEach(function (observer) {
+            observers.slice(0).forEach(function (observer) {
                 observer.notify(e);
             });
         };
-
-        self.getGlobalObservers = function() {
-            return globalObservers;
-        };
-
-        self.getObservers = getObservers;
     };
 
     var Future = (function (Super) {
@@ -439,31 +521,32 @@
                     var listener = function (e) {
                         callback(e.value);
                     };
-                    observers.observe("then", listener);
+                    observers.observeType("then", listener);
                 },
                 onComplete: function (callback) {
                     var listener = function (e) {
                         callback();
                     };
-                    observers.observe("onComplete", listener);
+                    observers.observeType("onComplete", listener);
+
                 },
                 ifError: function (callback) {
                     var listener = function (e) {
                         callback(e.error);
                     };
-                    observers.observe("ifError", listener);
+                    observers.observeType("ifError", listener);
                 },
                 ifCanceled: function (callback) {
                     var listener = function (e) {
                         callback();
                     };
-                    observers.observe("ifCanceled", listener);
+                    observers.observeType("ifCanceled", listener);
                 },
                 ifTimedOut: function (callback) {
                     var listener = function (e) {
                         callback();
                     };
-                    observers.observe("ifTimedOut", listener);
+                    observers.observeType("ifTimedOut", listener);
                 },
                 setTimeout: function (milliseconds) {
                     if (typeof milliseconds !== "number") {
@@ -632,12 +715,15 @@
                     var listener = function () {
                         callback(futures);
                     };
-                    observers.observe("whenAll", listener);
+                    observers.observeType("whenAll", listener);
                 },
                 whenAny: function (callback) {
-                    observers.observe("whenAny", function (event) {
+                    var listener = function (event) {
                         callback(event.future);
-                    });
+                    };
+
+                    observers.observeType("whenAny", listener);
+
                     completedFutures.forEach(function (future) {
                         callback(future);
                     });
@@ -646,13 +732,14 @@
                     var listener = function () {
                         callback();
                     };
-                    observers.observe("onComplete", listener);
+
+                    observers.observeType("onComplete", listener);
                 },
                 ifCanceled: function (callback) {
                     var listener = function (event) {
                         callback();
                     };
-                    observers.observe("canceled", listener);
+                    observers.observeType("canceled", listener);
                 }
             };
 
@@ -953,7 +1040,7 @@
                         setError(Error("Failed to load: \"" + path + "\"."));
                     };
 
-                    script.onreadystatechange = function() {
+                    script.onreadystatechange = function () {
                         if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadCalled) {
                             script.onloadCalled = true;
                             setValue(undefined);
@@ -1090,10 +1177,11 @@
 
     namespace("BASE.async");
     namespace("BASE.util");
+    namespace("BASE.behaviors");
 
     BASE.async.Future = Future;
     BASE.async.Task = Task;
-    BASE.util.Observable = Observable;
+    BASE.behaviors.Observable = BASE.util.Observable = Observable;
 
     BASE.extend = extend;
     BASE.hasInterface = hasInterface;

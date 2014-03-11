@@ -52,7 +52,7 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasOne;
-                    var observer = entity.observe(property, function (event) {
+                    var observer = entity.observeProperty(property, function (event) {
                         var newEntity = event.newValue;
                         var oldEntity = event.oldValue;
 
@@ -102,9 +102,9 @@
                                         // Now assign the foreignkey equal to the sources key.
                                         newEntity[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
                                     };
-                                    var idObserver = entity.observe(relationship.hasKey, idCallback);
+                                    var idObserver = entity.observeProperty(relationship.hasKey, idCallback);
 
-                                    var observer = newEntity.observe(relationship.withOne, function () {
+                                    var observer = newEntity.observeProperty(relationship.withOne, function () {
                                         observer.dispose();
                                         // Only un-observe if the entity has already been saved
                                         if (entity.id !== null) {
@@ -206,9 +206,9 @@
                                     item[makeSetterName(relationship.withForeignKey)](entity[relationship.hasKey]);
                                 };
 
-                                var idObserver = entity.observe(relationship.hasKey, idCallback);
+                                var idObserver = entity.observeProperty(relationship.hasKey, idCallback);
 
-                                var observer = item.observe(relationship.withOne, function observer() {
+                                var observer = item.observeProperty(relationship.withOne, function observer() {
                                     observer.dispose();
                                     // Only un-observe if the entity has already been saved
                                     if (entity.id !== null) {
@@ -329,7 +329,7 @@
 
                             // We need to remove the mapping entity from the hash when its been detached.
                             // This is also necessary to avoid memory leaks.
-                            entity.getChangeTracker().observe("state", function (event) {
+                            entity.getChangeTracker().observeType("state", function (event) {
                                 // If the new value is DETATCHED (0) then remove it from the hash.
                                 if (event.newValue === 0) {
                                     // Remove the mapping Entity from the map for quick access on removal.
@@ -367,7 +367,7 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withOne;
-                    var observer = entity.observe(property, function (event) {
+                    var observer = entity.observeProperty(property, function (event) {
                         var newEntity = event.newValue;
                         var oldEntity = event.oldValue;
 
@@ -410,9 +410,9 @@
                                         // Now assign the foreignkey equal to the sources key.
                                         newEntity[makeSetterName(relationship.withHasKey)](entity[relationship.withKey]);
                                     };
-                                    var idObserver = entity.observe(relationship.withKey, idCallback);
+                                    var idObserver = entity.observeProperty(relationship.withKey, idCallback);
 
-                                    var observer = newEntity.observe(relationship.hasOne, function () {
+                                    var observer = newEntity.observeProperty(relationship.hasOne, function () {
                                         observer.dispose();
                                         // Only un-observe if the entity has already been saved
                                         if (entity.id !== null) {
@@ -453,7 +453,7 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withOne;
-                    var observer = entity.observe(property, function (event) {
+                    var observer = entity.observeProperty(property, function (event) {
                         var oldSource = event.oldValue;
                         var newSource = event.newValue;
 

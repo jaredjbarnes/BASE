@@ -17,7 +17,7 @@
                 future.then(function (value) {
                     var returnedFuture = callback(value);
                     if (returnedFuture instanceof Future) {
-                        returnFuture.then(setValue);
+                        returnedFuture.then(setValue);
                     } else {
                         throw new Error("Expected a future to be returned from a continuation.");
                     }

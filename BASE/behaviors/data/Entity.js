@@ -28,7 +28,7 @@
         };
 
         self.save = function () {
-            var dataContext = _changeTracker.dataContext;
+            var dataContext = _changeTracker.getDataContext();
             if (dataContext) {
                 return dataContext.save(self).then();
             } else {
@@ -38,12 +38,12 @@
 
         self.load = function () {
             return new BASE.async.Future(function (setValue, setError) {
-                var dataContext = _changeTracker.dataContext;
+                var dataContext = _changeTracker.getDataContext();
                 if (dataContext) {
                     var dataSet = dataContext.getDataSet(self.constructor);
 
                     dataSet.asQueryable().where(function (e) {
-                        return e.id.equals(self.id);
+                        return e.property('id').isEqualTo(self.id);
                     }).toArray().then(function (entities) {
                         setValue(entities[0]);
                     }).ifError(function (err) {

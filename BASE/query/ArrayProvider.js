@@ -6,7 +6,7 @@
     "BASE.async.Future",
     "BASE.async.Task"
 ], function () {
-    BASE.namespace("LEAVITT.query");
+    BASE.namespace("BASE.query");
 
     var ArrayQueryBuilder = BASE.query.ArrayQueryBuilder;
     var ExpressionParser = BASE.query.ExpressionParser;

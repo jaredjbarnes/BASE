@@ -32,7 +32,7 @@
 
                             setValue({ data: data, xhr: xhr, message: "Success" });
                         } else {
-                            var error = new Error(status);
+                            var error = new Error(xhr.status);
                             error.xhr = xhr;
                             error.message = "Error";
                             setError(error);

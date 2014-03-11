@@ -39,7 +39,7 @@
             self.nodeName = nodeName;
 
             self.copy = function () {
-                return new ValueExpression(nodeName, value);
+                return new ValueExpression(nodeName, self.value);
             };
 
             return self;
@@ -61,7 +61,7 @@
 
             self.copy = function () {
                 var children = [];
-                var copy = new OperationExpression(nodeName);
+                var copy = new OperationExpression(self.nodeName);
 
                 self.children.forEach(function (expression) {
                     copy.children.push(expression.copy());

@@ -2,8 +2,6 @@
     "BASE.behaviors.Observable"
 ], function () {
 
-    var global = (function () { return this; }());
-
     var defaultProperties = (function () {
         var properties = {};
         var obj = {};
@@ -53,6 +51,23 @@
                 attach(property);
             }
         }(property));
+
+        self.observeProperty = function (propertyName, callback) {
+            return self.observe().filter(function (e) {
+                if (typeof e.property !== "undefined" && e.property === propertyName) {
+                    return true;
+                }
+                return false;
+            }).onEach(callback);
+        };
+
+        self.observeAllProperties = function (callback) {
+            return self.observe().filter(function (e) {
+                return typeof e.property  === "undefined"? false : true;
+            }).onEach(callback);
+        };
+
+        self.implementsNotifyPropertyChange = true;
 
     };
 
