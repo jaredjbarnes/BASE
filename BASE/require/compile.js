@@ -49,7 +49,7 @@
                 namespace !== "Date" &&
                 namespace !== "Number" &&
                 namespace !== "Array") {
-                task.add(GET(BASE.require.getPath(namespace)));
+                task.add(GET(BASE.require.loader.getPath(namespace)));
             }
         });
 

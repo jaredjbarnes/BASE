@@ -131,6 +131,8 @@
         return text.indexOf("@import") >= 0;
     };
 
+    var $head = $("head");
+
     // TODO: Blake had a good idea to move all the @ directives into one style sheet.
     // This would save us from hitting the threshold in IE with their stylesheet limit.
     var appendStyle = function (text) {
@@ -138,13 +140,16 @@
         var css;
         var textnode;
 
-        if (style.styleSheet) {   // Old IE
-            css = style.styleSheet.cssText || "";
-            css += text;
-            style.styleSheet.cssText = css;
-        } else {// the world
-            textNode = document.createTextNode(text);
-            style.appendChild(textNode);
+        if (text) {
+            if (style.styleSheet) {   // Old IE
+                css = style.styleSheet.cssText || '';
+                css += text;
+                style.styleSheet.cssText = css;
+            } else {// the world
+                var $styleSheet = $("<style type=\"text/css\"></style>");
+                $styleSheet.text(text);
+                $componentStyles.after($styleSheet);    
+            }
         }
     };
 
@@ -177,27 +182,26 @@
 
     var handleStyles = function (url, $element) {
         $element.find("style").remove().each(function (index) {
-            var $this = $(this);
-            var style = $componentStyles[0];
-            var exist;
-            var components = $componentStyles.data("components");
-            var text;
+                var $this = $(this);
+                var style = $componentStyles[0];
+                var exist;
+                var components = $componentStyles.data("components");
+                var text;
 
-            exist = components[url + index];
-            if (!exist) {
-                components[url + index] = url;
+                exist = components[url + index];
+                if (!exist) {
+                    components[url + index] = url;
 
-                if (style.styleSheet) {
-                    text = this.styleSheet.cssText;
-                } else {// the world
-                    text = $this.text();
+                    if (style.styleSheet) {
+                        text = this.styleSheet.cssText;
+                    } else {// the world
+                        text = $this.text();
+                    }
+
+                    text = createLinks(text);
+                    appendStyle(text);
                 }
-
-                text = createLinks(text);
-                appendStyle(text);
-
-            }
-        });
+            });
     };
 
     var ComponentCache = function () {
@@ -241,7 +245,6 @@
                             task.start().whenAll(function (futures) {
                                 setValue(element);
                             });
-
                         });
                     });
                 });
@@ -489,8 +492,10 @@
 
     $(function () {
         var task = new Task();
-
-        $("[component], [controller], [apply]").each(function () {
+        var $starts = $("[component], [controller], [apply]").filter(function () {
+            return $(this).parents("[component], [controller], [apply]").length === 0;
+        });
+        $starts.each(function () {
             task.add(loadComponents(this).then(function (lastElement) {
                 $(lastElement).find("[component]").each(function () {
                     $(this).triggerHandler({

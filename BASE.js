@@ -218,7 +218,11 @@
 
     var isObject = function (namespace) {
         var obj = getObject(namespace);
-        return obj ? true : false;
+        if (typeof obj === "undefined" || obj === null || (typeof obj === "number" && isNaN(obj))) {
+            return false;
+        } else {
+            return true;
+        }
     };
 
     var getObject = function (namespace, context) {
@@ -1091,6 +1095,10 @@
 
     namespace("BASE");
 
+    // This is for knowing the order in which scripts were executed.
+    var dependenciesLoadedHash = {};
+    var dependenciesLoaded = [];
+
     var Sweeper = function () {
         var self = this;
 
@@ -1136,7 +1144,13 @@
 
         self.isReady = function () {
             return namespaces.every(function (namespace) {
-                return isObject(namespace);
+                var result = isObject(namespace);
+                // This is for knowing the order in which scripts were executed.
+                if (result && !dependenciesLoadedHash[namespace]) {
+                    dependenciesLoadedHash[namespace] = true;
+                    dependenciesLoaded.push(namespace);
+                }
+                return result;
             });
         };
 
@@ -1198,6 +1212,8 @@
     };
 
     BASE.require.sweeper = sweeper;
+
+    BASE.require.dependencyList = dependenciesLoaded;
 
     if (global["window"]) {
         BASE.require.loader = new HtmlLoader();
