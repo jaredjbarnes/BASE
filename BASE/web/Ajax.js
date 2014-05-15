@@ -1,18 +1,46 @@
 ﻿BASE.require([
     "BASE.util.Observable",
-    "BASE.async.Future"
+    "BASE.async.Future",
+    "JSON"
 ], function () {
     BASE.namespace("BASE.web");
+
+    var isHTML4 = (function () {
+        if ('querySelector' in document && 'localStorage' in window && 'addEventListener' in window) {
+            return false;
+        } else {
+            return true;
+        }
+    }());
 
     BASE.web.ajax = {
         request: function (url, settings) {
             settings = settings || {};
             settings.type = settings.type || "GET"
             settings.headers = settings.headers || {};
-            //settings.headers["Accept"] = settings.headers["Accept"] || "*/*";
-            settings.headers["Content-Type"] = "application/json";
+
+            if (!settings.converter) {
+                settings.converter = function (responseText) {
+                    return JSON.parse(responseText);
+                };
+                settings.headers["Accept"] = "application/json";
+            }
+
+
+            if (!settings.headers["Content-Type"]) {
+                settings.headers["Content-Type"] = "application/json";
+            }
+
             settings.data = settings.data || "";
 
+            if (typeof settings.data !== "string") {
+                settings.data = JSON.stringify(settings.data);
+            }
+
+            // IE 8 doesn't support PATCH, sooooo we have to do this :(
+            if (isHTML4 && settings.type && settings.type.toUpperCase() === "PATCH") {
+                settings.type = "PUT";
+            }
 
             return new BASE.async.Future(function (setValue, setError) {
 
@@ -21,7 +49,7 @@
                     if (xhr.readyState == 4) {
                         if (xhr.status < 300 && xhr.status >= 200) {
                             try {
-                                var data = JSON.parse(xhr.responseText);
+                                var data = settings.converter(xhr.responseText);
                             } catch (e) {
                                 var error = new Error("Parse Error.");
                                 error.xhr = xhr;
@@ -47,9 +75,9 @@
 
                     xhr.send(settings.data);
                 } catch (e) {
-                    setError(e);
+                    throw new Error("Url: \""+url+"\" couldn't be retrieved because CORS isn't enabled, or you are working in ie 8 and below.");
                 }
-            });
+            }); 
         },
         GET: function (url, settings) {
             settings = settings || {};
@@ -68,7 +96,9 @@
         },
         PATCH: function (url, settings) {
             settings = settings || {};
-            settings.type = "PATCH";
+            var type = "PATCH";
+
+            settings.type = type;
             return BASE.web.ajax.request(url, settings);
         },
         DELETE: function (url, settings) {

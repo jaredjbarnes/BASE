@@ -3,58 +3,81 @@
 
     BASE.namespace("BASE.query");
 
-    var PropertyExpression = function (namespace) {
+    var OperationExpressionBuilder = function (propertyName, setExpression) {
         var self = this;
 
+        setExpression = setExpression || function (expression) {
+            return expression;
+        };
+
+        self.any = function (fn) {
+            var expressionBuilder = new ExpressionBuilder();
+            var expression = fn(expressionBuilder);
+            return setExpression(Expression.any(expression));
+        };
+
+        self.all = function (fn) {
+            var expressionBuilder = new ExpressionBuilder();
+            var expression = fn(expressionBuilder);
+            return setExpression(Expression.all(expression));
+        };
+
         self.isEqualTo = function (value) {
-            var property = Expression.property(namespace);
+            var property = Expression.property(propertyName);
             var constant = Expression.getExpressionType(value);
-            return Expression.equalTo(property, constant);
+            return setExpression(Expression.equalTo(property, constant));
         };
 
         self.isSubstring = function (value) {
-            return Expression.equalTo(Expression.substring(Expression.property(namespace)), Expression.getExpressionType(value));
+            return setExpression(Expression.equalTo(Expression.substring(Expression.property(propertyName)), Expression.getExpressionType(value)));
         };
 
         self.isSubstringOf = function (value) {
-            return Expression.substringOf(Expression.property(namespace), Expression.string(value));
+            return setExpression(Expression.substringOf(Expression.property(propertyName), Expression.string(value)));
         };
 
         self.isGreaterThan = function (value) {
-            var property = Expression.property(namespace);
+            var property = Expression.property(propertyName);
             var constant = Expression.getExpressionType(value);
-            return Expression.greaterThan(property, constant);
+            return setExpression(Expression.greaterThan(property, constant));
         };
 
         self.isGreaterThanOrEqualTo = function (value) {
-            var property = Expression.property(namespace);
+            var property = Expression.property(propertyName);
             var constant = Expression.getExpressionType(value);
-            return Expression.greaterThanOrEqualTo(property, constant);
+            return setExpression(Expression.greaterThanOrEqualTo(property, constant));
         };
 
         self.isLessThanOrEqualTo = function (value) {
-            var property = Expression.property(namespace);
+            var property = Expression.property(propertyName);
             var constant = Expression.getExpressionType(value);
-            return Expression.lessThanOrEqualTo(property, constant);
+            return setExpression(Expression.lessThanOrEqualTo(property, constant));
         };
 
         self.isLessThan = function (value) {
-            var property = Expression.property(namespace);
+            var property = Expression.property(propertyName);
             var constant = Expression.getExpressionType(value);
-            return Expression.lessThan(property, constant);
+            return setExpression(Expression.lessThan(property, constant));
         };
 
         self.endsWith = function (value) {
-            return Expression.endsWith(Expression.property(namespace), Expression.string(value));
+            return setExpression(Expression.endsWith(Expression.property(propertyName), Expression.string(value)));
         };
 
         self.startsWith = function (value) {
-            return Expression.startsWith(Expression.property(namespace), Expression.string(value));
+            return setExpression(Expression.startsWith(Expression.property(propertyName), Expression.string(value)));
         };
 
-        self.toString = function () {
-            return namespace;
+        self.property = function (value) {
+            return new OperationExpressionBuilder(value, function (expression) {
+                return Expression.propertyAccess(propertyName, expression);
+            });
         };
+
+        self.getPropertyName = function () {
+            return propertyName;
+        };
+
     };
 
     var ExpressionBuilder = function () {
@@ -62,7 +85,7 @@
         BASE.assertNotGlobal(self);
 
         self.property = function (property) {
-            return new PropertyExpression(property);
+            return new OperationExpressionBuilder(property);
         };
 
         self.and = function () {
@@ -73,9 +96,22 @@
             return Expression.or.apply(Expression, arguments);
         };
 
+        self.any = function (fn) {
+            var expressionBuilder = new ExpressionBuilder();
+            var expression = fn(expressionBuilder);
+            return setExpression(Expression.any("", expression));
+        };
+
+        self.all = function () {
+            var expressionBuilder = new ExpressionBuilder();
+            var expression = fn(expressionBuilder);
+            return setExpression(Expression.all("", expression));
+        };
+
         self.value = function () {
-            return new PropertyExpression("");
+        	return new OperationExpressionBuilder("");
         }
+
     };
 
     BASE.query.ExpressionBuilder = ExpressionBuilder;

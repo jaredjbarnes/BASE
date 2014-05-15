@@ -22,7 +22,7 @@
             }
 
             model = m;
-            var amObservable = m.implementsNotifyPropertyChange || false;
+            var amObservable = m._implementsNotifyPropertyChange || false;
             if (!amObservable) {
                 BASE.behaviors.NotifyPropertyChange.apply(model);
             }
@@ -40,7 +40,6 @@
 
             }
             
-
         };
 
         var modelChangeHandler = function (e) {

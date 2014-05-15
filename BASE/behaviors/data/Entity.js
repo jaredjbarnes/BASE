@@ -19,6 +19,9 @@
             return;
         }
 
+        // Keep track if all of our pices have been put in place
+        self._synced = true;
+
         self.id = null;
         // Make us observable as well
         BASE.behaviors.NotifyPropertyChange.call(self);

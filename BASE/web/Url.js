@@ -5,100 +5,91 @@ BASE.web.Url = (function () {
     var Url = function (url) {
         var self = this;
 
-        if (!(self instanceof Url)) {
-            return new Url(url);
-        }
+        BASE.assertNotGlobal(self);
 
-        return this;
-    };
-
-    Url.parse = function (url) {
-        var instance = new Url();
         //Thanks Douglas Crockford.
         var parse_url = /^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$/;
         var result = parse_url.exec(url);
-        if (result) {
-            Object.defineProperties(instance, {
-                "href": {
-                    get: function () {
-                        return result[0];
-                    }
-                },
-                "scheme": {
-                    get: function () {
-                        return result[1];
-                    }
-                },
-                "slash": {
-                    get: function () {
-                        return result[2];
-                    }
-                },
-                "host": {
-                    get: function () {
-                        return result[3];
-                    }
-                },
-                "port": {
-                    get: function () {
-                        if (!result[4]) {
-                            return result[1] === 'https' ? 443 : 80;
-                        } else {
-                            return parseInt(result[4], 10);
-                        }
-                    }
-                },
-                "path": {
-                    get: function () {
-                        return result[5];
-                    }
-                },
-                "query": {
-                    get: function () {
-                        if (result[6]) {
-                            var itemArray = result[6].split("&");
-                            var nameValue;
-                            var obj = {};
-                            for (var x = 0; x < itemArray.length; x++) {
-                                nameValue = itemArray[x].split("=");
-                                obj[decodeURI(nameValue[0])] = decodeURI(nameValue[1]);
-                            }
-                            return obj;
-                        }
-                        return undefined;
-                    }
-                },
-                "hash": {
-                    get: function () {
-                        return result[7];
-                    }
-                },
-                "page": {
-                    get: function () {
-                        var tmpArray;
-                        if (result[5]) {
-                            tmpArray = result[5].split("/");
-                            return tmpArray[tmpArray.length - 1];
-                        } else {
-                            return undefined;
-                        }
-                    }
-                },
-                "extension": {
-                    get: function () {
-                        var page = instance.page;
-                        if (page) {
-                            var regExp = /\.[^\.]*?$/i;
-                            var value = page.match(regExp);
-                            return value ? value[0] : undefined;
-                        } else {
-                            return undefined;
-                        }
-                    }
-                }
-            });
+
+        var parseQuery = function (querystring) {
+            var values = {};
+
+            if (querystring) {
+                querystring = decodeURI(querystring);
+
+                var keyValues = querystring.split("&");
+                keyValues.forEach(function (keyValue) {
+                    var split = keyValue.split("=");
+                    values[split[0]] = split[1];
+                });
+
+            }
+            return values;
+        };
+
+        var queryStringValues = parseQuery(result[6]);
+
+        self.getHref = function () {
+            result[0];
+        };
+
+        self.getScheme = function () {
+            return result[1];
+        };
+
+        self.getSlash = function () {
+            return result[2];
+        };
+
+        self.getHost = function () {
+            return result[3];
+        };
+
+        self.getPort = function () {
+            if (!result[4]) {
+                return result[1] === 'https' ? 443 : 80;
+            } else {
+                return parseInt(result[4], 10);
+            }
+        };
+
+        self.getPath = function () {
+            return result[5];
+        };
+
+        self.getQuery = function () {
+            return result[6];
+        };
+
+        self.getParsedQuery = function () {
+            return queryStringValues;
         }
-        return instance;
+
+        self.getHash = function () {
+            return result[7];
+        };
+
+        self.getPage = function () {
+            var tmpArray;
+            if (result[5]) {
+                tmpArray = result[5].split("/");
+                return tmpArray[tmpArray.length - 1];
+            } else {
+                return undefined;
+            }
+        };
+
+        self.getExtension = function () {
+            var page = self.getPage();
+            if (page) {
+                var regExp = /\.[^\.]*?$/i;
+                var value = page.match(regExp);
+                return value ? value[0] : undefined;
+            } else {
+                return undefined;
+            }
+        };
+
     };
 
     return Url;

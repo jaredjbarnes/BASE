@@ -28,22 +28,30 @@
             var getterName = "get" + pascalCased;
             var setterName = "set" + pascalCased;
 
-            self[getterName] = function () {
-                return self[property];
-            };
+            if (typeof self[getterName] !== "function") {
+                self[getterName] = function () {
+                    return self[property];
+                };
 
-            self[setterName] = function (newValue) {
-                var oldValue = self[property];
-                if (oldValue !== newValue) {
-                    self[property] = newValue;
-                    self.notify({
-                        type: property,
-                        property: property,
-                        oldValue: oldValue,
-                        newValue: newValue
-                    });
-                }
-            };
+            }
+
+            if (typeof self[setterName] !== "function") {
+
+                self[setterName] = function (newValue) {
+                    var oldValue = self[property];
+                    if (oldValue !== newValue) {
+                        self[property] = newValue;
+                        self.notify({
+                            type: "propertyChange",
+                            property: property,
+                            oldValue: oldValue,
+                            newValue: newValue
+                        });
+                    }
+                };
+
+            }
+
         };
 
         for (var property in self) (function (property) {
@@ -53,8 +61,9 @@
         }(property));
 
         self.observeProperty = function (propertyName, callback) {
+            callback = typeof callback === "function" ? callback : function () { };
             return self.observe().filter(function (e) {
-                if (typeof e.property !== "undefined" && e.property === propertyName) {
+                if (e.type === "propertyChange" && typeof e.property !== "undefined" && e.property === propertyName) {
                     return true;
                 }
                 return false;
@@ -63,11 +72,9 @@
 
         self.observeAllProperties = function (callback) {
             return self.observe().filter(function (e) {
-                return typeof e.property  === "undefined"? false : true;
+                return e.type === "propertyChange" ? true : false;
             }).onEach(callback);
         };
-
-        self.implementsNotifyPropertyChange = true;
 
     };
 

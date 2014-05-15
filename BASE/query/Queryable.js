@@ -131,7 +131,7 @@
 
                 var exp = fn.call(self, new ExpressionBuilder(Type));
 
-                orderBy.children.push(Expression.ascending(Expression.property(exp.toString())));
+                orderBy.children.push(Expression.ascending(Expression.property(exp.getPropertyName())));
 
                 expression.orderBy = orderBy;
 
@@ -152,6 +152,12 @@
                 }
 
                 return future;
+            };
+
+            self.forEach = function (onEach) {
+                self.toArray(function (results) {
+                    results.forEach(onEach);
+                });
             };
 
             self.count = function () {
@@ -190,8 +196,8 @@
                 return self.provider.contains(self, item);
             };
 
-            self.include = function () {
-                return self.provider.include(self, item);
+            self.include = function (func) {
+                return self.provider.include(self, func);
             };
 
             self.ifNone = function (callback) {

@@ -7,8 +7,7 @@
     "BASE.data.states.AddedState",
     "BASE.data.states.LoadedState",
     "BASE.data.states.UpdatedState",
-    "BASE.data.states.RemovedState",
-    "BASE.behaviors.Observable"
+    "BASE.data.states.RemovedState"
 ], function () {
     BASE.namespace("BASE.data");
 
@@ -155,7 +154,7 @@
                 "1": new LoadedState(self, entityRelationManager),
                 "2": new AddedState(self, entityRelationManager),
                 "3": new UpdatedState(self, entityRelationManager),
-                "4": new RemovedState(self, entityRelationManager),
+                "4": new RemovedState(self, entityRelationManager)
             };
 
             // This is the actual state object.

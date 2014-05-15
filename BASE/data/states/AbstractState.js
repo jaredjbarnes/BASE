@@ -61,6 +61,7 @@
 
             self.sync = function (dto) {
                 var dataContext = changeTracker.getDataContext();
+                entity._synced = false;
 
                 // Update the entity to the values in the dto.
                 // Run through each property and assign the entity that value.
@@ -106,6 +107,8 @@
                         entity[makeSetterName(key)](dto[key]);
                     }
                 });
+                entity._synced = true;
+                entity.notify({ type: "synced" });
             };
 
             self.start = function () {

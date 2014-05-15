@@ -185,6 +185,17 @@
                 });
             };
 
+            self.include = function (queryable, func) {
+                return new Future(function (setValue, setError) {
+                    queryable.toArray().then(function (results) {
+                        // This is probably not a great idea to be here, but we need it now.
+                        var builder = new ExpressionBuilder(queryable.Type);
+                        var propertyExpression = func.call(queryable, builder);
+
+                    }).ifError(setError);
+                });
+            };
+
             self.intersects = function (queryable, compareToQueryable) {
                 return new Future(function (setValue, setError) {
                     var task = new BASE.async.Task();

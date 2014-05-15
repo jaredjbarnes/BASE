@@ -126,7 +126,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasOne;
-                    var observer = propertyObservers.get(property).dispose();
+                    var observer = propertyObservers.remove(property);
                     if (observer) {
                         observer.dispose();
                     }
@@ -140,7 +140,12 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
-                    ObservableArrayBehavior.call(entity[property]);
+
+                    if (!Array.isArray(entity[property])) {
+                        entity[property] = [];
+                    }
+
+                    ObservableArrayBehavior.call(entity[property], relationship.ofType);
                     var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
@@ -233,7 +238,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
-                    var observer = propertyObservers.get(property);
+                    var observer = propertyObservers.remove(property);
                     if (observer) {
                         observer.dispose();
                     }
@@ -248,7 +253,12 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
-                    ObservableArrayBehavior.call(entity[property]);
+
+                    if (!Array.isArray(entity[property])) {
+                        entity[property] = [];
+                    }
+
+                    ObservableArrayBehavior.call(entity[property], relationship.ofType);
                     var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
@@ -315,17 +325,19 @@
                             // This will ensure that we get the mapping entity that has been loaded into the data context.
                             mappingEntity = _dataContext.getDataSet(mappingEntity.constructor).add(mappingEntity);
 
-                            // This should always be up to date.
-                            mappingEntity[makeSetterName(relationship.withForeignKey)](entity.id);
+                            mappingEntity.id = entity.id + "|" + target.id;
 
                             // This should always be up to date.
-                            mappingEntity[makeSetterName(relationship.hasForeignKey)](target.id);
+                            mappingEntity[relationship.withForeignKey] = entity.id;
+
+                            // This should always be up to date.
+                            mappingEntity[relationship.hasForeignKey] = target.id;
 
                             // Assign the mapping entity to the entity.
-                            mappingEntity[makeSetterName(sourceMappingRelationship.withOne)](entity);
+                            mappingEntity[sourceMappingRelationship.withOne] = entity;
 
                             // Assign the mapping entity to the entity.
-                            mappingEntity[makeSetterName(targetMappingRelationship.withOne)](target);
+                            mappingEntity[targetMappingRelationship.withOne] = target;
 
                             // We need to remove the mapping entity from the hash when its been detached.
                             // This is also necessary to avoid memory leaks.
@@ -351,7 +363,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
-                    var observer = propertyObservers.get(property);
+                    var observer = propertyObservers.remove(property);
                     if (observer) {
                         observer.dispose();
                     }
@@ -438,7 +450,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withOne;
-                    var observer = propertyObservers.get(property);
+                    var observer = propertyObservers.remove(property);
                     if (observer) {
                         observer.dispose();
                     }
@@ -506,7 +518,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withOne;
-                    var observer = propertyObservers.get(property);
+                    var observer = propertyObservers.remove(property);
                     if (observer) {
                         observer.dispose();
                     }
@@ -521,7 +533,13 @@
                 // Observe the array for changes.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withMany;
-                    ObservableArrayBehavior.call(entity[property]);
+
+                    if (!Array.isArray(entity[property])) {
+                        entity[property] = [];
+                    }
+
+                    ObservableArrayBehavior.call(entity[property], relationship.type);
+
                     var observer = entity[property].observe(function (event) {
                         // Remove the ties between the objects.
                         event.oldItems.forEach(function (item) {
@@ -564,7 +582,7 @@
                 // Unobserve from the array.
                 relationships.forEach(function (relationship) {
                     var property = relationship.withMany;
-                    var observer = propertyObservers.get(property);
+                    var observer = propertyObservers.remove(property);
 
                     if (observer) {
                         observer.dispose();
@@ -606,14 +624,16 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().getOneToManys(entity).filter(function (r) {
+                        return r.hasMany === property
+                    })[0];
 
                     factory = function () {
                         var provider;
                         // The service provider doesn't need to work until the entity is loaded.
                         if (entity.getChangeTracker().getState() === BASE.data.EntityChangeTracker.LOADED) {
 
-                            var provider = _dataContext.service.getTargetProvider(entity, property);
+                            var provider = _dataContext.getService().getTargetProvider(entity, property);
                             var oldExecute = provider.execute;
                             provider.toArray = provider.execute = function (queryable) {
                                 return new Future(function (setValue, setError) {
@@ -664,13 +684,15 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().getManyToManys(entity).filter(function (r) {
+                        return r.hasMany === property
+                    })[0];
 
                     factory = function () {
                         var provider;
                         // The service provider doesn't need to work until the entity is loaded.
                         if (entity.getChangeTracker().getState() === BASE.data.EntityChangeTracker.LOADED) {
-                            var provider = _dataContext.service.getTargetProvider(entity, property);
+                            var provider = _dataContext.getService().getTargetProvider(entity, property);
                             var oldExecute = provider.execute;
 
                             // We override the execute method to customize our provider.
@@ -692,7 +714,14 @@
                                             // to LOADED, set it's it, and let the observer take care of the rest.
 
                                             // We need to create the mapping type entity, or get it from the already loaded hash.
-                                            var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(entity, target) || new relationship.usingMappingType();
+                                            var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(entity, target);
+                                            var sourceMappingRelationship = relationship.sourceMappingRelationship;
+                                            var targetMappingRelationship = relationship.targetMappingRelationship;
+
+                                            if (!mappingEntity) {
+                                                mappingEntity = new relationship.usingMappingType();
+                                                BASE.behaviors.data.Entity.call(mappingEntity);
+                                            }
 
                                             // Assign the data context.
                                             mappingEntity.getChangeTracker().setDataContext(_dataContext);
@@ -700,16 +729,19 @@
                                             // Change the state of the mapping entity to LOADED before we add it to the state.
                                             mappingEntity.getChangeTracker().changeState(BASE.data.EntityChangeTracker.LOADED);
 
-                                            // Assign the id of the mapping entity as a concatenation of both entity's ids.
-                                            mappingEntity[makeSetterName(id)](entity.id + "|" + target.id);
+                                            mappingEntity.id = entity.id + "|" + target.id;
+
+                                            // This should always be up to date.
+                                            mappingEntity[relationship.withForeignKey] = entity.id;
+
+                                            // This should always be up to date.
+                                            mappingEntity[relationship.hasForeignKey] = target.id;
 
                                             // Assign the mapping entity to the entity.
-                                            var sourceMappingRelationship = relationship.sourceMappingRelationship;
-                                            mappingEntity[makeSetterName(sourceMappingRelationship.withOne)](entity);
+                                            mappingEntity[sourceMappingRelationship.withOne] = entity;
 
                                             // Assign the mapping entity to the entity.
-                                            var targetMappingRelationship = relationship.targetMappingRelationship;
-                                            mappingEntity[makeSetterName(targetMappingRelationship.withOne)](target);
+                                            mappingEntity[targetMappingRelationship.withOne] = target;
 
                                             // Add the mapping to the hash.
                                             entity.getChangeTracker().getDataContext().mappingEntities.add(entity, target, mappingEntity);
@@ -750,10 +782,12 @@
                 var factory = providerFactories.get(property);
 
                 if (!factory) {
-                    var relationship = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor, property);
+                    var relationship = self.getDataContext().getOrm().getManyToManyAsTargets(entity).filter(function (r) {
+                        return r.withMany === property;
+                    })[0];
 
                     factory = function () {
-                        var provider = _dataContext.service.getTargetProvider(entity, property);
+                        var provider = _dataContext.getService().getTargetProvider(entity, property);
                         var oldExecute = provider.execute;
                         provider.toArray = provider.execute = function (queryable) {
                             return new Future(function (setValue, setError) {
@@ -770,16 +804,28 @@
                                         // to LOADED, set it's it, and let the observer take care of the rest.
 
                                         // We need to create the mapping type entity, or get it from the already loaded hash.
-                                        var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(source, entity) || new relationship.usingMappingType();
+                                        var mappingEntity = entity.getChangeTracker().getDataContext().mappingEntities.get(source, entity);
+                                        var sourceMappingRelationship = relationship.sourceMappingRelationship;
+                                        var targetMappingRelationship = relationship.targetMappingRelationship;
 
-                                        // Assign the data context.
-                                        mappingEntity.getChangeTracker().setDataContext(_dataContext);
+                                        if (!mappingEntity) {
+                                            mappingEntity = new relationship.usingMappingType();
+                                            BASE.behaviors.data.Entity.call(mappingEntity);
+                                        }
 
-                                        // Change the state of the mapping entity to LOADED before we add it to the state.
-                                        mappingEntity.getChangeTracker().changeState(BASE.data.EntityChangeTracker.LOADED);
+                                        mappingEntity.id = entity.id + "|" + target.id;
 
-                                        // Assign the id of the mapping entity as a concatenation of both entity's ids.
-                                        mappingEntity[makeSetterName(id)](source.id + "|" + entity.id);
+                                        // This should always be up to date.
+                                        mappingEntity[relationship.withForeignKey] = entity.id;
+
+                                        // This should always be up to date.
+                                        mappingEntity[relationship.hasForeignKey] = target.id;
+
+                                        // Assign the mapping entity to the entity.
+                                        mappingEntity[sourceMappingRelationship.withOne] = entity;
+
+                                        // Assign the mapping entity to the entity.
+                                        mappingEntity[targetMappingRelationship.withOne] = target;
 
                                         // Add the mapping to the hash.
                                         entity.getChangeTracker().getDataContext().mappingEntities.add(source, entity, mappingEntity);
@@ -812,14 +858,9 @@
                 return factory;
             };
 
-            // This assigns the provider factories for all the array relationships.
-            var assignProviderFactories = function () {
-                var oneToManyRelationships = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationships = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationshipsAsTargets = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor) || new Hashmap();
-
-                oneToManyRelationships.getKeys().forEach(function (key) {
-                    var relationship = oneToManyRelationships.get(key);
+            var assignOneToManyProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getOneToManys(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
                     var factory = getOneToManyProviderFactory(property);
 
@@ -830,72 +871,89 @@
                     }
 
                     // Get the old Factory, so we can assign it back it the entity is DETATCHED again.
-                    var oldFactory = entity[property].providerFactory;
+                    var oldFactory = entity[property].getProviderFactory;
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    entity[property].providerFactory = factory;
+                    entity[property].getProviderFactory = factory;
                 });
+            };
 
-                manyToManyRelationships.getKeys().forEach(function (key) {
-                    var relationship = manyToManyRelationships.get(key);
+            var unassignOneToManyProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getOneToManys(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    var oldFactory = defaultproviderFactories.get(property);
+
+                    // Assign the old factory back.
+                    entity[property].getProviderFactory = oldFactory;
+                });
+            };
+
+            var assignManyToManyProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getManyToManys(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
                     var property = relationship.hasMany;
                     var factory = getManyToManyProviderFactory(relationship.hasMany);
 
                     // Get the old Factory, so we can assign it back it the entity is DETATCHED again.
-                    var oldFactory = entity[property].providerFactory;
+                    var oldFactory = entity[property].getProviderFactory;
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    entity[property].providerFactory = factory;
+                    entity[property].getProviderFactory = factory;
                 });
+            };
 
-                manyToManyRelationshipsAsTargets.getKeys().forEach(function (key) {
-                    var relationship = manyToManyRelationshipsAsTargets.get(key);
+            var unassignManyToManyProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getManyToManys(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
+                    var property = relationship.hasMany;
+                    var oldFactory = defaultproviderFactories.get(property);
+
+                    // Assign the old factory back.
+                    entity[property].getProviderFactory = oldFactory;
+                });
+            };
+
+            var assignManyToManyAsTargetsProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getManyToManyAsTargets(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
                     var property = relationship.withMany;
                     var factory = getManyToManyAsTargetsProviderFactory(relationship.withMany);
 
                     // Get the old Factory, so we can assign it back it the entity is DETATCHED again.
-                    var oldFactory = entity[property].providerFactory;
+                    var oldFactory = entity[property].getProviderFactory;
                     defaultproviderFactories.add(property, oldFactory);
 
                     // Assign the new factory.
-                    entity[property].providerFactory = factory;
+                    entity[property].getProviderFactory = factory;
                 });
             };
 
-            // This unassigns the provider factories for all the array relationships.
-            var unassignProviderFactories = function () {
-                var oneToManyRelationships = self.getDataContext().getOrm().oneToManyRelationships.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationships = self.getDataContext().getOrm().manyToManyRelationships.get(entity.constructor) || new Hashmap();
-                var manyToManyRelationshipsAsTargets = self.getDataContext().getOrm().manyToManyTargetRelationships.get(entity.constructor) || new Hashmap();
-
-                oneToManyRelationships.getKeys().forEach(function (key) {
-                    var relationship = oneToManyRelationships.get(key);
-                    var property = relationship.hasMany;
-                    var oldFactory = defaultproviderFactories.get(property);
-
-                    // Assign the old factory back.
-                    entity[property].providerFactory = oldFactory;
-                });
-
-                manyToManyRelationships.getKeys().forEach(function (key) {
-                    var relationship = manyToManyRelationships.get(key);
-                    var property = relationship.hasMany;
-                    var oldFactory = defaultproviderFactories.get(property);
-
-                    // Assign the old factory back.
-                    entity[property].providerFactory = oldFactory;
-                });
-
-                manyToManyRelationshipsAsTargets.getKeys().forEach(function (key) {
-                    var relationship = manyToManyRelationshipsAsTargets.get(key);
+            var unassignManyToManyAsTargetsProviderFactories = function () {
+                var relationships = self.getDataContext().getOrm().getManyToManyAsTargets(entity) || new Hashmap();
+                relationships.forEach(function (relationship) {
                     var property = relationship.withMany;
                     var oldFactory = defaultproviderFactories.get(property);
 
                     // Assign the old factory back.
-                    entity[property].providerFactory = oldFactory;
+                    entity[property].getProviderFactory = oldFactory;
                 });
+            };
+
+            // This assigns the provider factories for all the array relationships.
+            var assignProviderFactories = function () {
+                assignOneToManyProviderFactories();
+                assignManyToManyProviderFactories();
+                assignManyToManyAsTargetsProviderFactories();
+            };
+
+            // This unassigns the provider factories for all the array relationships.
+            var unassignProviderFactories = function () {
+                unassignOneToManyProviderFactories();
+                unassignManyToManyProviderFactories();
+                unassignManyToManyAsTargetsProviderFactories();
             };
 
             var _dataContext = null;

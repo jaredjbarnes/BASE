@@ -16,6 +16,10 @@
                 throw new Error("Meant to be overriden");
             };
 
+            self.isEqualTo = function () {
+                throw new Error("Meant to be overriden");
+            };
+
             return self;
         };
 
@@ -40,6 +44,13 @@
 
             self.copy = function () {
                 return new ValueExpression(nodeName, self.value);
+            };
+
+            self.isEqualTo = function (node) {
+                if (node && self.nodeName === node.nodeName && self.value === node.value) {
+                    return true;
+                }
+                return false;
             };
 
             return self;
@@ -68,6 +79,20 @@
                 });
 
                 return copy;
+            };
+
+            self.isEqualTo = function (node) {
+                if (!Array.isArray(node.children) || self.nodeName !== node.nodeName) {
+                    return false;
+                }
+
+                if (node.children.length !== self.children.length) {
+                    return false;
+                }
+
+                return self.children.every(function (expression, index) {
+                    return expression.isEqualTo(node.children[index]);
+                });
             };
 
             return self;
@@ -222,6 +247,7 @@
         });
         return expression;
     };
+
     Expression.lessThan = function () {
         var expression = new OperationExpression("lessThan");
         Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
@@ -326,24 +352,39 @@
         return expression;
     };
 
-    Expression.any = function (Type, namespace, expression) {
-        var anyExpression = new OperationExpression("any");
-        var ofTypeExpression = new ValueExpression("ofType", Type);
-        var propertyExpression = new ValueExpression("property", namespace);
-
-        anyExpression.children.push(ofTypeExpression, propertyExpression, expression);
-
-        return anyExpression;
+    Expression.include = function () {
+        var expression = new OperationExpression("include");
+        Array.prototype.slice.call(arguments, 0).forEach(function (arg) {
+            expression.children.push(arg);
+        });
+        return expression;
     };
 
-    Expression.all = function (Type, namespace, expression) {
-        var allExpression = new OperationExpression("all");
-        var ofTypeExpression = new ValueExpression("ofType", Type);
-        var propertyExpression = new ValueExpression("property", namespace);
-
-        allExpression.children.push(ofTypeExpression, propertyExpression, expression);
+    Expression.any = function (expression) {
+        var allExpression = new ValueExpression("any", Expression.expression(expression));
 
         return allExpression;
+    };
+
+    Expression.all = function (propertyName, expression) {
+        var allExpression = new ValueExpression("all", Expression.expression(expression));
+
+        return allExpression;
+    };
+
+    Expression.expression = function (value) {
+        var expresssionExpression = new ValueExpression("expression", value);
+
+        return expresssionExpression;
+    };
+
+    Expression.propertyAccess = function (propertyName, value) {
+        var propertyExpression = Expression.property(propertyName);
+        var valueExpression = new ValueExpression("expression", value);
+        var propertyAccessExpression = new OperationExpression("propertyAccess");
+        propertyAccessExpression.children.push(propertyExpression, valueExpression);
+
+        return propertyAccessExpression;
     };
 
     Expression.contains = function (Type, namespace, expression) {

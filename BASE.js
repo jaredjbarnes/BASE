@@ -293,6 +293,8 @@
         var onError = emptyFn;
         var observers = [];
 
+        unbind = unbind || emptyFn;
+
         filter = filter || function () {
             return true;
         };
@@ -366,6 +368,10 @@
             state.notify(e);
         };
 
+        self.copy = function () {
+            return self.filter();
+        };
+
         self.stop = function () {
             state.stop();
         };
@@ -384,10 +390,7 @@
                 if (index >= 0) {
                     observers.splice(index, 1);
                 }
-                // This will prevent memoryleaks.
-                if (observers.length === 0 && onEach === emptyFn && onError === emptyFn) {
-                    dispose();
-                }
+
             }, filter);
             observers.push(observer);
             return observer;
@@ -399,16 +402,16 @@
                 if (index >= 0) {
                     observers.splice(index, 1);
                 }
-                // This will prevent memoryleaks.
-                if (observers.length === 0 && onEach === emptyFn && onError === emptyFn) {
-                    dispose();
-                }
+
             }, undefined, map);
             observers.push(observer);
             return observer;
         };
 
         self.onEach = function (callback) {
+            if (typeof callback !== "function") {
+                throw new Error("Expected a function.");
+            }
             onEach = callback;
             return self;
         };
@@ -431,6 +434,10 @@
         }
 
         var observers = [];
+
+        self.getObservers = function () {
+            return observers;
+        };
 
         self.observe = function () {
             var observer = new Observer(function () {
@@ -798,11 +805,37 @@
                 return self;
             };
 
+            self.cancel = function () {
+                futures.forEach(function (future) {
+                    future.cancel();
+                });
+            };
+
             self.add = function () {
                 if (completedFutures.length === 0) {
                     futures.push.apply(futures, arguments);
                 } else {
                     throw new Error("Cannot add to a task when it has already finished.");
+                }
+                return self;
+            };
+
+            self.start = function () {
+                if (_started === false) {
+                    _started = true;
+                    _state = _startedState
+                    if (futures.length > 0) {
+                        futures.forEach(function (future) {
+
+                            future.onComplete(function () {
+                                _notify(future);
+                            });
+
+                            future.ifCanceled(_cancel);
+                        });
+                    } else {
+                        fireComplete();
+                    }
                 }
                 return self;
             };
@@ -848,25 +881,7 @@
                 }
             };
 
-            self.start = function () {
-                if (_started === false) {
-                    _started = true;
-                    _state = _startedState
-                    if (futures.length > 0) {
-                        futures.forEach(function (future) {
 
-                            future.onComplete(function () {
-                                _notify(future);
-                            });
-
-                            future.ifCanceled(_cancel);
-                        });
-                    } else {
-                        fireComplete();
-                    }
-                }
-                return self;
-            };
 
             return self;
         };
@@ -992,7 +1007,7 @@
         var NodeLoader = function () {
             var self = this;
 
-            assertInstance(self);
+            assertNotGlobal(self);
 
             Super.call(self);
 
@@ -1025,14 +1040,33 @@
 
             self.loadScript = function (path) {
                 return new Future(function (setValue, setError) {
+
                     // All of this is pretty weird because of browser caching etc.
                     var script = document.createElement("script");
-                    var src = path;
 
-                    script.onload = function () {
-                        if (!script.onloadCalled) {
-                            script.onloadCalled = true;
-                            setValue(undefined);
+                    script.async = true;
+
+                    script.src = path;
+
+                    // Attach handlers for all browsers
+                    script.onload = script.onreadystatechange = function () {
+
+                        if (!script.readyState || /loaded|complete/.test(script.readyState)) {
+
+                            // Handle memory leak in IE
+                            script.onload = script.onreadystatechange = null;
+                            script.onerror = null;
+
+                            // Remove the script
+                            if (script.parentNode) {
+                                script.parentNode.removeChild(script);
+                            }
+
+                            // Dereference the script
+                            script = null;
+
+                            // Callback if not abort
+                            setValue();
                         }
                     };
 
@@ -1040,15 +1074,11 @@
                         setError(Error("Failed to load: \"" + path + "\"."));
                     };
 
-                    script.onreadystatechange = function () {
-                        if (("loaded" === script.readyState || "complete" === script.readyState) && !script.onloadCalled) {
-                            script.onloadCalled = true;
-                            setValue(undefined);
-                        }
-                    };
+                    // Circumvent IE6 bugs with base elements (#2709 and #4378) by prepending
+                    // Use native DOM manipulation to avoid our domManip AJAX trickery
+                    var head = document.getElementsByTagName('head')[0];
+                    head.insertBefore(script, head.firstChild);
 
-                    script.src = src;
-                    document.getElementsByTagName('head')[0].appendChild(script);
                 });
             };
         };
@@ -1182,6 +1212,7 @@
     BASE.async.Future = Future;
     BASE.async.Task = Task;
     BASE.behaviors.Observable = BASE.util.Observable = Observable;
+    BASE.util.Observer = Observer;
 
     BASE.extend = extend;
     BASE.hasInterface = hasInterface;

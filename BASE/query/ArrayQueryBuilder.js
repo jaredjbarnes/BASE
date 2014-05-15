@@ -1,376 +1,392 @@
-﻿BASE.require(["BASE.util.Observable"], function () {
-    BASE.namespace("BASE.query");
+﻿BASE.require([
+    "BASE.util.Observable",
+    "BASE.collections.Hashmap"
+], function () {
+	BASE.namespace("BASE.query");
 
-    var Ascending = function (expression) {
-        var namespace = expression.value;
-        var self = this;
-        if (!(self instanceof Ascending)) {
-            return new Ascending();
-        }
+	var Hashmap = BASE.collections.Hashmap;
 
-        self.evaluate = function (a, b) {
-            var aValue = BASE.getObject(namespace, a);
-            var bValue = BASE.getObject(namespace, b);
+	var Ascending = function (expression) {
+		var namespace = expression.value;
+		var self = this;
+		if (!(self instanceof Ascending)) {
+			return new Ascending();
+		}
 
-            if (typeof aValue === "string" && typeof bValue === "string") {
-                aValue = aValue.toLowerCase();
-                bValue = bValue.toLowerCase();
-            }
+		self.evaluate = function (a, b) {
+			var aValue = BASE.getObject(namespace, a);
+			var bValue = BASE.getObject(namespace, b);
 
-            if (aValue === bValue) {
-                return 0;
-            } else if (aValue < bValue) {
-                return -1;
-            } else if (aValue > bValue) {
-                return 1;
-            }
-        };
-    };
-    var Descending = function (expression) {
-        var namespace = expression.value;
-        var self = this;
-        if (!(self instanceof Descending)) {
-            return new Descending();
-        }
+			if (typeof aValue === "string" && typeof bValue === "string") {
+				aValue = aValue.toLowerCase();
+				bValue = bValue.toLowerCase();
+			}
 
-        self.evaluate = function (a, b) {
-            var aValue = BASE.getObject(namespace, a);
-            var bValue = BASE.getObject(namespace, b);
+			if (aValue === bValue) {
+				return 0;
+			} else if (aValue < bValue) {
+				return -1;
+			} else if (aValue > bValue) {
+				return 1;
+			}
+		};
+	};
+	var Descending = function (expression) {
+		var namespace = expression.value;
+		var self = this;
+		if (!(self instanceof Descending)) {
+			return new Descending();
+		}
 
-            if (typeof aValue === "string" && typeof bValue === "string") {
-                aValue = aValue.toLowerCase();
-                bValue = bValue.toLowerCase();
-            }
+		self.evaluate = function (a, b) {
+			var aValue = BASE.getObject(namespace, a);
+			var bValue = BASE.getObject(namespace, b);
 
-            if (aValue === bValue) {
-                return 0;
-            } else if (aValue > bValue) {
-                return -1;
-            } else if (aValue < bValue) {
-                return 1;
-            }
-        };
-    };
+			if (typeof aValue === "string" && typeof bValue === "string") {
+				aValue = aValue.toLowerCase();
+				bValue = bValue.toLowerCase();
+			}
 
-    BASE.query.ArrayQueryBuilder = (function (Super) {
-        var ArrayQueryBuilder = function (sourceArray) {
-            var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new ArrayQueryBuilder(sourceArray);
-            }
+			if (aValue === bValue) {
+				return 0;
+			} else if (aValue > bValue) {
+				return -1;
+			} else if (aValue < bValue) {
+				return 1;
+			}
+		};
+	};
 
-            Super.call(self);
+	BASE.query.ArrayQueryBuilder = (function (Super) {
+		var ArrayQueryBuilder = function (sourceArray) {
+			var self = this;
+			if (!(self instanceof arguments.callee)) {
+				return new ArrayQueryBuilder(sourceArray);
+			}
 
-            var filteredArray = sourceArray.slice(0);
+			Super.call(self);
 
-            self.getValue = function() {
-                return filteredArray;
-            };
+			var filteredArray = sourceArray.slice(0);
 
-            self.ascending = function (namespace) {
-                return new Ascending(namespace);
-            };
+			self.getValue = function () {
+				return filteredArray;
+			};
 
-            self.descending = function (namespace) {
-                return new Descending(namespace);
-            };
+			self.ascending = function (namespace) {
+				return new Ascending(namespace);
+			};
 
-            self.greaterThan = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj > right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.descending = function (namespace) {
+				return new Descending(namespace);
+			};
 
-            self.lessThan = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj < right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.greaterThan = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj > right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-            self.greaterThanOrEqualTo = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj >= right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.lessThan = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj < right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-            self.lessThanOrEqualTo = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj <= right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.greaterThanOrEqualTo = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj >= right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-            self.orderBy = function () {
-                var self = this;
-                var orderByCriterions = Array.prototype.slice.call(arguments, 0);
+			self.lessThanOrEqualTo = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj <= right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-                filteredArray.sort(function (itemA, itemB) {
-                    var returnValue = 0;
-                    orderByCriterions.every(function (orderBy) {
-                        returnValue = orderBy.evaluate(itemA, itemB);
-                        if (returnValue === 0) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    });
-                    return returnValue;
-                });
+			self.orderBy = function () {
+				var self = this;
+				var orderByCriterions = Array.prototype.slice.call(arguments, 0);
 
-                return filteredArray;
-            };
+				filteredArray.sort(function (itemA, itemB) {
+					var returnValue = 0;
+					orderByCriterions.every(function (orderBy) {
+						returnValue = orderBy.evaluate(itemA, itemB);
+						if (returnValue === 0) {
+							return true;
+						} else {
+							return false;
+						}
+					});
+					return returnValue;
+				});
 
-            self.and = function () {
-                var results = [];
-                var children = Array.prototype.slice.call(arguments, 0);
-                children[0].forEach(function (item, index) {
-                    var pass = children.every(function (array, index) {
-                        return array.indexOf(item) >= 0
-                    });
+				return filteredArray;
+			};
 
-                    if (pass) {
-                        results.push(item);
-                    }
-                });
+			self.and = function () {
+				var results = [];
+				var hashes = [];
 
-                return results;
-            };
+				var children = Array.prototype.slice.call(arguments, 0);
 
-            self.where = function () {
-                var self = this;
-                return sourceArray = filteredArray = self.and.apply(self, arguments);
-            };
+				// Load all the results into a hash once.
+				children.forEach(function (array, index) {
+					var hash = hashes[index] = new Hashmap();
+					var item;
+					var length = array.length;
 
-            self.or = function () {
-                var results = [];
-                var children = Array.prototype.slice.call(arguments, 0);
-                var match = children.forEach(function (array, index) {
-                    array.forEach(function (item) {
-                        if (results.indexOf(item) < 0) {
-                            results.push(item);
-                        }
-                    })
-                });
+					for (var x = 0 ; x < length; x++) {
+						item = array[x];
+						hash.add(item, item);
+					}
+				});
 
-                return results;
-            };
+				children[0].forEach(function (item, index) {
 
-            self.string = function (value) {
-                return value;
-            };
+					var pass = hashes.slice(1).every(function (hash) {
+						return hash.hasKey(item);
+					});
 
-            self.constant = function (expression) {
-                return expression;
-            };
+					if (pass) {
+						results.push(item);
+					}
+				});
 
-            self.property = function (expression) {
-                return expression;
-            };
+				return results;
+			};
 
-            self.guid = function (value) {
-                return value;
-            };
+			self.where = function () {
+				var self = this;
+				return sourceArray = filteredArray = self.and.apply(self, arguments);
+			};
 
-            self["null"] = function (value) {
-                return value;
-            };
+			self.or = function () {
+				var hash = new Hashmap();
 
-            self["undefined"] = function (value) {
-                return value;
-            };
+				var children = Array.prototype.slice.call(arguments, 0);
 
-            self.number = function (value) {
-                return value;
-            };
+				// Load all the results into a hash once.
+				children.forEach(function (array, index) {
+					var item;
+					var length = array.length;
 
-            self.object = function (value) {
-                return value;
-            };
+					for (var x = 0 ; x < length; x++) {
+						item = array[x];
+						hash.add(item, item);
+					}
+				});
 
-            self.date = function (value) {
-                return value;
-            };
+				return hash.getValues();
+			};
 
-            self["function"] = function (value) {
-                return value;
-            };
+			self.string = function (value) {
+				return value;
+			};
 
-            self.boolean = function (value) {
-                return value;
-            };
+			self.constant = function (expression) {
+				return expression;
+			};
 
-            self.array = function (value) {
-                return value;
-            };
+			self.property = function (expression) {
+				return expression;
+			};
 
-            self.startsWith = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj.toLowerCase().indexOf(right.value.toLowerCase()) === 0) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.guid = function (value) {
+				return value;
+			};
 
-            self.endsWith = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (obj.toLowerCase().lastIndexOf(right.value.toLowerCase()) === obj.length - right.value.length) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self["null"] = function (value) {
+				return value;
+			};
 
-            self.substringOf = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
-                    if (right.value.trim() === "") {
-                        results.push(item);
-                    } else if (obj.toLowerCase().indexOf(right.value.toLowerCase()) >= 0) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self["undefined"] = function (value) {
+				return value;
+			};
 
-            self.equalTo = function (left, right) {
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
+			self.number = function (value) {
+				return value;
+			};
 
-                    if (obj === right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.object = function (value) {
+				return value;
+			};
 
-            self.notEqualTo = function (left, right) {
-                var self = this;
+			self.date = function (value) {
+				return value;
+			};
 
-                var results = [];
-                var self = this;
-                sourceArray.forEach(function (item) {
-                    // This will compare the base object.
-                    var obj;
-                    if (left.value === "") {
-                        obj = item;
-                    } else {
-                        obj = BASE.getObject(left.value, item);
-                    }
+			self["function"] = function (value) {
+				return value;
+			};
 
-                    if (obj !== right.value) {
-                        results.push(item);
-                    }
-                });
-                return results;
-            };
+			self.boolean = function (value) {
+				return value;
+			};
 
-            self.skip = function (valueExpression) {
-                var self = this;
-                var value = valueExpression.value;
-                for (var x = 0 ; x < value && filteredArray.length > 0; x++) {
-                    filteredArray.shift();
-                }
-                return filteredArray;
-            };
+			self.array = function (value) {
+				return value;
+			};
 
-            self.take = function (valueExpression) {
-                var self = this;
-                var newFilteredArray = [];
-                var value = valueExpression.value;
-                value = value < filteredArray.length ? value : filteredArray.length;
-                for (var x = 0 ; x < value ; x++) {
-                    newFilteredArray.push(filteredArray.shift());
-                }
-                return filteredArray = newFilteredArray;
-            };
+			self.startsWith = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj.toLowerCase().indexOf(right.value.toLowerCase()) === 0) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-            return self;
-        };
+			self.endsWith = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (obj.toLowerCase().lastIndexOf(right.value.toLowerCase()) === obj.length - right.value.length) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-        BASE.extend(ArrayQueryBuilder, Super);
+			self.substringOf = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+					if (right.value.trim() === "") {
+						results.push(item);
+					} else if (obj.toLowerCase().indexOf(right.value.toLowerCase()) >= 0) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
 
-        return ArrayQueryBuilder;
-    }(Object));
+			self.equalTo = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+
+					if (obj === right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
+
+			self.notEqualTo = function (left, right) {
+				var results = [];
+				var self = this;
+				sourceArray.forEach(function (item) {
+					// This will compare the base object.
+					var obj;
+					if (left.value === "") {
+						obj = item;
+					} else {
+						obj = BASE.getObject(left.value, item);
+					}
+
+					if (obj !== right.value) {
+						results.push(item);
+					}
+				});
+				return results;
+			};
+
+			self.skip = function (valueExpression) {
+				var value = valueExpression.value;
+				for (var x = 0 ; x < value && filteredArray.length > 0; x++) {
+					filteredArray.shift();
+				}
+				return filteredArray;
+			};
+
+			self.take = function (valueExpression) {
+				return filteredArray = filteredArray.slice(0, valueExpression.value);
+			};
+
+			return self;
+		};
+
+		BASE.extend(ArrayQueryBuilder, Super);
+
+		return ArrayQueryBuilder;
+	}(Object));
 });

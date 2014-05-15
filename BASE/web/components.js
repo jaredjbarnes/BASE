@@ -7,7 +7,8 @@
     "BASE.async.Task",
     "BASE.async.Continuation",
     "JSON",
-    "BASE.util.Guid"
+    "BASE.util.Guid",
+    "jQuery.fn.on"
 ], function () {
 
     var Future = BASE.async.Future;
@@ -21,7 +22,6 @@
     var $componentStyles = $(style).data("components", {});
     style.setAttribute("type", "text/css");
     $("head").prepend(style);
-
 
     var getConfig = function (url) {
         return new BASE.async.Future(function (setValue, setError) {
@@ -37,7 +37,6 @@
                         setError(new Error("Error while trying to retrieve url: " + url));
                     }
                 });
-
             } else {
                 setValue({
                     aliases: {}
@@ -149,20 +148,31 @@
         }
     };
 
-    var appendStyleWithImport = function (text) {
-        var style = document.createElement("style");
-        style.type = "text/css";
+    var importRegEx = /@import url\(\"?(.*?)\"?\)\;/gi;
 
-        var textnode;
+    var stripOutImports = function (text, onEach) {
+        onEach = onEach || function () { };
+        var match = importRegEx.exec(text);
 
-        if (style.styleSheet) {
-            style.styleSheet.cssText = text;
-        } else {
-            textNode = document.createTextNode(text);
-            style.appendChild(textNode);
+        while (match !== null) {
+            onEach(match[1]);
+            match = importRegEx.exec(text);
         }
 
-        $componentStyles.after(style);
+        var newText = text.replace(importRegEx, "");
+
+        return text;
+    };
+
+    var createLinks = function (text) {
+        return stripOutImports(text, function (url) {
+            if (document.createStyleSheet) {
+                document.createStyleSheet(url);
+            }
+            else {
+                $componentStyles.before("<link rel=\"stylesheet\" href=\"" + url + "\" />");
+            }
+        });
     };
 
     var handleStyles = function (url, $element) {
@@ -183,11 +193,8 @@
                     text = $this.text();
                 }
 
-                if (hasImport(text)) {
-                    appendStyleWithImport(text);
-                } else {
-                    appendStyle(text);
-                }
+                text = createLinks(text);
+                appendStyle(text);
 
             }
         });
@@ -246,7 +253,7 @@
         self.loadComponent = function (url, $withContent) {
             return new Future(function (setValue, setError) {
                 self.getComponentTemplate(url).then(function (template) {
-                    var element = template.cloneNode(true);
+                    var element = $(template).clone()[0];// template.cloneNode(true);
                     var $element = $(element);
 
                     var $tempHolder = $(document.createElement("div"));
@@ -283,16 +290,19 @@
     var componentCache = new ComponentCache();
     var disallowedDiggers = "iframe, object, embed, [template]";
 
-    var walkTheDomAsync = function (element, asyncOperation) {
+    var walkTheDomAsync = function (element, asyncOperation, scope) {
+        scope = scope || {};
         return new Future(function (setValue, setError) {
             var task = new Task();
             if (!$(element).is(disallowedDiggers)) {
                 $(element).children().each(function () {
-                    task.add(walkTheDomAsync(this, asyncOperation));
+                    var Scope = function () { };
+                    Scope.prototype = scope;
+                    task.add(walkTheDomAsync(this, asyncOperation, new Scope()));
                 });
             }
             task.start().whenAll(function (childrenFutures) {
-                asyncOperation(element).then(setValue).ifError(setError);
+                asyncOperation(element, scope).then(setValue).ifError(setError);
             });
         });
     };
@@ -323,13 +333,14 @@
     };
 
     var loadControllers = function (startElement) {
-        return walkTheDomAsync(startElement, function (element) {
+
+        return walkTheDomAsync(startElement, function (element, scope) {
             return new Future(function (setValue, setError) {
                 var $element = $(element);
 
                 var controllerName = $element.attr("controller");
                 var controllerFuture = BASE.async.Future.fromResult(null);
-                
+
                 // Instantiate the controller if applicable
                 if (controllerName && !$element.data("controller")) {
                     $element.data("controller", "loading...");
@@ -348,8 +359,10 @@
                                 }
                             });
 
-                            var instance = new Controller(element, tags);
+
+                            var instance = new Controller(element, tags, scope);
                             $element.data("controller", instance);
+                            $element.data("scope", scope);
 
                             setValue(instance);
                         });
@@ -375,13 +388,13 @@
                     return Future.fromResult(null);
                 });
 
-                
+
             });
-        });
+        }, {});
     };
 
     var loadComponentsDeep = function (startElement) {
-        var startElementClone = startElement.cloneNode(true);
+        var startElementClone = $(startElement).clone()[0];
         return new Future(function (setValue, setError) {
             buildDomAsync(startElementClone, function (element) {
                 return new Future(function (setValue, setError) {
@@ -441,16 +454,13 @@
         return loadComponents.apply(null, arguments);
     };
 
-    BASE.web.components.loadComponent = function (url, content) {
-        var element = document.createElement("div");
-        $(element).attr("component", url).append($(content));
 
-        return loadComponents(element);
-    };
-
-    BASE.web.components.createComponent = function (url) {
+    BASE.web.components.createComponent = function (url, content, attributes) {
         var div = document.createElement("div");
-        $(div).attr("component", url);
+        $(div).attr(attributes || {}).attr("component", url);
+        if (typeof content !== "undefined") {
+            $(div).append($(content));
+        }
         return loadComponents(div);
     };
 
@@ -467,6 +477,10 @@
         });
     };
 
+    BASE.web.components.getComponentCache = function () {
+        return componentCache;
+    };
+
     document.createComponent = BASE.web.components.createComponent;
 
     Element.prototype.replaceWithComponent = function (url) {
@@ -474,17 +488,27 @@
     };
 
     $(function () {
-        loadComponents(document.body).then(function (lastElement) {
-            $(lastElement).find("[component]").each(function () {
-                $(this).triggerHandler({
+        var task = new Task();
+
+        $("[component], [controller], [apply]").each(function () {
+            task.add(loadComponents(this).then(function (lastElement) {
+                $(lastElement).find("[component]").each(function () {
+                    $(this).triggerHandler({
+                        type: "enteredView"
+                    });
+                });
+                $(lastElement).triggerHandler({
                     type: "enteredView"
                 });
-            });
+            }));
+        });
 
+        task.start().whenAll(function () {
             $(document).trigger({
                 type: "componentsReady"
             });
         });
+
     });
 
     jQuery.prototype.controller = function () {

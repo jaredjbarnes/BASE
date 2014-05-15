@@ -99,6 +99,10 @@ BASE.require([
         };
 
         self.equals = function (dateRange) {
+            if (!dateRange) {
+                return false;
+            }
+
             if (dateRange.getStartDate().getTime() === self.getStartDate().getTime() &&
                 dateRange.getEndDate().getTime() === self.getEndDate().getTime()) {
                 return true;

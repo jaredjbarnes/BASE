@@ -14,60 +14,9 @@
         return ArrayChangedEvent;
     })();
 
-    var Observer = function (callback, unbind) {
-        var self = this;
-        var state;
+    var Observer = BASE.util.Observer;
 
-        var defaultState = {
-            stop: function () {
-                state = stoppedState;
-            },
-            start: emptyFn,
-            notify: function (e) {
-                callback(e);
-            },
-            dispose: function () {
-                unbind();
-                state = disposedState;
-            }
-        };
-
-        var disposedState = {
-            stop: emptyFn,
-            start: emptyFn,
-            notify: emptyFn,
-            dispose: emptyFn
-        };
-
-        var stoppedState = {
-            stop: emptyFn,
-            start: function () {
-                state = defaultState;
-            },
-            notify: emptyFn,
-            dispose: emptyFn
-        };
-
-        state = defaultState;
-
-        self.notify = function (e) {
-            state.notify(e);
-        }
-
-        self.stop = function () {
-            state.stop();
-        };
-
-        self.start = function () {
-            state.start();
-        };
-
-        self.dispose = function () {
-            state.dispose();
-        }
-    };
-
-    BASE.behaviors.collections.ObservableArray = function () {
+    BASE.behaviors.collections.ObservableArray = function (Type) {
         var self = this;
 
         if (!Array.isArray(self)) {
@@ -81,7 +30,9 @@
 
         self.isObservable = true;
 
-        var observers = [];
+        var observer = new Observer();
+
+        self.Type = Type || Object;
 
         self.push = function () {
             var result;
@@ -142,25 +93,14 @@
 
         self.concat = function () {
             var newArray = Array.prototype.concat.apply(this, arguments);
-             BASE.behaviors.collections.ObservableArray.apply(newArray);
+            BASE.behaviors.collections.ObservableArray.apply(newArray);
             return newArray;
         };
         self.notify = function (event) {
-            var observersCopy = observers.slice();
-            observersCopy.forEach(function (observer) {
-                observer.notify(event);
-            });
+            observer.notify(event);
         };
         self.observe = function (callback) {
-            var observer = new Observer(callback, function () {
-                var index = observers.indexOf(observer);
-                if (index > -1) {
-                    observers.splice(index, 1);
-                }
-            });
-            observers.push(observer);
-
-            return observer;
+            return observer.copy().onEach(callback);
         };
 
         self.add = self.push;

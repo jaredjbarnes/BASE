@@ -42,7 +42,7 @@
                 }
 
                 if (typeof key === "string" || typeof key === "number") {
-                    return hash[key] || null;
+                    return typeof hash[key] === "undefined" ? null : hash[key];
                 }
 
                 if (key._hash && hash[key._hash]) {

@@ -13,9 +13,10 @@
         configurable: true,
         value: function () {
 
-            var offsetParent, offset,
-                parentOffset = { top: 0, left: 0 },
-                self = this;
+            var offsetParent;
+            var offset;
+            var parentOffset = { top: 0, left: 0 };
+            var self = this;
 
             // fixed elements are offset from window (parentOffset = {top:0, left: 0}, because it is it's only offset parent
             if (self.css("position") === "fixed") {

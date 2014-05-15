@@ -37,6 +37,8 @@ BASE.require([
             var _typeToSet = new BASE.collections.Hashmap();
             var _mappingEntities = new BASE.collections.MultiKeyMap();
 
+            var observer = new BASE.util.Observer();
+
             var _findSets = function () {
                 Object.keys(self).forEach(function (x) {
                     if (self[x] instanceof BASE.data.DataSet) {
@@ -50,11 +52,11 @@ BASE.require([
                 return _orm;
             };
 
-            self.getService = function() {
+            self.getService = function () {
                 return _service;
             };
 
-            self.setService = function(value) {
+            self.setService = function (value) {
                 var oldValue = _service;
                 if (value !== oldValue) {
                     _service = value;
@@ -182,7 +184,12 @@ BASE.require([
 
             };
 
+            self.observe = function () {
+                return observer.copy();
+            };
+
             self.saveChanges = function () {
+                self.notify("saving");
                 return new Future(function (setValue, setError) {
                     var task = new Task();
 
@@ -191,12 +198,25 @@ BASE.require([
                     var updated = self.changeTracker.updated;
                     var removed = self.changeTracker.removed;
 
+                    var totalToSave = added.getKeys().length + updated.getKeys().length + removed.getKeys().length;
+                    var totalSaved = 0;
+
+                    var whenAny = function () {
+                        totalSaved++;
+                        var percentage = (totalSaved / totalToSave) * 100;
+                        observer.notify({
+                            type: "savingProgress",
+                            percentage: percentage
+                        });
+                    };
+
                     // We need to save each entity in each bucket, and wait for a return.
                     removed.getKeys().forEach(function (key) {
                         var entity = removed.get(key);
                         task.add(self.save(entity).ifError(function (e) {
                             handleEntityError(entity, e);
-                        }).then(function(){
+                        }).then(function () {
+
                             notifyEntitySaved(entity);
                         }));
                     });
@@ -219,6 +239,8 @@ BASE.require([
                         }));
                     });
 
+                    task.whenAny(whenAny);
+
                     task.start().whenAll(function (futures) {
                         var returnObject = {
                             errors: [],
@@ -233,6 +255,7 @@ BASE.require([
                             }
                         });
 
+                        self.notify("saved");
                         setValue(returnObject);
 
                     });

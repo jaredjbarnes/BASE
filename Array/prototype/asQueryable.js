@@ -1,6 +1,7 @@
 ﻿BASE.require([
     "BASE.query.ArrayProvider",
-    "BASE.query.Queryable"
+    "BASE.query.Queryable",
+    "BASE.behaviors.collections.ObservableArray"
 ], function () {
     var ArrayProvider = BASE.query.ArrayProvider;
     var Queryable = BASE.query.Queryable;

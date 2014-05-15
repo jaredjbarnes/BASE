@@ -35,6 +35,10 @@
             future.ifError(callback);
             return self;
         };
+
+        self.cancel = function () {
+            future.cancel();
+        };
     };
 
 });

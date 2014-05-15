@@ -35,6 +35,7 @@
             var _Type = Type;
 
             self.dataContext = context;
+
             self.Type = _Type;
 
             self.local = function () {
@@ -59,6 +60,7 @@
             self.add = function (entity) {
                 // Prevent any dirty objects from coming through.
                 if (!(entity instanceof Type) || entity === null) {
+                    //throw new Error("Invalid entity was added to data set.");
                     return entity;
                 }
 
@@ -252,15 +254,15 @@
 
 
             var superObserve = self.observe;
-            var superUnobserve = self.unobserve;
-
+            
             self.observe = function (callback) {
-                superObserve.call(self, callback, "change");
+                return superObserve.call(self).filter(function (e) {
+                    return e.type === "change";
+                }).onEach(function (e) {
+                    callback(e);
+                });
             };
 
-            self.unobserve = function (callback) {
-                superUnobserve.call(self, callback, "change");
-            };
         };
 
         BASE.extend(DataSet, Super);
