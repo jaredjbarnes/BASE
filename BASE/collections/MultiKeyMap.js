@@ -96,7 +96,8 @@
 
             self.hasKey = function (key1, key2) {
                 return self.get(key1, key2) ? true : false;
-            }
+            };
+
         };
 
         BASE.extend(MultiKeyMap, Super);

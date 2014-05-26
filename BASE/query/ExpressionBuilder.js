@@ -13,13 +13,13 @@
         self.any = function (fn) {
             var expressionBuilder = new ExpressionBuilder();
             var expression = fn(expressionBuilder);
-            return setExpression(Expression.any(expression));
+            return setExpression(Expression.any(propertyName, expression));
         };
 
         self.all = function (fn) {
             var expressionBuilder = new ExpressionBuilder();
             var expression = fn(expressionBuilder);
-            return setExpression(Expression.all(expression));
+            return setExpression(Expression.all(propertyName, expression));
         };
 
         self.isEqualTo = function (value) {

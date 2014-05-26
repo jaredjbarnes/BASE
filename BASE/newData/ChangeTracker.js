@@ -1,6 +1,7 @@
 ﻿BASE.require([
     "BASE.behaviors.NotifyPropertyChange",
-    "BASE.data.responses.ServiceResponse"
+    "BASE.data.responses.ServiceResponse",
+    "BASE.data.utils"
 ], function () {
 
     BASE.namespace("BASE.data");
@@ -13,20 +14,7 @@
         return "set" + name.substr(0, 1).toUpperCase() + name.substr(1);
     };
 
-    var isPrimitive = function (value) {
-
-        if (typeof value === "number" ||
-            typeof value === "string" ||
-            typeof value === "boolean" ||
-            value instanceof Date ||
-            value === null) {
-
-            return true;
-
-        }
-
-        return false;
-    };
+    var isPrimitive = BASE.data.utils.isPrimitive;
 
     BASE.data.ChangeTracker = function (entity, dataStore) {
         var self = this;
@@ -62,8 +50,11 @@
 
                 Object.keys(dto).forEach(function (key) {
                     var value = dto[key]
-                    if (isPrimitive(value)) {
-                        entity[makeSetterName(key)](value);
+                    var methodName = makeSetterName(key);
+                    if (isPrimitive(value) && typeof entity[methodName] === "function") {
+                        entity[methodName](value);
+                    } else {
+                        entity[key] = value;
                     }
                 });
 
@@ -94,15 +85,19 @@
 
         var AddedState = function () {
             var self = this;
-            self.save = function () {
 
-                changeTracker.setStateToLoaded();
+            self.remove = function () {
+                changeTracker.setStateToDetached();
+            };
+
+            self.save = function () {
 
                 return dataStore.add(entity).then(function (response) {
                     var dto = response.dto;
                     state.sync(dto);
+                    changeTracker.setStateToLoaded();
                 }).ifError(function (errorResponse) {
-                    changeTracker.setStateToAdded();
+                    // Do nothing for now.
                 });
 
             };
@@ -141,9 +136,9 @@
                 }
             };
             self.save = function () {
-                changeTracker.setStateToDetached();
-                return dataStore.remove(entity.id).then(function () {
-
+                return dataStore.remove(entity).then(function () {
+                    entity.setId(null);
+                    changeTracker.setStateToDetached();
                 }).ifError(function () {
                     changeTracker.setStateToRemoved();
                 });
@@ -155,7 +150,6 @@
             var self = this;
 
             self.add = function () {
-                entity.id = null;
                 changeTracker.setStateToAdded();
             };
 

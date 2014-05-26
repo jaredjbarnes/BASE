@@ -1,7 +1,9 @@
 ﻿BASE.require([
     "jQuery",
     "jQuery.fn.redraw",
-    "jQuery.support.transition"
+    "jQuery.support.transition",
+    "jQuery.fn.isAnimating",
+    "BASE.async.delay"
 ], function () {
 
     var easings = {
@@ -47,40 +49,54 @@
             "transition-timing-function": transitionPluginData.currentTransitionTimingFunction
         });
 
-        $elem.off("webkitTransitionEnd transitionEnd", transitionPluginData.currentTransitionEnd);
     };
 
     jQuery.fn.transition = function (properties) {
 
         var $elem = $(this[0]);
 
+        var isAnimating = $elem.isAnimating();
+
         var transitionPluginData = $elem.data("transitionPlugin");
 
-        if (typeof transitionPluginData !== "object") {
-
-            transitionPluginData = {
-                currentAnimationFuture: new BASE.async.Future(),
-                currentTransitionProperty: "",
-                currentTransitionDuration: 0,
-                currentTransitionTimingFunction: "",
-                currentTransitionEnd: function () { }
-            };
-
-            $elem.data("transitionPlugin", transitionPluginData);
+        if (transitionPluginData && transitionPluginData.currentAnimationFuture) {
+            transitionPluginData.currentAnimationFuture.cancel();
         }
 
-        transitionPluginData.currentAnimationFuture.cancel();
-        transitionPluginData.currentTransitionProperty = $elem.css("transition-property");
-        transitionPluginData.currentTransitionDuration = $elem.css("transition-duration");
-        transitionPluginData.currentTransitionTimingFunction = $elem.css("transition-timing-function");
+        transitionPluginData = {
+            currentAnimationFuture: new BASE.async.Future(),
+            currentTransitionProperty: $elem.css("transition-property"),
+            currentTransitionDuration: $elem.css("transition-duration"),
+            currentTransitionTimingFunction: $elem.css("transition-timing-function"),
+        };
+
+        $elem.data("transitionPlugin", transitionPluginData);
 
         transitionPluginData.currentAnimationFuture = new Future(function (setValue, setError) {
             var allProperties = Object.keys(properties);
             var durations = [];
             var timingFunctions = [];
             var toCss = {};
-            var completedCount = 0;
+            var longestDuration = 0;
 
+            allProperties.forEach(function (key) {
+                var duration = properties[key].duration;
+
+                if (typeof duration !== "number") {
+                    properties[key].duration = duration = 1000;
+                }
+
+                if (duration > longestDuration) {
+                    longestDuration = duration;
+                }
+            });
+
+            if (!isAnimating) {
+                $elem.css({
+                    transition: ""
+                });
+            }
+            // This makes transition current.
             $elem.redraw();
 
             allProperties.forEach(function (key) {
@@ -90,11 +106,7 @@
                     $elem.css(key, property.from);
                 }
 
-                if (typeof property.duration === "number") {
-                    durations.push(property.duration + "ms");
-                } else {
-                    durations.push("1000ms");
-                }
+                durations.push(property.duration + "ms");
 
                 if (typeof property.easing === "string" && easings[property.easing]) {
                     timingFunctions.push(easings[property.easing]);
@@ -108,34 +120,41 @@
 
             });
 
-            transitionPluginData.currentTransitionProperty = allProperties.join(", ");
-            transitionPluginData.currentTransitionDuration = durations.join(", ");
-            transitionPluginData.currentTransitionTimingFunction = timingFunctions.join(", ");
+            var currentTransitionProperty = allProperties.join(", ");
+            var currentTransitionDuration = durations.join(", ");
+            var currentTransitionTimingFunction = timingFunctions.join(", ");
 
             $elem.redraw();
 
-            toCss["transition-property"] = transitionPluginData.currentTransitionProperty;
-            toCss["transition-duration"] = transitionPluginData.currentTransitionDuration;
-            toCss["transition-timing-function"] = transitionPluginData.currentTransitionTimingFunction;
+            toCss["transition-property"] = currentTransitionProperty;
+            toCss["transition-duration"] = currentTransitionDuration;
+            toCss["transition-timing-function"] = currentTransitionTimingFunction;
 
             // For hardware accelerating on iOS.
-            toCss["-webkit-transform"] = "translate3d(0, 0, 0)";
-            toCss["-webkit-backface-visibility"] = "hidden";
-            toCss["-webkit-perspective"] = "1000";
-
-            transitionPluginData.currentTransitionEnd = function () {
-                completedCount++;
-                if (completedCount >= allProperties.length) {
-                    setValue();
-                }
-            };
-
-            $elem.on("webkitTransitionEnd transitionEnd", transitionPluginData.currentTransitionEnd);
+            if (typeof properties["transform"] === 'undefined' && $elem.css('transform') === 'none') {
+                toCss["transform"] = "translate3d(0, 0, 0)";
+            }
+            if ($elem.css("perspective") === 'none') {
+                toCss["perspective"] = "1000";
+            }
+            toCss["backface-visibility"] = "hidden";
 
             $elem.css(toCss);
+            $elem.redraw();
 
             if (!$.support.transition) {
+
                 setValue();
+
+            } else {
+                $elem.attr('animating', '');
+
+                BASE.async.delay(longestDuration).then(function () {
+
+                    $elem.removeAttr("animating");
+                    setValue();
+
+                }).ifError(setError);
             }
 
         });

@@ -62,4 +62,43 @@
             location.href = "data:application/javascript;charset=utf-8," + encoded;
         });
     };
+
+
+    var blacklist = {
+        "BASE.require.compile": true,
+        "BASE.async.Future": true,
+        "BASE.async.Task": true,
+        "BASE.behaviors.Observable": true,
+        "BASE.util.Observable": true,
+        "BASE.util.Observer": true,
+        "BASE.extend": true,
+        "BASE.hasInterface": true,
+        "BASE.Loader": true,
+        "BASE.namespace": true,
+        "BASE.isObject": true,
+        "BASE.getObject": true,
+        "BASE.clone": true,
+        "BASE.assertNotGlobal": true,
+        "Object": true,
+        "Function": true,
+        "Date": true,
+        "Number": true,
+        "Array": true
+    };
+
+    BASE.require.compile.getUris = function () {
+        var dependencies = BASE.require.dependencyList;
+        var result = [];
+
+        dependencies.filter(function (namespace) {
+            if (!blacklist[namespace]) {
+                return true;
+            }
+            return false;
+        }).forEach(function (namespace) {
+            result.push(BASE.require.loader.getPath(namespace));
+        });
+
+        return result;
+    };
 });

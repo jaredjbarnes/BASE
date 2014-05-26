@@ -34,6 +34,14 @@
 
         self.Type = Type || Object;
 
+        self.load = function () {
+            return Array.prototype.push.apply(self, arguments);
+        };
+
+        self.unload = function () {
+            return Array.prototype.splice.apply(self, arguments);
+        };
+
         self.push = function () {
             var result;
             var items = Array.prototype.slice.call(arguments);

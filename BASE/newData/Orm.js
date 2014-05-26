@@ -11,6 +11,13 @@
     var MultiKeyMap = BASE.collections.MultiKeyMap;
     var Observable = BASE.behaviors.Observable;
 
+    var flattenMultiKeyMap = function (multiKeyMap) {
+        var keys = multiKeyMap.getKeys();
+        return keys.reduce(function (array, key) {
+            return array.concat(multiKeyMap.get(key).getValues());
+        }, []);
+    }
+
     BASE.data.Orm = function () {
         var self = this;
         BASE.assertNotGlobal(self);
@@ -27,6 +34,9 @@
         var oneToManyAsTargetObservers = new MultiKeyMap();
         var manyToManyObservers = new MultiKeyMap();
         var manyToManyAsTargetObservers = new MultiKeyMap();
+
+        var mappingTypes = new MultiKeyMap();
+        var mappingEntities = new MultiKeyMap();
 
         var addedEntities = new Hashmap();
 
@@ -137,15 +147,6 @@
                         newTarget: newTarget
                     });
 
-                    entity.notify({
-                        type: "oneToOneChange",
-                        relationship: relationship,
-                        source: entity,
-                        property: property,
-                        oldTarget: oldTarget,
-                        newTarget: newTarget
-                    });
-
                 };
 
                 // Link if there is a entity already there.
@@ -236,7 +237,7 @@
                             item[withOneSetter](null);
                             item[withForeignKeySetter](null);
                         }
-
+                        self.remove(item);
                     });
 
                     self.notify({
@@ -279,6 +280,7 @@
                         if (index > -1) {
                             oldValue[relationship.hasMany].splice(index, 1);
                         }
+                        self.remove(entity);
                     }
 
                     if (newValue) {
@@ -311,6 +313,19 @@
                         if (index > -1) {
                             targetArray.splice(index, 1);
                         }
+
+                        var mappingEntity = mappingEntities.remove(entity, target);
+                        var MappingEntity;
+
+                        if (mappingEntity === null) {
+                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            mappingEntity = new MappingEntity();
+                            mappingEntity.source = entity;
+                            mappingEntity.target = target;
+                            mappingEntity.relationship = relationship;
+                        }
+
+                        self.remove(mappingEntity);
                     });
 
                     newItems.forEach(function (target) {
@@ -320,6 +335,22 @@
                         if (index === -1) {
                             targetArray.push(entity);
                         }
+
+                        var mappingEntity = mappingEntities.get(entity, target);
+                        var MappingEntity;
+
+                        if (mappingEntity === null) {
+                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            mappingEntity = new MappingEntity();
+                            mappingEntity.source = entity;
+                            mappingEntity.target = target;
+                            mappingEntity.relationship = relationship;
+
+                            mappingEntities.add(entity, target, mappingEntity);
+                        }
+
+                        self.add(mappingEntity);
+
                     });
 
                     self.notify({
@@ -352,19 +383,50 @@
 
                     oldItems.forEach(function (source) {
                         var sourceArray = source[relationship.hasMany];
+
                         var index = sourceArray.indexOf(entity);
                         if (index > -1) {
                             sourceArray.splice(index, 1);
                         }
+
+                        var mappingEntity = mappingEntities.remove(source, entity);
+                        var MappingEntity;
+
+                        if (mappingEntity === null) {
+                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            mappingEntity = new MappingEntity();
+                            mappingEntity.source = source;
+                            mappingEntity.target = entity;
+                            mappingEntity.relationship = relationship;
+                        }
+
+                        self.remove(mappingEntity);
                     });
 
                     newItems.forEach(function (source) {
                         self.add(source);
                         var sourceArray = source[relationship.hasMany];
                         var index = sourceArray.indexOf(entity);
+
                         if (index === -1) {
                             sourceArray.push(entity);
                         }
+
+                        var mappingEntity = mappingEntities.get(source, entity);
+                        var MappingEntity;
+
+                        if (mappingEntity === null) {
+                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            mappingEntity = new MappingEntity();
+                            mappingEntity.source = source;
+                            mappingEntity.target = entity;
+                            mappingEntity.relationship = relationship;
+
+                            mappingEntities.add(source, entity, mappingEntity);
+                        }
+
+                        self.add(mappingEntity);
+
                     });
                 };
 
@@ -430,6 +492,39 @@
             }
         };
 
+        var dismantleRelationships = function (entity) {
+            var oneToOne = getOneToOneRelationships(entity);
+            var oneToOneAsTarget = getOneToOneAsTargetRelationships(entity);
+            var oneToMany = getOneToManyRelationships(entity);
+            var oneToManyAsTarget = getOneToManyAsTargetRelationships(entity);
+            var manyToMany = getManyToManyRelationships(entity);
+            var manyToManyAsTarget = getManyToManyAsTargetRelationships(entity);
+
+            oneToOne.forEach(function (relationship) {
+                entity[makeSetter(relationship.hasOne)](null);
+            });
+
+            oneToOneAsTarget.forEach(function (relationship) {
+                entity[makeSetter(relationship.withOne)](null);
+            });
+
+            oneToMany.forEach(function (relationship) {
+                entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+            });
+
+            oneToManyAsTarget.forEach(function (relationship) {
+                entity[makeSetter(relationship.withOne)](null);
+            });
+
+            manyToMany.forEach(function (relationship) {
+                entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+            });
+
+            manyToManyAsTarget.forEach(function (relationship) {
+                entity[relationship.withMany].splice(0, entity[relationship.withMany].length);
+            });
+        };
+
         self.addOneToOne = function (relationship) {
             oneToOneRelationships.push(relationship);
         };
@@ -439,7 +534,12 @@
         };
 
         self.addManyToMany = function (relationship) {
-            manyToManyRelationships.push(relationship);
+            if (!relationship.usingMappingType) {
+                throw new Error("Many to many relationship needs to supply the mapping Type.");
+            } else {
+                mappingTypes.add(relationship.type, relationship.ofType, relationship.usingMappingType);
+                manyToManyRelationships.push(relationship);
+            }
         };
 
         self.getOneToOneRelationships = getOneToOneRelationships;
@@ -448,6 +548,15 @@
         self.getOneToOneAsTargetRelationships = getOneToOneAsTargetRelationships;
         self.getOneToManyAsTargetRelationships = getOneToManyAsTargetRelationships;
         self.getManyToManyAsTargetRelationships = getManyToManyAsTargetRelationships;
+
+        self.getMappingTypes = function () {
+            var array = flattenMultiKeyMap(mappingTypes);
+            var hashmap = new Hashmap();
+            array.forEach(function (Type) {
+                hashmap.add(Type, Type);
+            });
+            return hashmap;
+        };
 
         self.add = function (entity) {
             if (entity && !addedEntities.hasKey(entity)) {
@@ -479,6 +588,8 @@
                 unobserveOneToManyAsTargets(entity);
                 unobserveManyToMany(entity);
                 unobserveManyToManyAsTargets(entity);
+
+                dismantleRelationships(entity);
 
                 self.notify({
                     type: "entityRemoved",

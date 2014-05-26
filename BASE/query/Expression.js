@@ -360,15 +360,21 @@
         return expression;
     };
 
-    Expression.any = function (expression) {
-        var allExpression = new ValueExpression("any", Expression.expression(expression));
+    Expression.any = function (propertyName, expression) {
+        var anyExpression = new OperationExpression("any");
+        var propertyExpression = Expression.property(propertyName);
+        var expressionExpression = Expression.expression(expression);
 
-        return allExpression;
+        anyExpression.children.push(propertyExpression, expressionExpression);
+        return anyExpression;
     };
 
     Expression.all = function (propertyName, expression) {
-        var allExpression = new ValueExpression("all", Expression.expression(expression));
+        var allExpression = new OperationExpression("all");
+        var propertyExpression = Expression.property(propertyName);
+        var expressionExpression = Expression.expression(expression);
 
+        allExpression.children.push(propertyExpression, expressionExpression);
         return allExpression;
     };
 

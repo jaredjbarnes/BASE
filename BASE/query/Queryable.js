@@ -45,7 +45,7 @@
                 var expression = copyExpressionObject(self.getExpression());
 
                 if (expression.where) {
-                    var expressions = expression.children;
+                    var expressions = expression.where.children;
                     expressions.push(rightExpression);
 
                     expression.where = Expression.where(Expression.or.apply(Expression, expressions));
@@ -68,7 +68,7 @@
                 var expression = copyExpressionObject(self.getExpression());
 
                 if (expression.where) {
-                    var expressions = expression.children;
+                    var expressions = expression.where.children;
                     expressions.push(rightExpression);
 
                     expression.where = Expression.where(Expression.and.apply(Expression, expressions));
@@ -258,15 +258,23 @@
             };
 
             self.merge = function (queryable) {
-                var whereChildren = queryable.getExpression().where.children;
-                var rightExpression = Expression.and.apply(Expression, whereChildren);
-                if (self.whereExpression) {
-                    var expressions = self.whereExpression.children;
-                    expressions.push(rightExpression);
 
-                    self.whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
-                } else {
-                    self.whereExpression = Expression.where(rightExpression);
+                var rightExpression = queryable.getExpression().where;
+
+                if (rightExpression) {
+
+                    // Override the current value with the queryable or default back to the original value.
+                    self.skipExpression = rightExpression.skip || self.skipExpression;
+                    self.takeExpression = rightExpression.take || self.takeExpression;
+                    self.orderByExpression = rightExpression.orderBy || self.orderByExpression;
+
+                    if (self.whereExpression) {
+                        var expressions = expression.where.children;
+                        expressions.push(rightExpression);
+                        self.whereExpression = Expression.where(Expression.and.apply(Expression, expressions));
+                    } else {
+                        self.whereExpression = Expression.where(rightExpression);
+                    }
                 }
 
                 return self;

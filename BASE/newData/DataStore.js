@@ -27,7 +27,7 @@
             throw new Error("This method is expected to be overridden.");
         };
 
-        self.remove = function (id) {
+        self.remove = function (obj) {
             // return a Future<RemovedResponse>
             throw new Error("This method is expected to be overridden.");
         };
@@ -46,6 +46,7 @@
             // Return a Future.
             throw new Error("This method is expected to be overridden.");
         };
+
 
     };
 

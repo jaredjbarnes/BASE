@@ -40,7 +40,7 @@
 
     BASE.namespace("BASE.data");
 
-    BASE.data.InMemoryDataStore = function () {
+    BASE.data.LocalStorageDataStore = function (name) {
         var self = this;
 
         BASE.assertNotGlobal(self);
@@ -112,11 +112,27 @@
         };
 
         self.initialize = function () {
+            var json = localStorage[name];
+            if (json) {
+                var object = JSON.parse(json);
+                Object.keys(object).forEach(function (key) {
+                    entities.add(key, object[key]);
+                });
+            }
             return Future.fromResult(undefined);
         };
 
+        self.saveToDisk = function () {
+            var object = {};
+            entities.getKeys().forEach(function (key) {
+                object[key] = entities.get(key);
+            });
+
+            localStorage[name] = JSON.stringify(object);
+        };
 
         self.dispose = function () {
+            self.saveToDisk();
             return Future.fromResult(undefined);
         };
     };

@@ -1,15 +1,13 @@
 ﻿BASE.require([
     "BASE.async.Future",
-    "BASE.query.ArrayQueryBuilder",
-    "BASE.query.ExpressionParser",
+    "BASE.query.ArrayVisitor",
     "BASE.query.ExpressionBuilder"
 ], function () {
     BASE.namespace("BASE.query");
 
     var Future = BASE.async.Future;
     var ExpressionBuilder = BASE.query.ExpressionBuilder;
-    var ArrayQueryBuilder = BASE.query.ArrayQueryBuilder;
-    var ExpressionParser = BASE.query.ExpressionParser;
+    var ArrayVisitor = BASE.query.ArrayVisitor;
 
     BASE.query.Provider = (function (Super) {
         var Provider = function () {
@@ -31,8 +29,7 @@
             self.any = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -54,8 +51,7 @@
             self.all = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -72,8 +68,7 @@
             self.firstOrDefault = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -90,8 +85,7 @@
             self.lastOrDefault = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -108,8 +102,7 @@
             self.first = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -132,8 +125,7 @@
             self.last = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {
@@ -156,8 +148,7 @@
             self.contains = function (queryable, func) {
                 return new Future(function (setValue, setError) {
                     self.toArray(queryable).then(function (array) {
-                        var builder = new ArrayQueryBuilder(array);
-                        var parser = new ExpressionParser(builder);
+                        var parser = new ArrayVisitor(array);
                         var results;
 
                         if (typeof func === "function") {

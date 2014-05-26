@@ -125,6 +125,7 @@
                 }).ifError(ifError);
             }
         };
+
     };
 
     var hasImport = function (text) {
@@ -287,6 +288,10 @@
                 });
             });
 
+        };
+
+        self.getUris = function () {
+            return Object.keys(cache);
         };
     };
 

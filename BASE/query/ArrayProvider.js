@@ -1,15 +1,13 @@
 ﻿BASE.require([
     "BASE.query.Provider",
-    "BASE.query.ArrayQueryBuilder",
+    "BASE.query.ArrayVisitor",
     "BASE.query.Queryable",
-    "BASE.query.ExpressionParser",
     "BASE.async.Future",
     "BASE.async.Task"
 ], function () {
     BASE.namespace("BASE.query");
 
-    var ArrayQueryBuilder = BASE.query.ArrayQueryBuilder;
-    var ExpressionParser = BASE.query.ExpressionParser;
+    var ArrayVisitor = BASE.query.ArrayVisitor;
     var Queryable = BASE.query.Queryable;
     var Provider = BASE.query.Provider;
     var Future = BASE.async.Future;
@@ -27,8 +25,7 @@
                 var self = this;
                 return new Future(function (setValue, setError) {
                     var Type = queryable.Type;
-                    var builder = new ArrayQueryBuilder(array.slice(0));
-                    var parser = new ExpressionParser(builder);
+                    var parser = new ArrayVisitor(array);
 
                     var expression = queryable.getExpression();
 
@@ -38,7 +35,7 @@
                     parser.parse(expression.orderBy);
 
                     setTimeout(function () {
-                        setValue(builder.getValue());
+                        setValue(parser.getValue());
                     }, 0);
                 });
             };
