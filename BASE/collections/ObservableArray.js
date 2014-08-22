@@ -1,6 +1,8 @@
-BASE.require([], function () {
+﻿BASE.require([], function () {
 
-    BASE.namespace("BASE.collections");
+    BASE.namespace("BASE.behaviors.collections");
+
+    var emptyFn = function () { };
 
     var ArrayChangedEvent = (function () {
         function ArrayChangedEvent(target, newItems, oldItems) {
@@ -12,125 +14,137 @@ BASE.require([], function () {
         return ArrayChangedEvent;
     })();
 
-    BASE.collections.ObservableArray = function () {
+    var Observer = BASE.util.Observer;
+
+    BASE.collections.ObservableArray = function (Type) {
         var self = this;
-        if (!(self instanceof BASE.collections.ObservableArray)) {
-            self = new BASE.collections.ObservableArray();
+
+        if (!Array.isArray(self)) {
+            throw new Error("This behavior can only be applied to an array.");
         }
 
-        for (var x = 0 ; x < arguments.length; x++) {
-            self.push(arguments[x]);
+        // Check to see if its already observable.
+        if (self.isObservable) {
+            return;
         }
 
-        return self;
-    };
+        self.isObservable = true;
 
-    BASE.collections.ObservableArray.prototype = new Array();
-    BASE.collections.ObservableArray.prototype.push = function () {
-        var result;
-        var items = Array.prototype.slice.call(arguments);
-        result = Array.prototype.push.apply(this, arguments);
-        var event = new ArrayChangedEvent(this, items, []);
-        this.notify(event);
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.pop = function () {
-        var result;
-        if (this.length > 0) {
-            var item = this[this.length - 1];
-            result = Array.prototype.pop.apply(this, arguments);
-            var event = new ArrayChangedEvent(this, [], [
-                item
-            ]);
+        var observer = new Observer();
+
+        self.Type = Type || Object;
+
+        self.load = function () {
+            return Array.prototype.push.apply(self, arguments);
+        };
+
+        self.unload = function () {
+            return Array.prototype.splice.apply(self, arguments);
+        };
+
+        self.push = function () {
+            var result;
+            var items = Array.prototype.slice.call(arguments);
+            result = Array.prototype.push.apply(this, arguments);
+            var event = new ArrayChangedEvent(this, items, []);
             this.notify(event);
-        }
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.splice = function () {
-        var result;
-        var newItems = Array.prototype.slice.apply(arguments, [
-            2
-        ]);
-        var oldItems;
-        var event;
-        result = Array.prototype.splice.apply(this, arguments);
-        oldItems = result.slice();
-        event = new ArrayChangedEvent(this, newItems, oldItems);
-        this.notify(event);
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.slice = function () {
-        var array = Array.prototype.slice.apply(this, arguments);
-        var result = new BASE.collections.ObservableArray();
-        BASE.collections.ObservableArray.apply(result, array);
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.shift = function () {
-        var result;
-        result = Array.prototype.shift.apply(this, arguments);
-        var event = new ArrayChangedEvent(this, [], [
-            result
-        ]);
-        this.notify(event);
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.unshift = function () {
-        var result;
-        result = Array.prototype.unshift.apply(this, arguments);
-        var event = new ArrayChangedEvent(this, Array.prototype.slice.apply(arguments), []);
-        this.notify(event);
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.concat = function () {
-        var newArray = Array.prototype.concat.apply(this, arguments);
-        var result = new BASE.collections.ObservableArray();
-        return BASE.collections.ObservableArray.apply(result, newArray);
-    };
-    BASE.collections.ObservableArray.prototype.toArray = function (result) {
-        result = result || [];
-        for (var x = 0; x < self.length; x++) {
-            result.push(self[x]);
-        }
-        return result;
-    };
-    BASE.collections.ObservableArray.prototype.notify = function (event) {
-        if (!this._observers) {
-            this._observers = [];
-        }
-        var observers = this._observers.slice();
-        observers.forEach(function (observer) {
-            observer(event);
-        });
-    };
-    BASE.collections.ObservableArray.prototype.observe = function (callback) {
-        if (!this._observers) {
-            this._observers = [];
-        }
-        this._observers.push(callback);
-    };
-    BASE.collections.ObservableArray.prototype.unobserve = function (callback) {
-        if (!this._observers) {
-            this._observers = [];
-        }
-        var index = this._observers.indexOf(callback);
-        if (index >= 0) {
-            this._observers.splice(index, 1);
-        }
-    };
-    BASE.collections.ObservableArray.prototype.add = BASE.collections.ObservableArray.prototype.push;
-    BASE.collections.ObservableArray.prototype.remove = function (item) {
-        var index = this.indexOf(item);
-        if (index >= 0) {
-            this.splice(index, 1);
-        }
-    };
+            return result;
+        };
 
-    BASE.collections.ObservableArray.fromArray = function (array) {
-        var observableArray = new BASE.collections.ObservableArray();
-        array.forEach(function (item) {
-            observableArray.push(item);
-        });
-        return observableArray;
+        self.pop = function () {
+            var result;
+            if (this.length > 0) {
+                var item = this[this.length - 1];
+                result = Array.prototype.pop.apply(this, arguments);
+                var event = new ArrayChangedEvent(this, [], [
+                    item
+                ]);
+                this.notify(event);
+            }
+            return result;
+        };
+
+        self.splice = function () {
+            var result;
+            var oldItems;
+            var event;
+            var newItems = Array.prototype.slice.call(arguments, 2);
+
+            result = Array.prototype.splice.apply(this, arguments);
+            oldItems = result.slice();
+            event = new ArrayChangedEvent(this, newItems, oldItems);
+            this.notify(event);
+            return result;
+        };
+
+        self.slice = function () {
+            var array = Array.prototype.slice.apply(this, arguments);
+            BASE.collections.ObservableArray.apply(array);
+            return array;
+        };
+
+        self.shift = function () {
+            var result;
+            result = Array.prototype.shift.apply(this, arguments);
+            var event = new ArrayChangedEvent(this, [], [result]);
+            this.notify(event);
+            return result;
+        };
+
+        self.unshift = function () {
+            var result;
+            result = Array.prototype.unshift.apply(this, arguments);
+            var event = new ArrayChangedEvent(this, Array.prototype.slice.apply(arguments), []);
+            this.notify(event);
+            return result;
+        };
+
+        self.concat = function () {
+            var newArray = Array.prototype.concat.apply(this, arguments);
+            BASE.collections.ObservableArray.apply(newArray);
+            return newArray;
+        };
+
+        self.sync = function (newSet) {
+            var notInNew = [];
+            var notInThis = [];
+            var thisArr = this;
+            thisArr.forEach(function (item) {
+                if (newSet.indexOf(item) === -1) {
+                    notInNew.push(item);
+                }
+            });
+            newSet.forEach(function (item) {
+                if (thisArr.indexOf(item) === -1) {
+                    notInThis.push(item);
+                }
+            });
+
+            notInNew.forEach(function (item) {
+                thisArr.remove(item);
+            });
+
+            notInThis.forEach(function (item) {
+                thisArr.push(item);
+            });
+        };
+
+        self.notify = function (event) {
+            observer.notify(event);
+        };
+        self.observe = function (callback) {
+            return observer.copy().onEach(callback);
+        };
+
+        self.add = self.push;
+
+        self.remove = function (item) {
+            var index = this.indexOf(item);
+            if (index >= 0) {
+                this.splice(index, 1);
+            }
+        };
+
     };
 
 });

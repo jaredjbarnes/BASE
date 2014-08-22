@@ -1,7 +1,6 @@
 ﻿BASE.require([
     "BASE.query.ArrayProvider",
-    "BASE.query.Queryable",
-    "BASE.behaviors.collections.ObservableArray"
+    "BASE.query.Queryable"
 ], function () {
     var ArrayProvider = BASE.query.ArrayProvider;
     var Queryable = BASE.query.Queryable;
@@ -10,7 +9,7 @@
         var self = this;
         Type = Type || self.Type;
         var queryable = new Queryable(Type || Object);
-        queryable.provider = self.getProviderFactory();
+        queryable.provider = self.getProvider();
         return queryable;
     };
 
@@ -19,6 +18,6 @@
         return new ArrayProvider(self);
     };
 
-    Array.prototype.getProviderFactory = _providerFactory;
+    Array.prototype.getProvider = _providerFactory;
     Array.prototype.asQueryable = _asQueryable;
 });

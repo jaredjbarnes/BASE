@@ -68,7 +68,7 @@
         "BASE.require.compile": true,
         "BASE.async.Future": true,
         "BASE.async.Task": true,
-        "BASE.behaviors.Observable": true,
+        "BASE.util.Observable": true,
         "BASE.util.Observable": true,
         "BASE.util.Observer": true,
         "BASE.extend": true,

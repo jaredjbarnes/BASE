@@ -1,6 +1,6 @@
 ﻿BASE.require([
     "jQuery",
-    "BASE.behaviors.NotifyPropertyChange"
+    "BASE.util.PropertyBehavior"
 ], function () {
     BASE.namespace("BASE.web.behaviors");
     BASE.web.behaviors.Bindable = function (elem) {
@@ -22,9 +22,9 @@
             }
 
             model = m;
-            var amObservable = m._implementsNotifyPropertyChange || false;
+            var amObservable = m._implementsPropertyBehavior || false;
             if (!amObservable) {
-                BASE.behaviors.NotifyPropertyChange.apply(model);
+                BASE.util.PropertyBehavior.apply(model);
             }
             modelObserver = m.observeAllProperties(modelChangeHandler);
 

@@ -1,10 +1,10 @@
 BASE.require([
-    "BASE.behaviors.Observable",
+    "BASE.util.Observable",
 ], function () {
 
     BASE.namespace("BASE.time");
 
-    var Observable = BASE.behaviors.Observable;
+    var Observable = BASE.util.Observable;
 
     BASE.time.DateRange = function (startDate, endDate) {
         var self = this;

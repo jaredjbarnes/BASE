@@ -8,23 +8,28 @@
     BASE.async.Continuation = function (future) {
         var self = this;
 
-        var hasErrorHandler = future.error ? true : false;
-
+        var hasErrorHandler = false;
+        var hasCancelHandler = false;
         future.then();
 
         self.then = function (callback) {
+            callback = callback || function () { };
             var newFuture = new Future(function (setValue, setError) {
                 future.then(function (value) {
                     var returnedFuture = callback(value);
                     if (returnedFuture instanceof Future) {
                         returnedFuture.then(setValue);
+                        returnedFuture.ifError(setError);
+                        returnedFuture.ifCanceled(function () {
+                            newFuture.cancel();
+                        });
                     } else {
-                        throw new Error("Expected a future to be returned from a continuation.");
+                        setValue(returnedFuture);
                     }
                 }).ifError(function (e) {
-                    if (!hasErrorHandler) {
-                        setError(e);
-                    }
+                    setError(e);
+                }).ifCanceled(function (e) {
+                    newFuture.cancel();
                 });
             });
             return new BASE.async.Continuation(newFuture);
@@ -33,6 +38,12 @@
         self.ifError = function (callback) {
             hasErrorHandler = true;
             future.ifError(callback);
+            return self;
+        };
+
+        self.ifCanceled = function (callback) {
+            hasCancelHandler = true;
+            future.ifCanceled(callback);
             return self;
         };
 

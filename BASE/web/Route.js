@@ -31,7 +31,7 @@
                 return true;
             }
             return false;
-        })
+        });
 
         var mappedObserver = observer.map(function (e) {
             return getHashValue();

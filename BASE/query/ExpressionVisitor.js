@@ -3,10 +3,12 @@
 ], function () {
     BASE.namespace("BASE.query");
 
+    var Expression = BASE.query.Expression;
+
     BASE.query.ExpressionVisitor = (function (Super) {
         var ExpressionVisitor = function () {
             var self = this;
-            
+
             BASE.assertNotGlobal(self);
 
             Super.call(self);
@@ -42,6 +44,7 @@
                 return func.apply(self, children);
             };
 
+           
             return self;
         };
 

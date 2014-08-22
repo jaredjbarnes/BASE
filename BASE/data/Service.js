@@ -1,73 +1,71 @@
-﻿BASE.require(["BASE.behaviors.Observable", "BASE.query.Provider"], function () {
+﻿BASE.require([
+    "BASE.collections.Hashmap",
+    "BASE.query.Queryable",
+    "BASE.data.responses.AddedResponse",
+    "BASE.data.responses.ErrorResponse",
+    "BASE.data.responses.UpdatedResponse",
+    "BASE.data.responses.RemovedResponse",
+    "BASE.mirrors.reflect"
+], function () {
+    
     BASE.namespace("BASE.data");
-
-    BASE.data.Service = (function (Super) {
-        var Service = function () {
-            var self = this;
-            if (!(self instanceof arguments.callee)) {
-                return new Service();
-            }
-
-            BASE.behaviors.Observerable.call(self);
-
-            var _relationships = null;
-
-            self.getRelationships = function () {
-                return _relationships;
-            };
-
-            self.setRelationships = function (relationships) {
-                var oldValue = _relationships;
-                if (oldValue != relationships) {
-                    _relationships = relationships;
-                    self.notify({
-                        type: "relationships",
-                        oldValue: oldValue,
-                        newValue: relationships
-                    });
-                }
-            };
-
-            // Call this method to create an entity.
-            self.createEntity = function (entity) {
-                var Type = entity.constructor;
-            };
-
-            self.updateEntity = function (entity) {
-                var Type = entity.constructor;
-            };
-
-            self.deleteEntity = function (entity) {
-                var Type = entity.constructor;
-            };
-
-            // This allows the service to dictate what a dto's class is.
-            self.getTypeForDto = function (dto) {
-
-            };
-
-            self.getSetProvider = function (Type) {
-
-            };
-
-            self.getTargetProvider = function (entity, property) {
-
-            };
-
-            // This will be called by the developer who wants to begin using the service.
-            self.logIn = function (username, factors) {
-                return new BASE.async.Future(function (setValue) {
-                    setTimeout(function () {
-                        setValue({ message: "Logged In!" });
-                    }, 0);
-                });
-            };
-
-            return self;
+    
+    BASE.data.Service = function (relationships) {
+        var self = this;
+        
+        self.add = function (entity) {
+            /// <summary>Adds an entity to persistence.</summary>
+            /// <param type="Object" name="entity">The object that is going to be persisted.</param>
+            /// <returns type="Future">This is a Future of Type AddedResponse.</returns>
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.update = function (entity, updates) {
+            /// <summary>This updates an already persisted entity. The entity needs to have a primary key assigned or an ErrorResponse will be returned.</summary>
+            /// <param type="Object" name="entity">The object that is going to be updated.</param>
+            /// <param type="Object" name="updates">A key/value pair object of changes.</param>
+            /// <returns type="Future">This is a Future of Type UpdateResponse.</returns>
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.remove = function (entity) {
+            /// <summary>
+            ///     This removes an entity from persisting anymore. 
+            ///     The entity needs to have a primary key assigned or an ErrorResponse will be returned.
+            /// </summary>
+            /// <param type="Object" name="entity">The object that is going to be updated.</param>
+            /// <returns type="Future">This is a Future of Type RemovedResponse.</returns>
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getSourcesOneToOneTargetEntity = function (sourceEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getTargetsOneToOneSourceEntity = function (targetEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getSourcesOneToManyQueryProvider = function (sourceEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getTargetsOneToManySourceEntity = function (targetEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getSourcesManyToManyQueryProvider = function (sourceEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getTargetsManyToManyQueryProvider = function (targetEntity, relationship) {
+            throw new Error("This was meant to be overridden.");
+        };
+        
+        self.getQueryProvider = function (Type) {
+            throw new Error("This was meant to be overridden.");
         };
 
-        BASE.extend(Service, Super);
+    };
 
-        return Service;
-    }(Object));
 });

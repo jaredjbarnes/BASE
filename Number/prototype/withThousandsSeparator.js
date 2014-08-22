@@ -7,7 +7,11 @@
 
         var decimalMark = options.decimalMark || ".";
         var thousandsMark = options.thousandsMark || ",";
-        var fixedNumber = number.toFixed(2);
+        var decimalPrecision = 2;
+        if (typeof options.decimalPrecision === "number") {
+            decimalPrecision = options.decimalPrecision;
+        }
+        var fixedNumber = number.toFixed(decimalPrecision);
         var split = fixedNumber.split(".");
         var integer = split[0];
         var decimal = split[1];
@@ -26,7 +30,13 @@
             x += 3;
         }
 
-        return result.reverse() + decimalMark + decimal;
+        var result = result.reverse();
+
+        if (decimalPrecision > 0) {
+            result += decimalMark + decimal;
+        }
+
+        return result;;
 
     };
 });

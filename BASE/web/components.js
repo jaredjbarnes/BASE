@@ -15,6 +15,9 @@
     var Task = BASE.async.Task;
     var Continuation = BASE.async.Continuation;
     var Guid = BASE.util.Guid;
+    var globalConfig = {
+        aliases: {}
+    };
 
     BASE.namespace("BASE.web.components");
 
@@ -71,14 +74,15 @@
 
         return new Future(function (setValue, setError) {
             task.start().whenAll(function (futures) {
-                var concatConfig = { aliases: {} };
+                var concatConfig = globalConfig;
                 var error = null;
 
                 futures.forEach(function (future) {
                     if (future.error === null) {
                         var config = future.value;
                         Object.keys(config.aliases).forEach(function (key) {
-                            concatConfig.aliases[key] = config.aliases[key];
+                            var root = config.root || "";
+                            concatConfig.aliases[key] = root + config.aliases[key];
                         });
                     } else {
                         error = future.error;
@@ -149,7 +153,7 @@
             } else {// the world
                 var $styleSheet = $("<style type=\"text/css\"></style>");
                 $styleSheet.text(text);
-                $componentStyles.after($styleSheet);    
+                $componentStyles.after($styleSheet);
             }
         }
     };
@@ -183,26 +187,26 @@
 
     var handleStyles = function (url, $element) {
         $element.find("style").remove().each(function (index) {
-                var $this = $(this);
-                var style = $componentStyles[0];
-                var exist;
-                var components = $componentStyles.data("components");
-                var text;
+            var $this = $(this);
+            var style = $componentStyles[0];
+            var exist;
+            var components = $componentStyles.data("components");
+            var text;
 
-                exist = components[url + index];
-                if (!exist) {
-                    components[url + index] = url;
+            exist = components[url + index];
+            if (!exist) {
+                components[url + index] = url;
 
-                    if (style.styleSheet) {
-                        text = this.styleSheet.cssText;
-                    } else {// the world
-                        text = $this.text();
-                    }
-
-                    text = createLinks(text);
-                    appendStyle(text);
+                if (style.styleSheet) {
+                    text = this.styleSheet.cssText;
+                } else {// the world
+                    text = $this.text();
                 }
-            });
+
+                text = createLinks(text);
+                appendStyle(text);
+            }
+        });
     };
 
     var ComponentCache = function () {
@@ -219,33 +223,30 @@
                     htmlCache.getComponentHtml(url).then(function (html) {
                         var $element = $(html);
                         var element = $element[0];
-                        getConfigInElement(element).then(function (config) {
-                            var aliases = config.aliases;
 
-                            var task = new Task();
-                            var guid = Guid.create();
+                        var task = new Task();
+                        var guid = Guid.create();
 
-                            $element.attr("cid", guid);
+                        $element.attr("cid", guid);
 
-                            $element.find("[tag]").each(function () {
-                                var $this = $(this);
-                                var tagName = $this.attr("tag");
-                                $this.attr("owner", guid);
-                            });
+                        $element.find("[tag]").each(function () {
+                            var $this = $(this);
+                            var tagName = $this.attr("tag");
+                            $this.attr("owner", guid);
+                        });
 
-                            handleStyles(url, $element);
+                        handleStyles(url, $element);
 
-                            $element.children().each(function () {
-                                var oldElement = this;
+                        $element.children().each(function () {
+                            var oldElement = this;
 
-                                task.add(loadComponentsDeep(oldElement).then(function (newElement) {
-                                    $(oldElement).replaceWith(newElement);
-                                }));
-                            });
+                            task.add(loadComponentsDeep(oldElement).then(function (newElement) {
+                                $(oldElement).replaceWith(newElement);
+                            }));
+                        });
 
-                            task.start().whenAll(function (futures) {
-                                setValue(element);
-                            });
+                        task.start().whenAll(function (futures) {
+                            setValue(element);
                         });
                     });
                 });
@@ -261,9 +262,9 @@
                     var $element = $(element);
 
                     var $tempHolder = $(document.createElement("div"));
-
+                    var callbacks = [];
                     // Fills the content tags with matching criteria.
-                    $element.find("embed").each(function () {
+                    var $contentTags = $element.find("embed").each(function () {
                         var $contentTag = $(this);
                         var selector = $contentTag.attr("select");
                         if (selector) {
@@ -273,16 +274,28 @@
                             $withContent.appendTo($tempHolder);
 
                             $tempHolder.children(selector).each(function () {
-                                $(this).remove().insertBefore($contentTag);
+                                var child = this;
+
+                                if (!child.selected) {
+                                    child.selected = true;
+                                    callbacks.push(function () {
+                                        $(child).remove().insertBefore($contentTag);
+                                    });
+                                }
                             });
 
                             $withContent = $tempHolder.contents();
                         } else {
-                            $withContent.insertBefore($contentTag);
+                            callbacks.push(function () {
+                                $withContent.insertBefore($contentTag);
+                            });
                         }
 
-                        $contentTag.remove();
                     });
+
+                    callbacks.forEach(function (callback) { callback(); });
+                    $contentTags.remove();
+
 
                     setValue(element);
                 });
@@ -430,6 +443,9 @@
 
                                 setValue(clone);
                             });
+                        }).ifError(function (error) {
+                            console.error(error.message + ". Not found or parse error.");
+                            setError(error);
                         });
                     } else {
                         setValue(element);
@@ -495,12 +511,19 @@
         return BASE.web.components.replaceElementWith(this, url);
     };
 
+    jQuery.prototype.controller = function () {
+        return $(this[0]).data("controller");
+    };
+
     $(function () {
         var task = new Task();
+
         var $starts = $("[component], [controller], [apply]").filter(function () {
             return $(this).parents("[component], [controller], [apply]").length === 0;
         });
+
         $starts.each(function () {
+
             task.add(loadComponents(this).then(function (lastElement) {
                 $(lastElement).find("[component]").each(function () {
                     $(this).triggerHandler({
@@ -511,18 +534,16 @@
                     type: "enteredView"
                 });
             }));
+
         });
 
         task.start().whenAll(function () {
+
             $(document).trigger({
                 type: "componentsReady"
             });
+
         });
 
     });
-
-    jQuery.prototype.controller = function () {
-        return $(this[0]).data("controller");
-    };
-
 });
