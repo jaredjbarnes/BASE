@@ -37,28 +37,41 @@
             self.update();
         });
         
+        var sync = function (dto) {
+            observer.stop();
+            
+            Object.keys(dto).forEach(function (key) {
+                var value = dto[key];
+                if (isPrimitive(dto[key]) && isPrimitive(entity[key])) {
+                    entity[key] = value;
+                }
+            });
+            
+            observer.start();
+        };
+        
         var BaseState = function () {
             var self = this;
             self.add = emptyFn;
             self.update = emptyFn;
             self.remove = emptyFn;
             
-            self.sync = function (dto) {
-                observer.stop();
-                
-                Object.keys(dto).forEach(function (key) {
-                    var value = dto[key];
-                    if (isPrimitive(dto[key]) && isPrimitive(entity[key])) {
-                        entity[key] = value;
-                    }
-                });
-                
-                observer.start();
-            };
+            self.sync = sync;
             
             self.save = function () {
                 throw new Error("This should be overridden.");
             };
+        };
+        
+        var savingFuture = null;
+        var savingState = {
+            add: emptyFn,
+            update: emptyFn,
+            remove: emptyFn,
+            save: function () {
+                return savingFuture;
+            },
+            sync: sync
         };
         
         var LoadedState = function () {
@@ -86,14 +99,19 @@
             };
             
             self.save = function () {
+                var future = service.add(entity);
+                setStateToSaving(future);
                 
-                return service.add(entity).then(function (response) {
+                future.then(function (response) {
                     var dto = response.entity;
                     state.sync(dto);
                     changeTracker.setStateToLoaded();
                 }).ifError(function (errorResponse) {
                     // Do nothing for now.
+                    changeTracker.setStateToAdded();
                 });
+                
+                return future;
 
             };
         };
@@ -106,17 +124,24 @@
             };
             self.save = function () {
                 var updates = BASE.clone(updateHash, true);
-                changeTracker.setStateToLoaded();
                 updateHash = {};
                 
-                return service.update(entity, updates).ifError(function (errorResponse) {
+                var future = service.update(entity, updates);
+                setStateToSaving(future);
+                
+                future.then(function () {
+                    changeTracker.setStateToLoaded();
+                }).ifError(function (errorResponse) {
                     // This will capture any updates that may have happened while trying to save.
                     Object.keys(updateHash).forEach(function (key) {
                         updates[key] = updateHash[key];
                     });
                     updateHash = updates;
                     changeTracker.setStateToUpdated();
+                
                 });
+                
+                return future;
             };
         };
         UpdatedState.prototype = new BaseState();
@@ -131,12 +156,18 @@
                 }
             };
             self.save = function () {
-                return service.remove(entity).then(function () {
+                var future = service.remove(entity);
+                
+                setStateToSaving(future);
+                
+                future.then(function () {
                     entity.id = null;
                     changeTracker.setStateToDetached();
                 }).ifError(function () {
                     changeTracker.setStateToRemoved();
                 });
+                
+                return future;
             };
         };
         RemovedState.prototype = new BaseState();
@@ -160,6 +191,14 @@
         var removedState = new RemovedState();
         var updatedState = new UpdatedState();
         var detachedState = new DetachedState();
+        
+        var setStateToSaving = function (future) {
+            savingFuture = future;
+            state = savingState;
+            self.notify({
+                type: "saving"
+            });
+        };
         
         self.setStateToDetached = function () {
             state = detachedState;
@@ -218,6 +257,7 @@
         self.save = function () {
             return state.save();
         };
+        
     };
 
 });

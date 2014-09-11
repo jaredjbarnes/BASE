@@ -1,15 +1,17 @@
 ﻿BASE.require([
-"BASE.collections.MultiKeyMap",
-"BASE.collections.Hashmap",
-"BASE.util.PropertyBehavior",
-"BASE.collections.ObservableArray",
-"BASE.util.Observable"
+    "BASE.data.Edm",
+    "BASE.collections.MultiKeyMap",
+    "BASE.collections.Hashmap",
+    "BASE.util.PropertyBehavior",
+    "BASE.collections.ObservableArray",
+    "BASE.util.Observable"
 ], function () {
     BASE.namespace("BASE.data");
     
     var Hashmap = BASE.collections.Hashmap;
     var MultiKeyMap = BASE.collections.MultiKeyMap;
     var Observable = BASE.util.Observable;
+    var Edm = BASE.data.Edm;
     
     var flattenMultiKeyMap = function (multiKeyMap) {
         var keys = multiKeyMap.getKeys();
@@ -18,15 +20,15 @@
         }, []);
     }
     
-    BASE.data.Orm = function () {
+    BASE.data.Orm = function (edm) {
         var self = this;
         BASE.assertNotGlobal(self);
         
-        Observable.call(self);
+        if (typeof edm === "undefined" || !(edm instanceof Edm)) {
+            throw new Error("Orm must have an edm.");
+        }
         
-        var oneToOneRelationships = [];
-        var oneToManyRelationships = [];
-        var manyToManyRelationships = [];
+        Observable.call(self);
         
         var oneToOneObservers = new MultiKeyMap();
         var oneToOneAsTargetObservers = new MultiKeyMap();
@@ -35,64 +37,16 @@
         var manyToManyObservers = new MultiKeyMap();
         var manyToManyAsTargetObservers = new MultiKeyMap();
         
-        var mappingTypes = new MultiKeyMap();
         var mappingEntities = new MultiKeyMap();
         
         var addedEntities = new Hashmap();
         
-        var getOneToOneRelationships = function (entity) {
-            return oneToOneRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.type) {
-                    return true;
-                }
-                return false;
-            });
-        };
-        
-        var getOneToOneAsTargetRelationships = function (entity) {
-            return oneToOneRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.ofType) {
-                    return true;
-                }
-                return false;
-            });
-        };
-        
-        var getOneToManyRelationships = function (entity) {
-            return oneToManyRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.type) {
-                    return true;
-                }
-                return false;
-            });
-        };
-        
-        var getOneToManyAsTargetRelationships = function (entity) {
-            return oneToManyRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.ofType) {
-                    return true;
-                }
-                return false;
-            });
-        };
-        
-        var getManyToManyRelationships = function (entity) {
-            return manyToManyRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.type) {
-                    return true;
-                }
-                return false;
-            });
-        };
-        
-        var getManyToManyAsTargetRelationships = function (entity) {
-            return manyToManyRelationships.filter(function (relationship) {
-                if (entity instanceof relationship.ofType) {
-                    return true;
-                }
-                return false;
-            });
-        };
+        var getOneToOneRelationships = edm.getOneToOneRelationships;
+        var getOneToManyRelationships = edm.getOneToManyRelationships;
+        var getManyToManyRelationships = edm.getManyToManyRelationships;
+        var getOneToOneAsTargetRelationships = edm.getOneToOneAsTargetRelationships;
+        var getOneToManyAsTargetRelationships = edm.getOneToManyAsTargetRelationships;
+        var getManyToManyAsTargetRelationships = edm.getManyToManyAsTargetRelationships;
         
         var observeOneToOne = function (entity) {
             var Type = entity.constructor;
@@ -134,15 +88,6 @@
                         }
                     }
                     
-                    self.notify({
-                        type: "oneToOneChange",
-                        relationship: relationship,
-                        source: entity,
-                        property: property,
-                        oldTarget: oldTarget,
-                        newTarget: newTarget
-                    });
-
                 };
                 
                 // Link if there is a entity already there.
@@ -236,14 +181,6 @@
                         self.remove(item);
                     });
                     
-                    self.notify({
-                        type: "oneToManyChange",
-                        relationship: relationship,
-                        source: entity,
-                        property: property,
-                        newItems: newItems,
-                        oldItems: oldItems
-                    });
                 };
                 
                 action({
@@ -272,10 +209,7 @@
                     self.add(newValue);
                     
                     if (oldValue) {
-                        var index = oldValue[relationship.hasMany].indexOf(entity);
-                        if (index > -1) {
-                            oldValue[relationship.hasMany].splice(index, 1);
-                        }
+                        oldValue[relationship.hasMany].unload(entity);
                         self.remove(entity);
                     }
                     
@@ -310,23 +244,23 @@
                     
                     oldItems.forEach(function (target) {
                         var targetArray = target[relationship.withMany];
-                        var index = targetArray.indexOf(entity);
-                        if (index > -1) {
-                            targetArray.splice(index, 1);
-                        }
+                        targetArray.unload(entity);
                         
                         var mappingEntity = mappingEntities.remove(entity, target);
                         var MappingEntity;
                         
                         if (mappingEntity === null) {
-                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            MappingEntity = relationship.usingMappingType;
                             mappingEntity = new MappingEntity();
                             mappingEntity.source = entity;
                             mappingEntity.target = target;
                             mappingEntity.relationship = relationship;
                         }
                         
-                        self.remove(mappingEntity);
+                        self.notify({
+                            type: "entityRemoved",
+                            entity: mappingEntity
+                        });
                     });
                     
                     newItems.forEach(function (target) {
@@ -341,7 +275,7 @@
                         var MappingEntity;
                         
                         if (mappingEntity === null) {
-                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            MappingEntity = relationship.usingMappingType;
                             mappingEntity = new MappingEntity();
                             mappingEntity.source = entity;
                             mappingEntity.target = target;
@@ -354,15 +288,6 @@
 
                     });
                     
-                    self.notify({
-                        type: "manyToManyChange",
-                        relationship: relationship,
-                        source: entity,
-                        property: property,
-                        newItems: newItems,
-                        oldItems: oldItems
-                    });
-
                 };
                 
                 action({
@@ -390,23 +315,24 @@
                     oldItems.forEach(function (source) {
                         var sourceArray = source[relationship.hasMany];
                         
-                        var index = sourceArray.indexOf(entity);
-                        if (index > -1) {
-                            sourceArray.splice(index, 1);
-                        }
+                        sourceArray.unload(entity);
                         
                         var mappingEntity = mappingEntities.remove(source, entity);
                         var MappingEntity;
                         
                         if (mappingEntity === null) {
-                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            MappingEntity = relationship.usingMappingType;
                             mappingEntity = new MappingEntity();
                             mappingEntity.source = source;
                             mappingEntity.target = entity;
                             mappingEntity.relationship = relationship;
                         }
                         
-                        self.remove(mappingEntity);
+                        self.notify({
+                            type: "entityRemoved",
+                            entity: mappingEntity
+                        });
+
                     });
                     
                     newItems.forEach(function (source) {
@@ -422,7 +348,7 @@
                         var MappingEntity;
                         
                         if (mappingEntity === null) {
-                            MappingEntity = mappingTypes.get(relationship.type, relationship.ofType);
+                            MappingEntity = relationship.usingMappingType;
                             mappingEntity = new MappingEntity();
                             mappingEntity.source = source;
                             mappingEntity.target = entity;
@@ -450,7 +376,7 @@
         };
         
         var unobserveOneToOne = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = oneToOneObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -459,7 +385,7 @@
         };
         
         var unobserveOneToOneAsTargets = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = oneToOneAsTargetObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -468,7 +394,7 @@
         };
         
         var unobserveOneToMany = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = oneToManyObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -477,7 +403,7 @@
         };
         
         var unobserveOneToManyAsTargets = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = oneToManyAsTargetObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -486,7 +412,7 @@
         };
         
         var unobserveManyToMany = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = manyToManyObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -495,7 +421,7 @@
         };
         
         var unobserveManyToManyAsTargets = function (entity) {
-            var observers = oneToOneObservers.get(entity);
+            var observers = manyToManyAsTargetObservers.remove(entity);
             if (observers) {
                 observers.getValues().forEach(function (observer) {
                     observer.dispose();
@@ -534,39 +460,6 @@
             manyToManyAsTarget.forEach(function (relationship) {
                 entity[relationship.withMany].splice(0, entity[relationship.withMany].length);
             });
-        };
-        
-        self.addOneToOne = function (relationship) {
-            oneToOneRelationships.push(relationship);
-        };
-        
-        self.addOneToMany = function (relationship) {
-            oneToManyRelationships.push(relationship);
-        };
-        
-        self.addManyToMany = function (relationship) {
-            if (!relationship.usingMappingType) {
-                throw new Error("Many to many relationship needs to supply the mapping Type.");
-            } else {
-                mappingTypes.add(relationship.type, relationship.ofType, relationship.usingMappingType);
-                manyToManyRelationships.push(relationship);
-            }
-        };
-        
-        self.getOneToOneRelationships = getOneToOneRelationships;
-        self.getOneToManyRelationships = getOneToManyRelationships;
-        self.getManyToManyRelationships = getManyToManyRelationships;
-        self.getOneToOneAsTargetRelationships = getOneToOneAsTargetRelationships;
-        self.getOneToManyAsTargetRelationships = getOneToManyAsTargetRelationships;
-        self.getManyToManyAsTargetRelationships = getManyToManyAsTargetRelationships;
-        
-        self.getMappingTypes = function () {
-            var array = flattenMultiKeyMap(mappingTypes);
-            var hashmap = new Hashmap();
-            array.forEach(function (Type) {
-                hashmap.add(Type, Type);
-            });
-            return hashmap;
         };
         
         self.add = function (entity) {

@@ -32,7 +32,7 @@
                         
                         setValue(results);
                     });
-                });
+                }).then();
             };
             
             self.count = function (queryable) {

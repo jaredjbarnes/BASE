@@ -61,6 +61,10 @@
                 } else {
                     fn = fn || function () { };
                     rightExpression = fn.call(ExpressionBuilder, new ExpressionBuilder(Type));
+
+                    if (typeof rightExpression === "undefined") {
+                        throw new Error("Invalid expression: return the expression.");
+                    }
                 }
                 
                 var expression = copyExpressionObject(self.getExpression());
@@ -110,7 +114,7 @@
                 
                 var exp = fn.call(self, new ExpressionBuilder(Type));
                 
-                orderBy.children.push(Expression.descending(Expression.property(exp.toString())));
+                orderBy.children.push(Expression.descending(Expression.property(exp.getPropertyName())));
                 
                 expression.orderBy = orderBy;
                 
@@ -144,6 +148,10 @@
             };
             
             self.toArray = function (callback) {
+                if (typeof self.provider === "undefined") {
+                    throw new Error("No provider found.");
+                }
+                
                 var future = self.provider.execute(self);
                 if (typeof callback === "function") {
                     future.then(callback);

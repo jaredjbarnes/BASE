@@ -175,12 +175,12 @@
             return "(" + left + " lt " + right + ")";
         };
 
-        ODataVisitor.prototype["greaterThanOrEqual"] = function (left, right) {
+        ODataVisitor.prototype["greaterThanOrEqualTo"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " ge " + right + ")";
         };
 
-        ODataVisitor.prototype["lessThanOrEqual"] = function (left, right) {
+        ODataVisitor.prototype["lessThanOrEqualTo"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
             return "(" + left + " le " + right + ")";
         };

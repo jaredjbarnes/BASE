@@ -25,8 +25,8 @@
         /// <summary>Register a mirror to represent a type of object.</summary>
         /// <param name="mirror" type="BASE.mirrors.Mirror" />
 
-        var namespace = mirror.getType().getTypeString();
-        var Type = mirror.getType().getRuntimeType();
+        var namespace = mirror.getType().getNamespace();
+        var Type = mirror.getType().getType();
 
         if (Type !== null) {
             registeredRuntimeMirrors.add(Type, mirror);

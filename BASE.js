@@ -312,59 +312,62 @@
         }, "");
     };
     
+    var returnTrue = function () {
+        return true;
+    };
+    
+    var returnItem = function (item) {
+        return item;
+    };
+    
     var Observer = function (unbind, filter, map) {
         var self = this;
-        var state;
         
-        var onEach = emptyFn;
-        var onError = emptyFn;
-        var observers = [];
+        self._onEach = emptyFn;
+        self._onError = emptyFn;
+        self._observers = [];
         
-        unbind = unbind || emptyFn;
+        self._unbind = unbind || emptyFn;
         
-        filter = filter || function () {
-            return true;
-        };
+        self._filter = filter || returnTrue;
         
-        map = map || function (item) {
-            return item;
-        };
+        self._map = map || returnItem;
         
-        if (typeof filter !== "function") {
+        if (typeof self._filter !== "function") {
             throw new TypeError("Expected a function.");
         }
         
-        if (typeof map !== "function") {
+        if (typeof self._map !== "function") {
             throw new TypeError("Expected a function.");
         }
         
         var dispose = function () {
-            unbind();
-            state = disposedState;
+            self._unbind();
+            self._state = disposedState;
         };
         
         var defaultState = {
             stop: function () {
-                state = stoppedState;
+                self._state = stoppedState;
             },
             start: emptyFn,
             notify: function (e) {
                 
-                if (filter(e)) {
+                if (self._filter(e)) {
                     
-                    var value = map(e);
+                    var value = self._map(e);
                     
                     try {
-                        onEach(value);
+                        self._onEach(value);
                     } catch (error) {
-                        if (onError === emptyFn) {
+                        if (self._onError === emptyFn) {
                             throw (error);
                         } else {
-                            onError(error);
+                            self._onError(error);
                         }
                     }
                     
-                    observers.slice(0).forEach(function (observer) {
+                    self._observers.slice(0).forEach(function (observer) {
                         observer.notify(value);
                     });
                 }
@@ -383,71 +386,92 @@
         var stoppedState = {
             stop: emptyFn,
             start: function () {
-                state = defaultState;
+                self._state = defaultState;
             },
             notify: emptyFn,
             dispose: emptyFn
         };
         
-        state = defaultState;
+        self._state = defaultState;
+
+    };
+    
+    Observer.prototype.notify = function (e) {
+        this._state.notify(e);
+    };
+    
+    Observer.prototype.copy = function () {
+        return this.filter(returnTrue);
+    };
+    
+    Observer.prototype.stop = function () {
+        this._state.stop();
+    };
+    
+    Observer.prototype.start = function () {
+        this._state.start();
+    };
+    
+    Observer.prototype.dispose = function () {
+        this._state.dispose();
+    };
+    
+    Observer.prototype.filter = function (filter) {
+        var self = this;
         
-        self.notify = function (e) {
-            state.notify(e);
-        };
+        if (typeof filter !== "function") {
+            throw new Error("Filter needs to be a function.");
+        }
         
-        self.copy = function () {
-            return self.filter();
-        };
-        
-        self.stop = function () {
-            state.stop();
-        };
-        
-        self.start = function () {
-            state.start();
-        };
-        
-        self.dispose = function () {
-            state.dispose();
-        };
-        
-        self.filter = function (filter) {
+        if (this._filter === returnTrue) {
+            self._filter = filter;
+            observer = self;
+        } else {
             var observer = new Observer(function () {
-                var index = observers.indexOf(observer);
+                var index = self._observers.indexOf(observer);
                 if (index >= 0) {
-                    observers.splice(index, 1);
+                    self._observers.splice(index, 1);
                 }
 
             }, filter);
-            observers.push(observer);
-            return observer;
-        };
+            self._observers.push(observer);
+        }
         
-        self.map = function (map) {
+        return observer;
+    };
+    
+    Observer.prototype.map = function (map) {
+        var self = this;
+        if (self._map === returnItem) {
+            self._map = map;
+            observer = self;
+        } else {
             var observer = new Observer(function () {
-                var index = observers.indexOf(observer);
+                var index = self._observers.indexOf(observer);
                 if (index >= 0) {
-                    observers.splice(index, 1);
+                    self._observers.splice(index, 1);
                 }
 
             }, undefined, map);
-            observers.push(observer);
-            return observer;
-        };
+            self._observers.push(observer);
+        }
         
-        self.onEach = function (callback) {
-            if (typeof callback !== "function") {
-                throw new Error("Expected a function.");
-            }
-            onEach = callback;
-            return self;
-        };
-        
-        self.onError = function (callback) {
-            onError = callback;
-            return self;
-        };
-
+        return observer;
+    };
+    
+    Observer.prototype.onEach = function (callback) {
+        var self = this;
+        if (typeof callback !== "function") {
+            throw new Error("Expected a function.");
+        }
+        self._onEach = callback;
+        return self;
+    };
+    
+    Observer.prototype.onError = function (callback) {
+        var self = this;
+        self._onError = callback;
+        return self;
     };
     
     var Observable = function () {
@@ -504,6 +528,40 @@
         };
     };
     
+    var CheapObservable = function () {
+        var self = this;
+        
+        BASE.assertNotGlobal();
+        
+        self._observers = {};
+    };
+    
+    CheapObservable.prototype.observeType = function (type, callback) {
+        var self = this;
+        if (typeof self._observers[type] === "undefined") {
+            self._observers[type] = [];
+        }
+        self._observers[type].push(callback);
+    };
+    
+    CheapObservable.prototype.notify = function (e) {
+        var self = this;
+        var type = e.type;
+        if (typeof self._observers[type] !== "undefined") {
+            self._observers[type].forEach(function (callback) {
+                callback(e);
+            });
+        }
+    };
+    
+    CheapObservable.prototype.clear = function () {
+        var self = this;
+        Object.keys(self._observers).forEach(function (key) {
+            self._observers[key] = [];
+        });
+    };
+    
+    
     var Future = (function (Super) {
         
         var emptyState = {
@@ -522,7 +580,7 @@
             
             BASE.assertNotGlobal(self);
             
-            var observers = new BASE.util.Observable();
+            var observers = new CheapObservable();
             
             self.value = null;
             self.error = null;
@@ -542,6 +600,7 @@
                             observers.notify({ type: "then", value: value });
                             observers.notify({ type: "onComplete" });
                         }
+                        observers.clear();
                     }, function (error) {
                         if (_state === retrievingState) {
                             self.isComplete = true;
@@ -563,7 +622,6 @@
                         callback();
                     };
                     observers.observeType("onComplete", listener);
-
                 },
                 ifError: function (callback) {
                     var listener = function (e) {
@@ -597,6 +655,7 @@
                             observers.notify({ type: "ifCanceled" });
                             observers.notify({ type: "onComplete" });
                         }
+                        observers.clear();
                     }, milliseconds);
                 },
                 cancel: function () {
@@ -605,6 +664,7 @@
                     _state = canceledState;
                     observers.notify({ type: "ifCanceled" });
                     observers.notify({ type: "onComplete" });
+                    observers.clear();
                 }
             };
             
@@ -732,7 +792,7 @@
             
             BASE.assertNotGlobal(self);
             
-            var observers = new Observable();
+            var observers = new CheapObservable();
             
             var futures = Array.prototype.slice.call(arguments, 0);
             var completedFutures = [];
@@ -918,9 +978,6 @@
         
         return Task;
     }());
-    
-    
-    
     
     var Loader = (function () {
         

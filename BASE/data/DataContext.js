@@ -1,6 +1,8 @@
 ﻿BASE.require([
+    "Array.prototype.asQueryable",
     "BASE.data.ChangeTracker",
     "BASE.data.Orm",
+    "BASE.data.DataSet",
     "BASE.data.Entity",
     "BASE.collections.Hashmap",
     "BASE.collections.MultiKeyMap",
@@ -14,6 +16,7 @@
     
     var Orm = BASE.data.Orm;
     var Entity = BASE.data.Entity;
+    var DataSet = BASE.data.DataSet;
     var ChangeTracker = BASE.data.ChangeTracker;
     var Hashmap = BASE.collections.Hashmap;
     var MultiKeyMap = BASE.collections.MultiKeyMap;
@@ -42,7 +45,7 @@
         return returnValue;
     };
     
-    BASE.data.DataContext = function (service, relationships) {
+    BASE.data.DataContext = function (service, edm) {
         var self = this;
         BASE.assertNotGlobal(self);
         
@@ -51,7 +54,7 @@
         }
         
         var dataContext = self;
-        var orm = new Orm();
+        var orm = new Orm(edm);
         
         var changeTrackersHash = new Hashmap();
         var loadedBucket = new MultiKeyMap();
@@ -63,22 +66,22 @@
             addedBucket.remove(entity.constructor, entity);
             updatedBucket.remove(entity.constructor, entity);
             removedBucket.remove(entity.constructor, entity);
-            loadedBucket.remove(entity.constructor, entity);
+            loadedBucket.remove(entity.constructor, getUniqueValue(entity));
         };
         
         var saveEntity = function (entity) {
             return new Future(function (setValue, setError) {
                 var task = new Task();
                 
-                var oneToOne = orm.getOneToOneAsTargetRelationships(entity);
-                var oneToMany = orm.getOneToManyAsTargetRelationships(entity);
+                var oneToOne = edm.getOneToOneAsTargetRelationships(entity);
+                var oneToMany = edm.getOneToManyAsTargetRelationships(entity);
                 var dependencies = oneToOne.concat(oneToMany);
                 
                 dependencies.forEach(function (relationship) {
-                    var property = relationship.hasOne;
-                    
-                    if (entity[property]) {
-                        task.add(self.saveEntity(entity[property]));
+                    var property = relationship.withOne;
+                    var source = entity[property];
+                    if (source) {
+                        task.add(self.saveEntity(source));
                     }
                 });
                 
@@ -227,8 +230,8 @@
         };
         
         var addOneToOneProviders = function (entity) {
-            var oneToOneRelationships = orm.getOneToOneRelationships(entity);
-            var oneToOneAsTargetsRelationships = orm.getOneToOneAsTargetRelationships(entity);
+            var oneToOneRelationships = edm.getOneToOneRelationships(entity);
+            var oneToOneAsTargetsRelationships = edm.getOneToOneAsTargetRelationships(entity);
             
             oneToOneRelationships.forEach(function (relationship) {
                 createSourcesOneToOneProvider(entity, relationship);
@@ -240,8 +243,8 @@
         };
         
         var addOneToManyProviders = function (entity) {
-            var oneToManyRelationships = orm.getOneToManyRelationships(entity);
-            var oneToManyAsTargetsRelationships = orm.getOneToManyAsTargetRelationships(entity);
+            var oneToManyRelationships = edm.getOneToManyRelationships(entity);
+            var oneToManyAsTargetsRelationships = edm.getOneToManyAsTargetRelationships(entity);
             
             oneToManyRelationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
@@ -256,8 +259,8 @@
         };
         
         var addManyToManyProviders = function (entity) {
-            var sourceRelationships = orm.getManyToManyRelationships(entity);
-            var targetRelationships = orm.getManyToManyAsTargetRelationships(entity);
+            var sourceRelationships = edm.getManyToManyRelationships(entity);
+            var targetRelationships = edm.getManyToManyAsTargetRelationships(entity);
             
             sourceRelationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
@@ -274,6 +277,18 @@
             });
         };
         
+        
+        var getUniqueValue = function (entity) {
+            var uniqueKey = {};
+            var properties = edm.getPrimaryKeyProperties(entity.constructor);
+            
+            properties.forEach(function (key) {
+                uniqueKey[key] = entity[key];
+            });
+            
+            return JSON.stringify(uniqueKey);
+        };
+        
         var setUpEntity = function (entity) {
             addOneToOneProviders(entity);
             addOneToManyProviders(entity);
@@ -281,7 +296,7 @@
         };
         
         var loadEntity = function (Type, dto) {
-            var entity = loadedBucket.get(Type, dto.id);
+            var entity = loadedBucket.get(Type, getUniqueValue(dto));
             if (entity === null) {
                 entity = new Type();
                 
@@ -290,6 +305,8 @@
                         entity[key] = getValue(dto[key]);
                     }
                 });
+                
+                loadedBucket.add(Type, getUniqueValue(entity), entity);
                 
                 self.addEntity(entity);
             }
@@ -341,7 +358,7 @@
                 var task = new Task();
                 
                 var mappingEntities = [];
-                var mappingTypes = orm.getMappingTypes();
+                var mappingTypes = edm.getMappingTypes();
                 
                 var forEachEntity = function (entity) {
                     if (mappingTypes.hasKey(entity.constructor)) {
@@ -360,8 +377,10 @@
                     var task = new Task();
                     
                     mappingEntities.forEach(function (entity) {
-                        entity[entity.relationship.withForeignKey] = entity.source[entity.relationship.hasKey];
-                        entity[entity.relationship.hasForeignKey] = entity.target[entity.relationship.withKey];
+                        if (entity.relationship) {
+                            entity[entity.relationship.withForeignKey] = entity.source[entity.relationship.hasKey];
+                            entity[entity.relationship.hasForeignKey] = entity.target[entity.relationship.withKey];
+                        }
                         task.add(saveEntity(entity));
                     });
                     
@@ -413,28 +432,14 @@
             };
         };
         
-        relationships = relationships || {};
-        relationships.oneToOne = relationships.oneToOne || [];
-        relationships.oneToMany = relationships.oneToMany || [];
-        relationships.manyToMany = relationships.manyToMany || [];
-        
-        relationships.oneToOne.forEach(function (relationship) {
-            orm.addOneToOne(relationship);
+        // Add DataSets
+        edm.getModels().getValues().forEach(function (model) {
+            self[model.collectionName] = new DataSet(model.type, self);
         });
         
-        relationships.oneToMany.forEach(function (relationship) {
-            orm.addOneToMany(relationship);
-        });
-        
-        relationships.manyToMany.forEach(function (relationship) {
-            orm.addManyToMany(relationship);
-        });
-        
-        orm.observeType("entityAdded", function (e) {
-            var entity = e.entity;
-            Entity.apply(entity);
+        var setUpChangeTracker = function (entity) {
             
-            var changeTracker = new ChangeTracker(e.entity, service);
+            var changeTracker = new ChangeTracker(entity, service);
             
             changeTracker.observeType("detached", function () {
                 removeEntityFromBuckets(entity);
@@ -469,24 +474,43 @@
                 setUpEntity(entity);
                 
                 // We want to use the entity's key as the key for the hash, so we can sync.
-                loadedBucket.add(entity.constructor, entity.id, entity);
+                loadedBucket.add(entity.constructor, getUniqueValue(entity), entity);
             });
             
             changeTrackersHash.add(entity, changeTracker);
-            if (entity.id) {
+            return changeTracker;
+        };
+        
+        var onEntityAdded = function (e) {
+            var entity = e.entity;
+            Entity.apply(entity);
+            
+            var changeTracker = setUpChangeTracker(entity);
+            var id = getUniqueValue(entity);
+            
+            if (loadedBucket.hasKey(entity.constructor, id)) {
                 changeTracker.setStateToLoaded();
             } else {
                 changeTracker.add();
             }
-        });
+        };
+        
+        orm.observeType("entityAdded", onEntityAdded);
         
         orm.observeType("entityRemoved", function (e) {
             var entity = e.entity;
             var changeTracker = changeTrackersHash.get(entity);
             
+            // This only happens with Many to Many.
+            // I really don't like this. Its a broken pattern. I've missed something somewhere.
+            if (!changeTracker) {
+                changeTracker = setUpChangeTracker(entity);
+                changeTracker.setStateToLoaded();
+            }
+            
             changeTracker.remove();
         });
-
+        
     };
 
 });

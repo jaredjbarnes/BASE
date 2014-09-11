@@ -34,7 +34,6 @@
                     clone[key] = obj[key];
                 }
             }
-
         });
         
         return clone;
@@ -42,7 +41,7 @@
     
     BASE.namespace("BASE.data.dataStores");
     
-    BASE.data.dataStores.InMemoryDataStore = function () {
+    BASE.data.dataStores.InMemoryDataStore = function (primaryKeyProperties) {
         var self = this;
         
         BASE.assertNotGlobal(self);
@@ -51,19 +50,40 @@
         
         var entities = new Hashmap();
         
+        if (!Array.isArray(primaryKeyProperties) && primaryKeyProperties.length > 0) {
+            throw new Error("Argument error: primaryKeyProperties needs to be an array of properties.");
+        }
+        
+        var getUniqueValue = function (entity) {
+            return primaryKeyProperties.reduce(function (current, next) {
+                return current += entity[next];
+            }, "");
+        };
+        
+        var setUniqueValues = function (entity) {
+            primaryKeyProperties.forEach(function (key) {
+                if (typeof entity[key] === "undefined" || entity[key] === null) {
+                    entity[key] = createGuid();
+                }
+            });
+        };
+        
         self.add = function (entity) {
             var result;
             if (!entity) {
                 var error = new ErrorResponse("An Entity cannot be null or undefined.");
                 result = Future.fromError(error);
             } else {
-                var clone = cloneObject(entity);
-                var id = clone.id || createGuid();
+                var id = getUniqueValue(entity);
                 
                 if (entities.hasKey(id)) {
                     var error = new ErrorResponse("An Entity with that key already exists.");
                     result = Future.fromError(error);
                 } else {
+                    setUniqueValues(entity);
+                    var clone = cloneObject(entity);
+                    id = getUniqueValue(entity);
+
                     entities.add(id, clone);
                     clone.id = id;
                     result = Future.fromResult(new AddedResponse("Successfully added enity.", clone));
@@ -77,13 +97,15 @@
             return result;
         };
         
-        self.update = function (id, updates) {
-            var entity = entities.get(id);
+        self.update = function (entity, updates) {
             var result;
+            var id = getUniqueValue(entity);
             
-            if (entity) {
+            var inMemoryEntity = entities.get(id);
+            
+            if (inMemoryEntity) {
                 Object.keys(updates).forEach(function (key) {
-                    entity[key] = updates[key];
+                    inMemoryEntity[key] = updates[key];
                 });
                 
                 result = Future.fromResult(new UpdatedResponse("Update was successful."));
@@ -102,7 +124,7 @@
         };
         
         self.remove = function (entity) {
-            var id = entity.id;
+            var id = getUniqueValue(entity);
             var result;
             var hasKey = entities.hasKey(id);
             
@@ -137,7 +159,7 @@
                 items.push(cloneObject(entity));
             });
             
-            return items.provider;
+            return items.asQueryable().provider;
         };
         
         self.getEntities = function () {
@@ -155,7 +177,6 @@
         self.initialize = function () {
             return Future.fromResult(undefined);
         };
-        
         
         self.dispose = function () {
             return Future.fromResult(undefined);

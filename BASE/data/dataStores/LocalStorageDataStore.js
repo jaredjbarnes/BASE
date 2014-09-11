@@ -11,7 +11,7 @@
     var Hashmap = BASE.collections.Hashmap;
     var InMemoryDataStore = BASE.data.dataStores.InMemoryDataStore;
 
-    BASE.namespace("BASE.data.dataStores.dataStores");
+    BASE.namespace("BASE.data.dataStores");
 
     BASE.data.dataStores.LocalStorageDataStore = function (name) {
         var self = this;
@@ -24,7 +24,7 @@
             return dataStore.add.apply(dataStore, arguments);
         };
 
-        self.update = function (id, updates) {
+        self.update = function (entity, updates) {
             return dataStore.update.apply(dataStore, arguments);
         };
 

@@ -20,17 +20,17 @@
         
         BASE.util.Observable.call(self);
         
-        self.add = function (obj) {
+        self.add = function (entity) {
             // return a Future<AddedResponse>
             throw new Error("This method is expected to be overridden.");
         };
         
-        self.update = function (id, updates) {
+        self.update = function (entity, updates) {
             // return a Future<UpdatedResponse>
             throw new Error("This method is expected to be overridden.");
         };
         
-        self.remove = function (obj) {
+        self.remove = function (entity) {
             // return a Future<RemovedResponse>
             throw new Error("This method is expected to be overridden.");
         };
