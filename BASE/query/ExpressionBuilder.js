@@ -28,11 +28,18 @@
             return setExpression(Expression.equalTo(property, constant));
         };
 
-        self.isSubstring = function (value) {
-            return setExpression(Expression.equalTo(Expression.substring(Expression.property(propertyName)), Expression.getExpressionType(value)));
+        self.isNotEqualTo = function (value) {
+            var property = Expression.property(propertyName);
+            var constant = Expression.getExpressionType(value);
+            return setExpression(Expression.notEqualTo(property, constant));
         };
 
+        self.contains = function (value) {
+            return setExpression(Expression.substringOf(Expression.property(propertyName), Expression.string(value)));
+        }
+
         self.isSubstringOf = function (value) {
+            console.warn("isSubstringOf is deprecated, please us contains.");
             return setExpression(Expression.substringOf(Expression.property(propertyName), Expression.string(value)));
         };
 
@@ -109,7 +116,7 @@
         };
 
         self.value = function () {
-        	return new OperationExpressionBuilder("");
+            return new OperationExpressionBuilder("");
         }
 
     };

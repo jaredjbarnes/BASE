@@ -4,17 +4,6 @@
 ], function () {
     BASE.namespace("BASE.query");
     
-    var toServiceNamespace = function (value) {
-        var array = value.split(".");
-        var newArray = [];
-        var scope = this.scope ? this.scope + "/" : "";
-        
-        array.forEach(function (name) {
-            newArray.push(scope + name.substr(0, 1).toUpperCase() + name.substring(1));
-        });
-        return newArray.join(".");
-    };
-    
     var escapeSingleQuotes = function (value) {
         if (typeof value !== "string") {
             value = value.toString();
@@ -33,21 +22,20 @@
         } else if (typeof value === "boolean") {
             return value.toString().toUpperCase();
         } else if (value instanceof Date) {
-            return value.format("yyyy-mm-dd'T'HH:MM:ss")
+            return value.getTime();
         }
 
     };
     
     BASE.query.SqlVisitor = (function (Super) {
-        var SqlVisitor = function (tableName, scope) {
+        var SqlVisitor = function (tableName, model) {
             var self = this;
             BASE.assertNotGlobal(self);
             
             Super.call(self);
-            self.scope = scope || "";
+            self.model = model;
             self.tableName = tableName;
             
-            self.toServiceNamespace = toServiceNamespace;
             return self;
         };
         
@@ -114,11 +102,19 @@
         };
         
         SqlVisitor.prototype["equalTo"] = function (left, right) {
-            return left + " = " + sqlizePrimitive(right);
+            if (right === null) {
+                return left + " IS NULL";
+            } else {
+                return left + " = " + sqlizePrimitive(right);
+            }
         };
         
         SqlVisitor.prototype["notEqualTo"] = function (left, right) {
-            return left + " != " + sqlizePrimitive(right);
+            if (right === null) {
+                return left + " IS NOT NULL";
+            } else {
+                return left + " != " + sqlizePrimitive(right);
+            }
         };
         
         SqlVisitor.prototype["greaterThan"] = function (left, right) {
@@ -142,11 +138,11 @@
         };
         
         SqlVisitor.prototype["skip"] = function (value) {
-            return "OFFSET " + value;
+            return " OFFSET " + value;
         };
         
         SqlVisitor.prototype["take"] = function (value) {
-            return "LIMIT " + (value || -1);
+            return " LIMIT " + (value || -1);
         };
         
         SqlVisitor.prototype["constant"] = function (expression) {
@@ -154,7 +150,8 @@
         };
         
         SqlVisitor.prototype["property"] = function (expression) {
-            return this.toServiceNamespace(expression.value);
+            var property = expression.value;
+            return property;
         };
         
         SqlVisitor.prototype["substringOf"] = function (namespace, value) {
@@ -174,7 +171,7 @@
         };
         
         SqlVisitor.prototype["date"] = function (expression) {
-            return expression.value;
+            return sqlizePrimitive(expression.value);
         };
         
         SqlVisitor.prototype["string"] = function (expression) {
@@ -197,4 +194,5 @@
         
         return SqlVisitor;
     }(BASE.query.ExpressionVisitor));
+
 });

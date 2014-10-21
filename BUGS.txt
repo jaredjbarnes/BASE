@@ -1,0 +1,33 @@
+﻿=============
+base.js
+=============
+-------------
+( 2/18/2014 )
+-------------
+
+When running components in Internet Explorer 8 the following error occurs. 
+
+Object doesn't support property or method 'isArray'
+File: BASE.js, Line: 1022, Column: 9
+
+=============
+components.js
+=============
+-------------
+  2/18/2014 
+-------------
+Only starting component's jQuery data survives.  This affects tags and "componentLoaded" data.
+To see:
+	* Drop a breakpoint around line 303, in loadControllers, around here:
+		var tags = $element.closest("[component]").data("componentTags");
+        var instance = new Controller(element, tags);
+	* Add a watch for this:
+		$(element).data("componentLoaded")
+	* Notice that (even on the tag test) only the last, outermost component returns a value for that watch expression
+
+I also discovered that the "clone" built in loadComponentsDeep -> buildDomAsync -> componentCache.loadComponent (abt 332)
+is not the same element as you get in loadControllers (around line 303 as mentioned above).  For one of my
+components I set the clone to the window and compared when it hit loadControllers and it was not the same.
+
+
+

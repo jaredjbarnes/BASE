@@ -15,6 +15,6 @@
 
         BASE.extend(UnauthorizedErrorResponse, Super);
 
-        return ErrorResponse;
+        return UnauthorizedErrorResponse;
     }(BASE.data.responses.ErrorResponse));
 });

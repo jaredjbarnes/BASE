@@ -10,13 +10,13 @@
             
             Super.call(self, message);
             
-            self.validationErrors = validationErrors;
+            self.errors = validationErrors;
             
             return self;
         };
         
         BASE.extend(ValidationErrorResponse, Super);
         
-        return ErrorResponse;
+        return ValidationErrorResponse;
     }(BASE.data.responses.ErrorResponse));
 });

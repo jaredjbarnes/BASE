@@ -6,8 +6,7 @@
     "BASE.data.responses.AddedResponse",
     "BASE.data.responses.UpdatedResponse",
     "BASE.data.responses.RemovedResponse",
-    "BASE.data.responses.ErrorResponse",
-    "BASE.data.utils"
+    "BASE.data.responses.ErrorResponse"
 ], function () {
     
     var createGuid = BASE.util.Guid.create;
@@ -21,23 +20,7 @@
     var RemovedResponse = BASE.data.responses.RemovedResponse;
     var ErrorResponse = BASE.data.responses.ErrorResponse;
     
-    var isPrimitive = BASE.data.utils.isPrimitive;
-    
-    var cloneObject = function (obj) {
-        var clone = new obj.constructor();
-        
-        Object.keys(obj).forEach(function (key) {
-            var value = obj[key];
-            
-            if (isPrimitive(value)) {
-                if (key !== "_hash") {
-                    clone[key] = obj[key];
-                }
-            }
-        });
-        
-        return clone;
-    };
+    var cloneObject = BASE.data.utils.flattenEntity;
     
     BASE.namespace("BASE.data.dataStores");
     

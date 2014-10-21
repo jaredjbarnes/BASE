@@ -17,6 +17,6 @@
         
         BASE.extend(EntityNotFoundErrorResponse, Super);
         
-        return ErrorResponse;
+        return EntityNotFoundErrorResponse;
     }(BASE.data.responses.ErrorResponse));
 });

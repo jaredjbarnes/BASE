@@ -93,7 +93,7 @@
         var propertyObserver = self.observe().filter(function (e) {
             return e.type === "propertyChange";
         }).onEach(function (e) {
-            observers.forEach(function (observer) {
+            observers.slice(0).forEach(function (observer) {
                 observer.notify(e);
             });
         });
@@ -108,6 +108,18 @@
                 return e.property === property;
             }).onEach(callback);
             
+            observers.push(observer);
+            return observer;
+        };
+
+        self.observeAllProperties = function (callback) {
+            var observer = new Observer(function () {
+                var index = observers.indexOf(observer);
+                if (index >= 0) {
+                    observers.splice(index, 1);
+                }
+            }).onEach(callback);
+
             observers.push(observer);
             return observer;
         };

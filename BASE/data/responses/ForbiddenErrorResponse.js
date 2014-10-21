@@ -15,6 +15,6 @@
 
         BASE.extend(ForbiddenErrorResponse, Super);
 
-        return ErrorResponse;
+        return ForbiddenErrorResponse;
     }(BASE.data.responses.ErrorResponse));
 });

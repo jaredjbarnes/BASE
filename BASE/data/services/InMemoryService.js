@@ -38,9 +38,15 @@
         self.add = function (entity) {
             var dataStore = getDataStore(entity.constructor);
             return dataStore.add(entity).then(function () {
+                var model = edm.getModelByType(entity.constructor);
+                var tableName = model.collectionName;
+                var primaryKeys = edm.getPrimaryKeyProperties(entity.constructor);
+                
                 self.notify({
                     type: "added",
-                    entity: entity
+                    entity: entity,
+                    primaryKeys: primaryKeys,
+                    tableName: tableName
                 });
             }).ifError(function (responseError) {
                 self.notify({
@@ -54,9 +60,15 @@
         self.update = function (entity, updates) {
             var dataStore = getDataStore(entity.constructor);
             return dataStore.update(entity, updates).then(function () {
+                var model = edm.getModelByType(entity.constructor);
+                var tableName = model.collectionName;
+                var primaryKeys = edm.getPrimaryKeyProperties(entity.constructor);
+                
                 self.notify({
                     type: "updated",
                     entity: entity,
+                    primaryKeys: primaryKeys,
+                    tableName: tableName,
                     updates: updates
                 });
             }).ifError(function (responseError) {
@@ -69,19 +81,62 @@
         };
         
         self.remove = function (entity) {
-            var dataStore = getDataStore(entity.constructor);
-            return dataStore.remove(entity).then(function () {
-                self.notify({
-                    type: "removed",
-                    entity: entity
-                });
-            }).ifError(function (responseError) {
-                self.notify({
-                    type: "error",
-                    entity: entity,
-                    error: responseError
+            return new Future(function (setValue, setError) {
+                
+                // Clean house.
+                var cleanTargets = function (relationship) {
+                    var keyValue = entity[relationship.hasKey];
+                    
+                    if (relationship.optional !== true) {
+                        var dataStore = getDataStore(relationship.ofType);
+                        dataStore.asQueryable().where(function (e) {
+                            
+                            return e.property(relationship.withForeignKey).isEqualTo(keyValue);
+                        
+                        }).toArray(function (entities) {
+                            
+                            entities.forEach(function (childEntity) {
+                                if (childEntity) {
+                                    dataStore.remove(childEntity).then();
+                                }
+                            });
+
+                        });
+                       
+                    }
+                };
+                
+                edm.getOneToOneRelationships(entity).forEach(cleanTargets);
+                edm.getOneToManyRelationships(entity).forEach(cleanTargets);
+                
+                var dataStore = getDataStore(entity.constructor);
+                dataStore.remove(entity).then(function (response) {
+                    var model = edm.getModelByType(entity.constructor);
+                    var tableName = model.collectionName;
+                    var primaryKeys = edm.getPrimaryKeyProperties(entity.constructor);
+                    
+                    self.notify({
+                        type: "removed",
+                        entity: entity,
+                        primaryKeys: primaryKeys,
+                        tableName: tableName
+                    });
+                    
+                    setValue(response);
+                
+                }).ifError(function (responseError) {
+                    
+                    self.notify({
+                        type: "error",
+                        entity: entity,
+                        error: responseError
+                    });
+                    
+                    setError(responseError);
                 });
             });
+
+            
         };
         
         self.getSourcesOneToOneTargetEntity = function (sourceEntity, relationship) {
@@ -192,6 +247,10 @@
         };
         
         self.getDataStore = getDataStore;
+        
+        self.getEdm = function () {
+            return edm;
+        };
     };
 
 

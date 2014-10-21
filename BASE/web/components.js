@@ -1,7 +1,6 @@
 ﻿BASE.require([
     "jQuery",
     "Array.prototype.forEach",
-    "Element.prototype.replaceWith",
     "String.prototype.trim",
     "BASE.async.Future",
     "BASE.async.Task",
@@ -25,6 +24,41 @@
     var $componentStyles = $(style).data("components", {});
     style.setAttribute("type", "text/css");
     $("head").prepend(style);
+
+    $.fn.scope = function (name, newValue) {
+        var isGetter = arguments.length === 1;
+        var $this = $(this[0]);
+
+        var scope = $this.data("__scope__");
+        if (!scope) {
+            scope = {};
+            $this.data("__scope__", scope);
+        }
+
+        if (isGetter) {
+
+            var value = scope[name];
+
+            if (typeof value === "undefined" && $this.parent().length > 0) {
+                return $this.parent().scope(name);
+            }
+
+            return value;
+        } else {
+            scope[name] = newValue;
+            return this;
+        }
+    };
+
+    var Scope = function ($element) {
+        this.get = function (name) {
+            return $element.scope(name);
+        };
+
+        this.set = function (name, value) {
+            return $element.scope(name, value);
+        };
+    };
 
     var getConfig = function (url) {
         return new BASE.async.Future(function (setValue, setError) {
@@ -311,19 +345,18 @@
     var componentCache = new ComponentCache();
     var disallowedDiggers = "iframe, object, embed, [template]";
 
-    var walkTheDomAsync = function (element, asyncOperation, scope) {
-        scope = scope || {};
+    var walkTheDomAsync = function (element, asyncOperation) {
+
         return new Future(function (setValue, setError) {
             var task = new Task();
             if (!$(element).is(disallowedDiggers)) {
                 $(element).children().each(function () {
-                    var Scope = function () { };
-                    Scope.prototype = scope;
-                    task.add(walkTheDomAsync(this, asyncOperation, new Scope()));
+
+                    task.add(walkTheDomAsync(this, asyncOperation));
                 });
             }
             task.start().whenAll(function (childrenFutures) {
-                asyncOperation(element, scope).then(setValue).ifError(setError);
+                asyncOperation(element).then(setValue).ifError(setError);
             });
         });
     };
@@ -355,7 +388,7 @@
 
     var loadControllers = function (startElement) {
 
-        return walkTheDomAsync(startElement, function (element, scope) {
+        return walkTheDomAsync(startElement, function (element) {
             return new Future(function (setValue, setError) {
                 var $element = $(element);
 
@@ -380,6 +413,9 @@
                                 }
                             });
 
+
+
+                            var scope = new Scope($element);
 
                             var instance = new Controller(element, tags, scope);
                             $element.data("controller", instance);
@@ -435,7 +471,7 @@
                                 // Apply attributes that were on the previous element.
                                 for (var x = 0 ; x < element.attributes.length; x++) {
                                     domAttribute = element.attributes.item(x);
-                                    $(clone).attr(domAttribute.nodeName, domAttribute.nodeValue);
+                                    $(clone).attr(domAttribute.name, domAttribute.value);
                                 }
 
                                 // Set the component as loaded.
@@ -501,6 +537,10 @@
         });
     };
 
+    BASE.web.components.getComponentConfigFuture = function () {
+        return globalConfigFuture;
+    };
+
     BASE.web.components.getComponentCache = function () {
         return componentCache;
     };
@@ -525,7 +565,7 @@
         $starts.each(function () {
 
             task.add(loadComponents(this).then(function (lastElement) {
-                $(lastElement).find("[component]").each(function () {
+                $(lastElement).find("[component], [controller], [apply]").each(function () {
                     $(this).triggerHandler({
                         type: "enteredView"
                     });

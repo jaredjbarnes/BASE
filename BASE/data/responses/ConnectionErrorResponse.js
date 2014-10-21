@@ -15,6 +15,6 @@
         
         BASE.extend(ConnectionErrorResponse, Super);
         
-        return ErrorResponse;
+        return ConnectionErrorResponse;
     }(BASE.data.responses.ErrorResponse));
 });

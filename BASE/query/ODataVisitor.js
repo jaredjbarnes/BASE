@@ -12,17 +12,71 @@
             newArray.push(scope + name.substr(0, 1).toUpperCase() + name.substring(1));
         });
         return newArray.join(".");
-    }
+    };
+
+    var toLocal = function (str) {
+        return str.substr(0, 1).toLowerCase() + str.substring(1);
+    };
+
+    var getOdataValue = function (value) {
+        if (typeof value === "string") {
+            return "'" + value + "'";
+        } else if (typeof value === "boolean") {
+            return value.toString();
+        } else if (typeof value === "number") {
+            return value.toString();
+        } else if (value instanceof Date) {
+            var dateString = value.toISOString();
+            dateString = dateString.substr(0, dateString.length - 1);
+            dateString += "-00:00";
+            return "DateTime'" + dateString + "'";
+        } else if (value === null) {
+            return "null";
+        } else {
+            return value;
+        }
+    };
 
     BASE.query.ODataVisitor = (function (Super) {
-        var ODataVisitor = function (scope) {
+        var ODataVisitor = function (config) {
             var self = this;
             BASE.assertNotGlobal(self);
 
             Super.call(self);
-            self.scope = scope || "";
+            config = config || {};
+            self.scope = config.scope || "";
+            var model = self.model = config.model || { properties: {} };
 
             self.toServiceNamespace = toServiceNamespace;
+            self.getValue = function (key, value) {
+                var property = model.properties[toLocal(key)];
+                if (property) {
+                    if (value === null) {
+                        return "null";
+                    }
+                    if (property.type === Date) {
+                        var dateString = value.toISOString();
+                        dateString = dateString.substr(0, dateString.length - 1);
+                        dateString += "-00:00";
+                        return "DateTime'" + dateString + "'";
+                    } else if (property.type === DateTimeOffset) {
+                        var dateString = value.toISOString();
+                        dateString = dateString.substr(0, dateString.length - 1);
+                        dateString += "-00:00";
+                        return "DateTimeOffset'" + dateString + "'";
+                    } else if (property.type === Number) {
+                        return value.toString();
+                    } else if (property.type === String) {
+                        return "'" + value + "'";
+                    } else if (property.type === Boolean) {
+                        return value.toString();
+                    } else {
+                        return value;
+                    }
+                } else {
+                    return getOdataValue(value);
+                }
+            };
             return self;
         };
 
@@ -89,11 +143,11 @@
         };
 
         ODataVisitor.prototype["equalTo"] = function (left, right) {
-            return "(" + left + " eq " + right + ")";
+            return "(" + left + " eq " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["notEqualTo"] = function (left, right) {
-            return "(" + left + " ne " + right + ")";
+            return "(" + left + " ne " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["constant"] = function (expression) {
@@ -104,8 +158,8 @@
             return this.toServiceNamespace(expression.value);
         };
 
-        ODataVisitor.prototype["guid"] = function (value) {
-            return "guid'" + value.replace("'", "''") + "'";
+        ODataVisitor.prototype["guid"] = function (expression) {
+            return expression.value;
         };
 
         ODataVisitor.prototype["substring"] = function (namespace, startAt, endAt) {
@@ -124,28 +178,28 @@
             return "endswith(" + namespace + "," + value + ")";
         };
 
-        ODataVisitor.prototype["null"] = function (value) {
-            return "null";
+        ODataVisitor.prototype["null"] = function (expression) {
+            return null;
         };
 
-        ODataVisitor.prototype["undefined"] = function (value) {
-            return "undefined";
+        ODataVisitor.prototype["undefined"] = function (expression) {
+            return expression.value;
         };
 
         ODataVisitor.prototype["date"] = function (expression) {
-            return "DateTime" + JSON.stringify(expression.value).replace(/"/g, "'") + "";
+            return expression.value;
         };
 
         ODataVisitor.prototype["string"] = function (expression) {
-            return "'" + expression.value.replace("'", "''") + "'";
+            return expression.value;
         };
 
         ODataVisitor.prototype["number"] = function (expression) {
-            return expression.value.toString();
+            return expression.value;
         };
 
         ODataVisitor.prototype["boolean"] = function (expression) {
-            return expression.value.toString();
+            return expression.value;
         };
 
         ODataVisitor.prototype["all"] = function (property, expression) {
@@ -167,27 +221,27 @@
         }
 
         ODataVisitor.prototype["greaterThan"] = function (left, right) {
-            return "(" + left + " gt " + right + ")";
+            return "(" + left + " gt " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["lessThan"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
-            return "(" + left + " lt " + right + ")";
+            return "(" + left + " lt " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["greaterThanOrEqualTo"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
-            return "(" + left + " ge " + right + ")";
+            return "(" + left + " ge " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["lessThanOrEqualTo"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
-            return "(" + left + " le " + right + ")";
+            return "(" + left + " le " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["not"] = function (left, right) {
             var boundary = typeof right.value === "string" ? "'" : "";
-            return "(" + left + " not " + right + ")";
+            return "(" + left + " not " + this.getValue(left, right) + ")";
         };
 
         ODataVisitor.prototype["skip"] = function (value) {
