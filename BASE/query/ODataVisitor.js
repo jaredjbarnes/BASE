@@ -82,6 +82,16 @@
 
         BASE.extend(ODataVisitor, Super);
 
+        ODataVisitor.prototype["isIn"] = function (property, array) {
+            if (array.length > 0) {
+                return "(" + array.map(function (value) {
+                    return property + " eq " + value;
+                }).join(" or ") + ")";
+            } else {
+                return "";
+            }
+        };
+
         ODataVisitor.prototype["ascending"] = function (namespace) {
             return namespace + " asc";
         };
@@ -101,7 +111,12 @@
 
         ODataVisitor.prototype["where"] = function () {
             var self = this;
-            return "&$filter=" + self["and"].apply(self.parsers, arguments);
+            var filterString = self["and"].apply(self.parsers, arguments);
+            if (filterString) {
+                return "&$filter=" + filterString;
+            } else {
+                return "";
+            }
         };
 
         ODataVisitor.prototype["and"] = function () {
@@ -167,15 +182,15 @@
         };
 
         ODataVisitor.prototype["substringOf"] = function (namespace, value) {
-            return "substringof(" + value + "," + namespace + ")";
+            return "substringof(" + getOdataValue(value) + "," + namespace + ")";
         };
 
         ODataVisitor.prototype["startsWith"] = function (namespace, value) {
-            return "startswith(" + namespace + "," + value + ")";
+            return "startswith(" + namespace + "," + getOdataValue(value) + ")";
         };
 
         ODataVisitor.prototype["endsWith"] = function (namespace, value) {
-            return "endswith(" + namespace + "," + value + ")";
+            return "endswith(" + namespace + "," + getOdataValue(value) + ")";
         };
 
         ODataVisitor.prototype["null"] = function (expression) {
@@ -217,7 +232,7 @@
         };
 
         ODataVisitor.prototype["array"] = function (expression) {
-
+            return expression.value;
         }
 
         ODataVisitor.prototype["greaterThan"] = function (left, right) {

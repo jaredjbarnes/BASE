@@ -30,7 +30,7 @@
             }
 
 
-            if (!settings.headers["Content-Type"]) {
+            if (!settings.headers["Content-Type"] && typeof settings.headers["Content-Type"] !== "boolean") {
                 settings.headers["Content-Type"] = "application/json";
             }
 
@@ -73,7 +73,9 @@
                 try {
                     xhr.open(settings.type, url, true);
                     Object.keys(settings.headers).forEach(function (key) {
-                        xhr.setRequestHeader(key, settings.headers[key]);
+                        if (settings.headers[key] !== false) {
+                            xhr.setRequestHeader(key, settings.headers[key]);
+                        }
                     });
 
                     xhr.send(settings.data);

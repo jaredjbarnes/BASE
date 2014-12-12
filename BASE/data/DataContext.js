@@ -55,89 +55,103 @@
         var addedBucket = new MultiKeyMap();
         var updatedBucket = new MultiKeyMap();
         var removedBucket = new MultiKeyMap();
+        var transactionId = 0;
 
-        var removeEntityFromBuckets = function (entity) {
+        var removeEntityFromChangeTrackerBuckets = function (entity) {
             addedBucket.remove(entity.constructor, entity);
             updatedBucket.remove(entity.constructor, entity);
             removedBucket.remove(entity.constructor, entity);
-            loadedBucket.remove(entity.constructor, getUniqueValue(entity));
+        };
+
+        var saveEntityDependencies = function (entity) {
+            var task = new Task();
+
+            var oneToOne = edm.getOneToOneAsTargetRelationships(entity);
+            var oneToMany = edm.getOneToManyAsTargetRelationships(entity);
+            var dependencies = oneToOne.concat(oneToMany);
+
+            dependencies.forEach(function (relationship) {
+                var property = relationship.withOne;
+                var source = entity[property];
+                if (source) {
+                    task.add(saveEntity(source));
+                }
+            });
+
+            return task.toFuture();
         };
 
         var saveEntity = function (entity) {
             return new Future(function (setValue, setError) {
-                var task = new Task();
+                var changeTracker = changeTrackersHash.get(entity);
 
-                var oneToOne = edm.getOneToOneAsTargetRelationships(entity);
-                var oneToMany = edm.getOneToManyAsTargetRelationships(entity);
-                var dependencies = oneToOne.concat(oneToMany);
+                if (changeTracker === null) {
+                    throw new Error("The entity supplied wasn't part of the dataContext.");
+                }
 
-                dependencies.forEach(function (relationship) {
-                    var property = relationship.withOne;
-                    var source = entity[property];
-                    if (source) {
-                        task.add(self.saveEntity(source));
-                    }
-                });
-
-                task.start().whenAll(function (futures) {
-                    changeTrackersHash.get(entity).save().then(setValue).ifError(setError);
+                saveEntityDependencies(entity).then(function () {
+                    changeTracker.save(service).then(setValue).ifError(setError);
                 });
 
             }).then();
         };
 
         var createSourcesOneToOneProvider = function (entity, relationship) {
-            entity.registerProvider(relationship.hasOne, function (entity, property) {
-                return new Future(function (setValue, setError) {
-                    service.getSourcesOneToOneTargetEntity(entity, relationship).then(function (target) {
-                        if (target !== null) {
-                            var loadedTarget = loadEntity(relationship.ofType, target);
-                            entity[property] = loadedTarget;
-                            setValue(loadedTarget);
-                        } else {
-                            setValue(target);
-                        }
+            if (typeof relationship.hasOne !== "undefined") {
+                entity.registerProvider(relationship.hasOne, function (entity, property) {
+                    return new Future(function (setValue, setError) {
+                        service.getSourcesOneToOneTargetEntity(entity, relationship).then(function (target) {
+                            if (target !== null) {
+                                var loadedTarget = loadEntity(relationship.ofType, target);
+                                setValue(loadedTarget);
+                            } else {
+                                setValue(target);
+                            }
 
+                        });
                     });
                 });
-            });
+            }
 
         };
 
         var createTargetsOneToOneProvider = function (entity, relationship) {
-            entity.registerProvider(relationship.withOne, function (entity, property) {
-                return new Future(function (setValue, setError) {
-                    service.getTargetsOneToOneSourceEntity(entity, relationship).then(function (source) {
-                        if (source !== null) {
-                            var loadedSource = loadEntity(relationship.type, source);
-                            entity[property] = loadedSource;
-                            setValue(loadedSource);
-                        } else {
-                            setValue(source);
-                        }
+            if (typeof relationship.withOne !== "undefined") {
+                entity.registerProvider(relationship.withOne, function (entity, property) {
+                    return new Future(function (setValue, setError) {
+                        service.getTargetsOneToOneSourceEntity(entity, relationship).then(function (source) {
+                            if (source !== null) {
+                                var loadedSource = loadEntity(relationship.type, source);
+                                setValue(loadedSource);
+                            } else {
+                                setValue(source);
+                            }
 
+                        });
                     });
                 });
-            });
+            }
         };
 
         var createTargetsOneToManyProvider = function (entity, relationship) {
-            entity.registerProvider(relationship.withOne, function (entity, property) {
-                return new Future(function (setValue, setError) {
-                    service.getTargetsOneToManySourceEntity(entity, relationship).then(function (source) {
-                        if (source !== null) {
-                            var loadedSource = loadEntity(relationship.type, source);
-                            entity[property] = loadedSource;
-                            setValue(loadedSource);
-                        } else {
-                            setValue(source);
-                        }
+            if (typeof relationship.withOne !== "undefined") {
+                entity.registerProvider(relationship.withOne, function (entity, property) {
+                    return new Future(function (setValue, setError) {
+                        service.getTargetsOneToManySourceEntity(entity, relationship).then(function (source) {
+                            if (source !== null) {
+                                var loadedSource = loadEntity(relationship.type, source);
+                                setValue(loadedSource);
+                            } else {
+                                setValue(source);
+                            }
+                        });
                     });
                 });
-            });
+            }
         };
 
         var createOneToManyProvider = function (entity, fillArray, relationship) {
+
             var provider = new Provider();
             provider.toArray = provider.execute = function (queryable) {
 
@@ -256,9 +270,12 @@
 
             oneToManyRelationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
-                var provider = createOneToManyProvider(entity, entity[property], relationship);
+                if (typeof property !== "undefined") {
 
-                entity[property].getProvider = function () { return provider; };
+                    var provider = createOneToManyProvider(entity, entity[property], relationship);
+
+                    entity[property].getProvider = function () { return provider; };
+                }
             });
 
             oneToManyAsTargetsRelationships.forEach(function (relationship) {
@@ -272,16 +289,72 @@
 
             sourceRelationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
-                var provider = createManyToManyProvider(entity, entity[property], relationship);
+                if (typeof property !== "undefined") {
+                    var provider = createManyToManyProvider(entity, entity[property], relationship);
 
-                entity[property].getProvider = function () { return provider; };
+                    entity[property].getProvider = function () { return provider; };
+                }
             });
 
             targetRelationships.forEach(function (relationship) {
                 var property = relationship.withMany;
-                var provider = createManyToManyAsTargetProvider(entity, entity[property], relationship);
+                if (typeof property !== "undefined") {
+                    var provider = createManyToManyAsTargetProvider(entity, entity[property], relationship);
 
-                entity[property].getProvider = function () { return provider; };
+                    entity[property].getProvider = function () { return provider; };
+                }
+            });
+        };
+
+        var removeOneToOneProviders = function (entity) {
+            var oneToOneRelationships = edm.getOneToOneRelationships(entity);
+            var oneToOneAsTargetsRelationships = edm.getOneToOneAsTargetRelationships(entity);
+
+            oneToOneRelationships.forEach(function (relationship) {
+                entity[relationship.hasOne] = null;
+            });
+
+            oneToOneAsTargetsRelationships.forEach(function (relationship) {
+                entity[relationship.withForeignKey] = null;
+                entity[relationship.withOne] = null;
+            });
+        };
+
+        var removeOneToManyProviders = function (entity) {
+            var oneToManyRelationships = edm.getOneToManyRelationships(entity);
+            var oneToManyAsTargetsRelationships = edm.getOneToManyAsTargetRelationships(entity);
+
+            oneToManyRelationships.forEach(function (relationship) {
+                var array = entity[relationship.hasMany];
+                while (array.length > 0) {
+                    array.pop();
+                }
+            });
+
+            // TODO: set to Array Providers;
+            oneToManyAsTargetsRelationships.forEach(function (relationship) {
+                entity[relationship.withForeignKey] = null;
+                entity[relationship.withOne] = null;
+            });
+        };
+
+        var removeManyToManyProviders = function (entity) {
+            // TODO: set to Array Providers;
+            var sourceRelationships = edm.getManyToManyRelationships(entity);
+            var targetRelationships = edm.getManyToManyAsTargetRelationships(entity);
+
+            sourceRelationships.forEach(function (relationship) {
+                var array = entity[relationship.hasMany];
+                while (array.length > 0) {
+                    array.pop();
+                }
+            });
+
+            targetRelationships.forEach(function (relationship) {
+                var array = entity[relationship.withMany];
+                while (array.length > 0) {
+                    array.pop();
+                }
             });
         };
 
@@ -297,10 +370,110 @@
             return JSON.stringify(uniqueKey);
         };
 
+        var hasAllPrimaryKeys = function (entity) {
+            var properties = edm.getPrimaryKeyProperties(entity.constructor);
+
+            return properties.every(function (key) {
+                return entity[key] !== null;
+            });
+        };
+
         var setUpEntity = function (entity) {
             addOneToOneProviders(entity);
             addOneToManyProviders(entity);
             addManyToManyProviders(entity);
+        };
+
+        var tearDownEntity = function (entity) {
+            removeOneToOneProviders(entity);
+            removeOneToManyProviders(entity);
+            removeManyToManyProviders(entity);
+        };
+
+        var actOnLoadedEntitiesByType = function (Type, action) {
+            var entityHash = loadedBucket.get(Type);
+            if (entityHash !== null) {
+                entityHash.getValues().reduce(function (hash, entity) {
+                    action(entity);
+                }, {});
+            }
+        };
+
+        var getLoadedEntitiesByTypeAndKey = function (Type, key) {
+            var hash = {};
+            actOnLoadedEntitiesByType(Type, function (entity) {
+                if (!hash[entity[key]]) {
+                    hash[entity[key]] = [];
+                }
+
+                hash[entity[key]].push(entity);
+            });
+            return hash;
+        };
+
+        var connectRelationships = function (Type, entities) {
+            var entity = new Type();
+
+            var oneToOneRelationships = edm.getOneToOneRelationships(entity);
+            var oneToOneRelationshipsAsTargets = edm.getOneToOneAsTargetRelationships(entity);
+
+            var oneToManyRelationships = edm.getOneToManyRelationships(entity);
+            var oneToManyRelationshipsAsTargets = edm.getOneToManyAsTargetRelationships(entity);
+
+
+            oneToOneRelationships.forEach(function (relationship) {
+                var TargetType = relationship.ofType;
+                var targetsHashByKey = getLoadedEntitiesByTypeAndKey(TargetType, relationship.withForeignKey);
+
+                entities.forEach(function (entity) {
+                    var targets = targetsHashByKey[entity[relationship.hasKey]];
+                    if (targets && targets[0]) {
+                        entity[relationship.hasOne] = targets[0];
+                    }
+                });
+
+            });
+
+            oneToOneRelationshipsAsTargets.forEach(function (relationship) {
+                var SourceType = relationship.type;
+                var sourcesHashByKey = getLoadedEntitiesByTypeAndKey(SourceType, relationship.hasKey);
+
+                entities.forEach(function (entity) {
+                    var sources = sourcesHashByKey[entity[relationship.withForeignKey]];
+                    if (Array.isArray(sources)) {
+                        entity[relationship.withOne] = sources[0];
+                    }
+                });
+            });
+
+            oneToManyRelationships.forEach(function (relationship) {
+                var TargetType = relationship.ofType;
+                var targetsHashByKey = getLoadedEntitiesByTypeAndKey(TargetType, relationship.withForeignKey);
+
+                entities.forEach(function (entity) {
+                    var targets = targetsHashByKey[entity[relationship.hasKey]];
+                    if (Array.isArray(targets)) {
+                        targets.forEach(function (target) {
+                            if (entity[relationship.hasMany].indexOf(target) < 0) {
+                                entity[relationship.hasMany].add(target);
+                            }
+                        });
+                    }
+                });
+            });
+
+            oneToManyRelationshipsAsTargets.forEach(function (relationship) {
+                var SourceType = relationship.type;
+                var sourcesHashByKey = getLoadedEntitiesByTypeAndKey(SourceType, relationship.hasKey);
+
+                entities.forEach(function (entity) {
+                    var sources = sourcesHashByKey[entity[relationship.withForeignKey]];
+                    if (Array.isArray(sources)) {
+                        entity[relationship.withOne] = sources[0];
+                    }
+                });
+            });
+
         };
 
         var loadEntity = function (Type, dto) {
@@ -333,7 +506,17 @@
                 entities.push(loadEntity(Type, dto));
             });
 
+            connectRelationships(Type, entities);
+
             return entities;
+        };
+
+        var getTransactionService = function (name) {
+            var transactionService = null;
+            if (typeof service.getTransactionService === "function") {
+                transactionService = service.getTransactionService(name);
+            }
+            return transactionService;
         };
 
         self.loadEntity = function (entity) {
@@ -357,60 +540,111 @@
             }
         };
 
-        self.saveEntity = function (entity) {
-            var changeTracker = changeTrackersHash.get(entity);
+        self.saveEntity = saveEntity;
 
-            if (changeTracker === null) {
-                throw new Error("The entity supplied wasn't part of the dataContext.");
+        self.saveChanges = function (name) {
+            var mappingTypes = edm.getMappingTypes();
+            var added = flattenMultiKeyMap(addedBucket);
+            var updated = flattenMultiKeyMap(updatedBucket);
+            var removed = flattenMultiKeyMap(removedBucket);
+
+            var entitiesToSave = added.concat(updated).concat(removed).sort(function (a, b) {
+                return a.timestamp - b.timestamp;
+            }).map(function (item) {
+                return item.entity;
+            });
+
+            var transactionService = getTransactionService(name);
+
+            if (typeof name === "string" && transactionService === null) {
+                throw new Error("Cannot find service for transaction.");
             }
 
-            return saveEntity(entity);
-        };
+            if (transactionService === null) {
 
-        self.saveChanges = function () {
-            return new Future(function (setValue, setError) {
-                var task = new Task();
-
-                var mappingEntities = [];
-                var mappingTypes = edm.getMappingTypes();
-
-                var forEachEntity = function (entity) {
-                    if (mappingTypes.hasKey(entity.constructor)) {
-                        mappingEntities.push(entity);
-                    } else {
-                        task.add(saveEntity(entity));
-                    }
-                };
-
-                // Remove needs to go first just in case a relationship was reassigned.
-                // so we need to remove the old relationship by removing the entity.
-                var added = flattenMultiKeyMap(addedBucket);
-                var updated = flattenMultiKeyMap(updatedBucket);
-                var removed = flattenMultiKeyMap(removedBucket);
-
-                added.concat(updated).concat(removed).sort(function (a, b) {
-                    return a.timestamp - b.timestamp;
-                }).map(function (item) {
-                    return item.entity;
-                }).forEach(forEachEntity);
-
-                task.start().whenAll(function () {
-
+                return new Future(function (setValue, setError) {
                     var task = new Task();
+                    var mappingEntities = [];
 
-                    mappingEntities.forEach(function (entity) {
-                        if (entity.relationship) {
-                            entity[entity.relationship.withForeignKey] = entity.source[entity.relationship.hasKey];
-                            entity[entity.relationship.hasForeignKey] = entity.target[entity.relationship.withKey];
+                    var forEachEntity = function (entity) {
+                        if (mappingTypes.hasKey(entity.constructor)) {
+                            mappingEntities.push(entity);
+                        } else {
+                            task.add(saveEntityDependencies(entity));
                         }
+                    };
+
+                    entitiesToSave.forEach(forEachEntity);
+
+                    task.start().whenAll(function () {
+                        var task = new Task();
+
+                        entitiesToSave.forEach(function (entity) {
+                            var changeTracker = changeTrackersHash.get(entity);
+                            task.add(changeTracker.save(service));
+                        });
+
+                        task.start().whenAll(function () {
+
+                            var task = new Task();
+
+                            mappingEntities.forEach(function (entity) {
+                                if (entity.relationship) {
+                                    entity[entity.relationship.withForeignKey] = entity.source[entity.relationship.hasKey];
+                                    entity[entity.relationship.hasForeignKey] = entity.target[entity.relationship.withKey];
+                                }
+                                task.add(saveEntity(entity));
+                            });
+
+                            task.start().whenAll(setValue);
+
+                        });
+                    });
+
+
+
+                }).then();
+            } else {
+                return new Future(function (setValue, setError) {
+                    var task = new Task();
+                    var mappingEntities = [];
+
+                    var forEachEntity = function (entity) {
+                        if (mappingTypes.hasKey(entity.constructor)) {
+                            mappingEntities.push(entity);
+                        } else {
+                            var changeTracker = changeTrackersHash.get(entity);
+                            task.add(changeTracker.save(transactionService));
+                        }
+                    };
+
+                    transactionId++;
+                    transactionService.startTransaction(transactionId);
+
+                    entitiesToSave.forEach(forEachEntity);
+                    mappingEntities.forEach(function (entity) {
                         task.add(saveEntity(entity));
                     });
 
+                    transactionService.endTransaction(transactionId);
                     task.start().whenAll(setValue);
-
                 });
+            }
+        };
 
-            }).then();
+        self.revert = function () {
+            var added = flattenMultiKeyMap(addedBucket);
+            var updated = flattenMultiKeyMap(updatedBucket);
+            var removed = flattenMultiKeyMap(removedBucket);
+
+            var entitiesToRevert = added.concat(updated).concat(removed).map(function (item) {
+                return item.entity;
+            }).forEach(function (entity) {
+                var changeTracker = changeTrackersHash.get(entity);
+                if (changeTracker) {
+                    changeTracker.revert();
+                }
+            });
         };
 
         self.asQueryable = function (Type) {
@@ -456,10 +690,19 @@
 
         // Add DataSets
         edm.getModels().getValues().forEach(function (model) {
-            self[model.collectionName] = new DataSet(model.type, self);
+            if (model.collectionName) {
+                self[model.collectionName] = new DataSet(model.type, self);
+            }
         });
 
         var setUpChangeTracker = function (entity) {
+
+            if (typeof entity.__dataContext__ !== "undefined" && entity.__dataContext__ !== self) {
+                console.log(entity);
+                throw new Error("Entity cannot be part of two contexts.");
+            }
+
+            entity.__dataContext__ = self;
 
             // As requested by Ben
             entity.save = function () {
@@ -471,13 +714,14 @@
             var changeTracker = new ChangeTracker(entity, service);
 
             changeTracker.observeType("detached", function () {
-                removeEntityFromBuckets(entity);
+                removeEntityFromChangeTrackerBuckets(entity);
+                loadedBucket.remove(entity.constructor, getUniqueValue(entity));
                 changeTrackersHash.remove(entity);
-                //TODO: Set the entities to use the Array Provider again.
+                tearDownEntity(entity);
             });
 
             changeTracker.observeType("added", function () {
-                removeEntityFromBuckets(entity);
+                removeEntityFromChangeTrackerBuckets(entity);
                 addedBucket.add(entity.constructor, entity, {
                     entity: entity,
                     timestamp: new Date().getTime()
@@ -485,7 +729,7 @@
             });
 
             changeTracker.observeType("updated", function () {
-                removeEntityFromBuckets(entity);
+                removeEntityFromChangeTrackerBuckets(entity);
                 updatedBucket.add(entity.constructor, entity, {
                     entity: entity,
                     timestamp: new Date().getTime()
@@ -493,7 +737,7 @@
             });
 
             changeTracker.observeType("removed", function () {
-                removeEntityFromBuckets(entity);
+                removeEntityFromChangeTrackerBuckets(entity);
                 removedBucket.add(entity.constructor, entity, {
                     entity: entity,
                     timestamp: new Date().getTime()
@@ -501,7 +745,7 @@
             });
 
             changeTracker.observeType("loaded", function () {
-                removeEntityFromBuckets(entity);
+                removeEntityFromChangeTrackerBuckets(entity);
 
                 // We want to use the entity's key as the key for the hash, so we can sync.
                 loadedBucket.add(entity.constructor, getUniqueValue(entity), entity);
@@ -516,9 +760,8 @@
             Entity.apply(entity);
 
             var changeTracker = setUpChangeTracker(entity);
-            var id = getUniqueValue(entity);
 
-            if (loadedBucket.hasKey(entity.constructor, id)) {
+            if (hasAllPrimaryKeys(entity)) {
                 changeTracker.setStateToLoaded();
             } else {
                 changeTracker.add();

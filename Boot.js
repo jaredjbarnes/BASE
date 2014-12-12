@@ -1,9 +1,13 @@
 ﻿(function () {
-    
+
     var global = (function () { return this; }());
-    
+
     var emptyFn = function () { };
-    
+
+    var isIE8 = function () {
+        return document.all && !document.addEventListener;
+    };
+
     if (!Object.hasOwnProperty("keys")) {
         Object.keys = function (object) {
             var name;
@@ -13,17 +17,17 @@
                     result.push(name);
                 }
             }
-            
+
             return result;
         };
     }
-    
+
     if (!Array.hasOwnProperty("isArray")) {
         Array.isArray = function (value) {
             return Object.prototype.toString.call(value) === "[object Array]";
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("every")) {
         Array.prototype.every = function (fn, thisp) {
             var i;
@@ -36,7 +40,7 @@
             return true;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("some")) {
         Array.prototype.some = function (fn, thisp) {
             var i;
@@ -49,14 +53,14 @@
             return false;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("filter")) {
         Array.prototype.filter = function (fn, thisp) {
             var i;
             var length = this.length;
             var result = [];
             var value;
-            
+
             for (i = 0; i < length; i += 1) {
                 if (this.hasOwnProperty(i)) {
                     value = this[i];
@@ -68,12 +72,12 @@
             return result;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("indexOf")) {
         Array.prototype.indexOf = function (searchElement, fromIndex) {
             var i = fromIndex || 0;
             var length = this.length;
-            
+
             while (i < length) {
                 if (this.hasOwnProperty(i) && this[i] === searchElement) {
                     return i;
@@ -83,14 +87,14 @@
             return -1;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("lastIndexOf")) {
         Array.prototype.lastIndexOf = function (searchElement, fromIndex) {
             var i = fromIndex;
             if (typeof i !== "number") {
                 i = length - 1;
             }
-            
+
             while (i >= 0) {
                 if (this.hasOwnProperty(i) && this[i] === searchElement) {
                     return i;
@@ -100,58 +104,58 @@
             return -1;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("map")) {
         Array.prototype.map = function (fn, thisp) {
             var i;
             var length = this.length;
             var result = [];
-            
+
             for (i = 0; i < length; i += 1) {
                 if (this.hasOwnProperty(i)) {
                     result[i] = fn.call(thisp, this[i], i, this);
                 }
             }
-            
+
             return result;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("reduceRight")) {
         Array.prototype.reduceRight = function (fn, initialValue) {
             var i = this.length - 1;
-            
+
             while (i >= 0) {
                 if (this.hasOwnProperty(i)) {
                     initialValue = fn.call(undefined, initialValue, this[i], i, this);
                 }
                 i -= 1
             }
-            
+
             return initialValue;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("reduce")) {
         Array.prototype.reduce = function (fn, initialValue) {
             var i;
             var length = this.length;
-            
+
             for (i = 0; i < length; i += 1) {
                 if (this.hasOwnProperty(i)) {
                     initialValue = fn.call(undefined, initialValue, this[i], i, this);
                 }
             }
-            
+
             return initialValue;
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("indexOf")) {
         Array.prototype.indexOf = function (searchElement, fromIndex) {
             var i = fromIndex || 0;
             var length = this.length;
-            
+
             while (i < length) {
                 if (this.hasOwnProperty(i) && this[i] === searchElement) {
                     return i;
@@ -161,7 +165,7 @@
             return -1;
         };
     }
-    
+
     if (!Array.prototype.except) {
         Array.prototype.except = function (array) {
             array = Array.isArray(array) ? array : [];
@@ -170,12 +174,12 @@
             });
         };
     }
-    
+
     if (!Array.prototype.hasOwnProperty("forEach")) {
         Array.prototype.forEach = function (fn, thisp) {
             var i;
             var length = this.length;
-            
+
             for (i = 0; i < length; i += 1) {
                 if (this.hasOwnProperty(i)) {
                     fn.call(thisp, this[i], i, this);
@@ -183,6 +187,7 @@
             }
         };
     }
+
 
     var head = document.getElementsByTagName('head')[0];
 
@@ -194,7 +199,7 @@
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function (event) {
             if (xhr.readyState == 4) {
-                if (xhr.status < 300 && xhr.status >= 200) {
+                if (xhr.status == 0 || (xhr.status < 300 && xhr.status >= 200)) {
                     try {
                         var data = JSON.parse(xhr.responseText);
                     } catch (e) {
@@ -228,7 +233,13 @@
     };
 
     var makeArray = function (arrayLike) {
-        return Array.prototype.slice.call(arrayLike, 0);
+        var array = [];
+
+        for (var x = 0 ; x < arrayLike.length; x++) {
+            array.push(arrayLike[x]);
+        }
+
+        return array;
     };
 
     var concatPaths = function () {
@@ -295,15 +306,31 @@
     };
 
     var prependCss = function (url, callback) {
+        callback = callback || function () { };
+
         var link = document.createElement('link');
         link.type = 'text/css';
         link.rel = 'stylesheet';
         link.href = url;
 
-        link.onerror = function () {
-            throw new Error("Couldn't find css at url: " + url);
-        };
-        link.onload = callback;
+        // This is as ugly as IE 8 is.
+        // We hate... I mean hate IE 8.
+        if (isIE8()) {
+
+            link.onreadystatechange = function () {
+                if (link.readyState == 'complete') {
+                    callback();
+                }
+            };
+
+        } else {
+
+            link.onerror = function () {
+                throw new Error("Couldn't find css at url: " + url);
+            };
+            link.onload = callback;
+
+        }
 
         if (head.children.length > 0) {
             head.insertBefore(link, head.firstChild);
@@ -320,7 +347,6 @@
         var baseUrl = concatPaths(root, "/js/BASE.js");
 
         prependCss(concatPaths(rootCss, "bootstrap.css"));
-        prependCss(concatPaths(rootCss, "reset-min.css"));
 
         var script = document.createElement("script");
         script.type = "components/config";
@@ -371,7 +397,7 @@
 
             BASE.require.loader.setRoot(rootJs);
             BASE.require.loader.setNamespace("components", rootComponents);
-            BASE.require(["BASE.web.components", "BASE.web.smoothScrollingHelper", "FastClick", "jQuery"], function () {
+            BASE.require(["BASE.web.components", "FastClick", "jQuery"], function () {
                 $(function () {
                     FastClick.attach(document.body);
                 });

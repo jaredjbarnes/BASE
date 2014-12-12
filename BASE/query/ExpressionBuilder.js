@@ -38,6 +38,10 @@
             return setExpression(Expression.substringOf(Expression.property(propertyName), Expression.string(value)));
         }
 
+        self.isIn = function (array) {
+            return setExpression(Expression.isIn(Expression.property(propertyName), Expression.array(array)));
+        };
+
         self.isSubstringOf = function (value) {
             console.warn("isSubstringOf is deprecated, please us contains.");
             return setExpression(Expression.substringOf(Expression.property(propertyName), Expression.string(value)));

@@ -10,7 +10,8 @@
     "BASE.data.responses.UpdatedResponse",
     "BASE.data.responses.RemovedResponse",
     "BASE.data.responses.ErrorResponse",
-    "Date.prototype.format"
+    "Date.prototype.format",
+    "BASE.data.utils"
 ], function () {
 
     var createGuid = BASE.util.Guid.create;
@@ -25,6 +26,7 @@
     var UpdatedResponse = BASE.data.responses.UpdatedResponse;
     var RemovedResponse = BASE.data.responses.RemovedResponse;
     var ErrorResponse = BASE.data.responses.ErrorResponse;
+    var flattenEntity = BASE.data.utils.flattenEntity;
 
     var sqlizePrimitive = function (value) {
 
@@ -33,7 +35,7 @@
         } else if (typeof value === "number") {
             return value.toString();
         } else if (typeof value === "boolean") {
-            return value;
+            return value ? 1 : 0;
         } else if (value instanceof Date) {
             return value.getTime();
         } else if (value === null) {
@@ -126,7 +128,11 @@
                             indexes.add(key, key);
 
                             if (primaryKeys.length === 1) {
-                                primaryKey = " PRIMARY KEY AUTOINCREMENT";
+                                primaryKey = " PRIMARY KEY";
+                            }
+
+                            if (property.autoIncrement) {
+                                primaryKey += " AUTOINCREMENT";
                             }
                         }
                         columns.push(key + " " + sqlType + primaryKey);
@@ -176,14 +182,15 @@
         };
 
         self.createInsertStatement = function (entity) {
-            var model = edm.getModelByType(entity.constructor);
+            var Type = entity.constructor
+            var model = edm.getModelByType(Type);
             var columns = [];
             var values = [];
             var properties = model.properties;
 
             filterReleventProperties(properties).forEach(function (key) {
                 var defaultValue = getDefaultValue(model, key);
-                if (properties[key].primaryKeyRelationships.length === 0) {
+                if (typeof entity[key] !== "undefined" && entity[key] !== null) {
                     columns.push(key);
                     if (entity[key] === null) {
                         values.push(sqlizePrimitive(defaultValue));
@@ -193,10 +200,19 @@
                 }
             });
 
-            return {
-                statement: "INSERT INTO " + model.collectionName + " (" + columns.join(", ") + ") VALUES (" + values.map(function () { return "?"; }).join(", ") + ")",
-                values: values
-            };
+            if (values.length === 0) {
+                return {
+                    statement: "INSERT INTO " + model.collectionName + " DEFAULT VALUES",
+                    values: values
+                };
+            } else {
+                return {
+                    statement: "INSERT INTO " + model.collectionName + " (" + columns.join(", ") + ") VALUES (" + values.map(function () { return "?"; }).join(", ") + ")",
+                    values: values
+                };
+            }
+
+
         };
 
         self.createUpdateStatement = function (entity, updates) {
@@ -355,13 +371,7 @@
 
                 execute(addSql.statement, addSql.values).then(function (results) {
                     var id = results.insertId;
-                    var newEntity = {};
-
-                    Object.keys(entity).forEach(function (key) {
-                        if (typeof entity[key] !== "object" && typeof entity[key] !== "function") {
-                            newEntity[key] = entity[key];
-                        }
-                    });
+                    var newEntity = flattenEntity(entity, true);
 
                     // This could be problematic, because many to many entities often times use the two
                     // Foreign keys as their primary key.
@@ -406,6 +416,17 @@
                 }).ifError(function (error) {
                     // TODO: Better error messages.
                     setError(new ErrorResponse("Failed to updated entity."));
+                });
+            }).then();
+        };
+
+        self.drop = function () {
+            return new Future(function (setValue, setError) {
+                var sql = "DROP TABLE '" + tableName + "'";
+                execute(sql).then(function () {
+                    setValue();
+                }).ifError(function (error) {
+                    setError(new ErrorResponse("Failed to drop table: " + tableName));
                 });
             }).then();
         };
@@ -460,10 +481,10 @@
                             Object.keys(dto).forEach(function (key) {
                                 var Type = properties[key].type;
 
-                                if ((Type === Date || Type === DateTimeOffset)&& dto[key] !== null ) {
+                                if ((Type === Date || Type === DateTimeOffset) && dto[key] !== null) {
                                     entity[key] = new Date(dto[key]);
                                 } else if (Type === Boolean) {
-                                    entity[key] = dto[key] === "true" ? true : false;
+                                    entity[key] = dto[key] ? true : false;
                                 } else {
                                     entity[key] = dto[key];
                                 }
@@ -493,7 +514,7 @@
 
 
         self.dispose = function () {
-
+            return Future.fromResult();
         };
 
         self.onReady = function (callback) {

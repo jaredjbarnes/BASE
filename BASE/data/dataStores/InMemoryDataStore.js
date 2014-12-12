@@ -6,7 +6,8 @@
     "BASE.data.responses.AddedResponse",
     "BASE.data.responses.UpdatedResponse",
     "BASE.data.responses.RemovedResponse",
-    "BASE.data.responses.ErrorResponse"
+    "BASE.data.responses.ErrorResponse",
+    "BASE.data.utils"
 ], function () {
     
     var createGuid = BASE.util.Guid.create;

@@ -198,6 +198,9 @@
     };
 
     var namespace = function (namespace) {
+        if (typeof namespace !== "string") {
+            throw new Error("BASE.namespace: this function only accepts strings.");
+        }
         var obj = namespace;
         var a = obj.split('.');
         var length = a.length;
@@ -258,16 +261,29 @@
     };
 
     var clone = function (object, deep) {
-        var obj = {};
-        var proto = object;
-        for (var x in proto) {
-            if (typeof proto[x] === 'object' && proto[x] !== null && deep) {
-                obj[x] = clone(proto[x], deep);
-            } else {
-                obj[x] = proto[x];
+        var clonedObject;
+
+        if (Array.isArray(object)) {
+            clonedObject = [];
+            object.forEach(function (item) {
+                if (typeof item === "object" && item !== null && deep) {
+                    clonedObject.push(clone(item, deep));
+                } else {
+                    clonedObject.push(item);
+                }
+            });
+        } else {
+            clonedObject = {};
+            for (var x in object) {
+                if (typeof object[x] === 'object' && object[x] !== null && deep) {
+                    clonedObject[x] = clone(object[x], deep);
+                } else {
+                    clonedObject[x] = object[x];
+                }
             }
         }
-        return obj;
+
+        return clonedObject;
     };
 
     var extend = function (SubClass, SuperClass) {
@@ -357,15 +373,7 @@
 
                     var value = self._map(e);
 
-                    try {
-                        self._onEach(value);
-                    } catch (error) {
-                        if (self._onError === emptyFn) {
-                            throw (error);
-                        } else {
-                            self._onError(error);
-                        }
-                    }
+                    self._onEach(value);
 
                     self._observers.slice(0).forEach(function (observer) {
                         observer.notify(value);
@@ -924,6 +932,12 @@
                 return self;
             };
 
+            self.toFuture = function () {
+                return new Future(function (setValue) {
+                    self.start().whenAll(setValue);
+                });
+            };
+
             var fireComplete = function () {
                 _state = _finishedState;
 
@@ -1314,6 +1328,7 @@
     BASE.async.Future = Future;
     BASE.async.Task = Task;
     BASE.util.Observable = Observable;
+    BASE.util.LiteObservable = CheapObservable;
     BASE.util.Observer = Observer;
 
     BASE.extend = extend;

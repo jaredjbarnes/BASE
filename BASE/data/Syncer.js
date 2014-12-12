@@ -24,6 +24,7 @@
     var makePrimaryKeyString = BASE.data.utils.makePrimaryKeyString;
     var Future = BASE.async.Future;
     var Hashmap = BASE.collections.Hashmap;
+    var MultiKeyMap = BASE.collections.MultiKeyMap;
     var Mutator = BASE.data.sync.Mutator;
     var flattenEntity = BASE.data.utils.flattenEntity;
     var isPrimitive = BASE.data.utils.isPrimitive;
@@ -36,7 +37,7 @@
 
     var modifiedDateQueryable = function (e) { return e.property("modifiedDate"); };
 
-    BASE.data.Syncer = function (serviceToWatch, serviceToActOn, remoteService) {
+    BASE.data.Syncer = function (serviceToWatch, serviceToActOn, remoteService, syncDatabaseName) {
         var self = this;
 
         BASE.assertNotGlobal(self);
@@ -57,7 +58,8 @@
         var mutator;
         var disabledTypes = new Hashmap();
         var remoteSyncFilterByType = new Hashmap();
-        var remoteSyncTriggersByType = new Hashmap();
+        var remoteSyncTriggersByType = new MultiKeyMap();
+        var sqliteDatabase = null;
 
         var saveEntitiesToLocal = function (entities, callback) {
             var syncDataContext = new DataContext(service);
@@ -68,7 +70,11 @@
                 var entity = entities.pop();
                 var Type = entity.constructor;
                 var keys = remoteEdm.getPrimaryKeyProperties(Type);
-                var tableName = remoteEdm.getModelByType(Type).collectionName;
+                var model = remoteEdm.getModelByType(Type);
+                var tableName = model.collectionName;
+                var properties = model.properties;
+
+                self.notify({ type: "status", remaining: entities.length, tableName: tableName });
 
                 var startInsertTime = new Date().getTime();
 
@@ -86,8 +92,11 @@
                         var localEntity = flattenEntity(entity);
 
                         if (!mappingTypes.hasKey(Type)) {
-                            primaryKeys.forEach(function (key) {
-                                localEntity[key.fieldName] = undefined;
+                            keys.forEach(function (key) {
+                                var property = properties[key];
+                                if (!property.foreignKeyRelationship || (property.foreignKeyRelationship && property.foreignKeyRelationship.hasKey !== property.foreignKeyRelationship.withForeignKey)) {
+                                    localEntity[key] = undefined;
+                                }
                             });
                         }
 
@@ -213,9 +222,16 @@
 
                                 dependenciesTask.start().whenAll(function () {
                                     var createdDateQueryable = remoteService.asQueryable(Type).where(function (e) {
-                                        return e.and(
-                                    e.property("createdDate").isGreaterThanOrEqualTo(syncDatum.startDate),
-                                    e.property("createdDate").isLessThan(syncDatum.endDate));
+                                        var args = [];
+                                        args.push(e.property("createdDate").isGreaterThanOrEqualTo(syncDatum.startDate));
+                                        if (syncDatum.startDate !== defaultLastSyncDate) {
+                                            args.push(e.property("createdDate").isLessThan(syncDatum.endDate));
+                                        }
+                                        var type = new Type();
+                                        if (type.hasOwnProperty("endDate")) {
+                                            args.push(e.property("endDate").isEqualTo(null));
+                                        }
+                                        return e.and.apply(e, args);
                                     });
 
 
@@ -228,6 +244,7 @@
                                     createdDateQueryable.toArray(function (addedEntities) {
 
                                         //console.log("TableName adding: " + model.collectionName + " (" + (new Date().getTime() - getDataStart) + ")");
+                                        self.notify({ type: "addingTable", table: model.collectionName });
 
                                         saveEntitiesToLocal(addedEntities, function () {
                                             // This looks for modified entities on the remote service.
@@ -248,6 +265,7 @@
                                             var getDataStart = new Date().getTime();
                                             lastModifiedQueryable.toArray(function (updatedEntities) {
                                                 //console.log("TableName updating: " + model.collectionName + " (" + (new Date().getTime() - getDataStart) + ")");
+                                                self.notify({ type: "updatingTable", table: model.collectionName });
                                                 updateEntitiesToLocal(updatedEntities, setValue);
                                             }).ifError(function (e) {
                                                 setError(e);
@@ -365,6 +383,7 @@
                     var Type = model.type;
                     var statusString = status.status;
                     var handlers = exceptionHandlers.get(Type) || {};
+                    var properties = model.properties;
 
                     if (disabledTypes.get(Type)) {
                         setValue();
@@ -377,14 +396,18 @@
                                         if (typeof data.json !== "string") {
                                             throw new Error("Expected data to add entity.");
                                         }
-
-                                        if (!mappingTypes.hasKey(Type)) {
-                                            primaryKeys.forEach(function (key) {
-                                                instance[key.fieldName] = undefined;
-                                            });
-                                        }
-
+                                        var localInstance = instance;
+                                        instance = flattenEntity(instance);
                                         mutator.toRemote(instance).then(function () {
+
+                                            if (!mappingTypes.hasKey(Type)) {
+                                                primaryKeys.forEach(function (key) {
+                                                    var property = properties[key.fieldName];
+                                                    if (!property.foreignKeyRelationship || (property.foreignKeyRelationship && property.foreignKeyRelationship.hasKey !== property.foreignKeyRelationship.withForeignKey)) {
+                                                        instance[key.fieldName] = undefined;
+                                                    }
+                                                });
+                                            }
 
                                             remoteService.add(instance).then(function (response) {
                                                 var entity = response.entity;
@@ -395,7 +418,31 @@
                                                 syncDataContext.statusData.remove(data);
                                                 syncDataContext.saveChanges().then(setValue);
 
+                                                // Update the entity saved with the servers response entity.
+                                                var keys = remoteEdm.getAllKeyProperties(Type).reduce(function (hash, current) {
+                                                    hash[current] = current;
+                                                    return hash;
+                                                }, {});
+
+                                                Object.keys(entity).forEach(function (key) {
+                                                    if (!keys[key]) {
+                                                        localInstance[key] = entity[key];
+                                                    }
+                                                });
+
+                                                localInstance.save();
+
                                             }).ifError(function (e) {
+                                                console.log(instance);
+                                                console.error(e.message);
+                                                if (e instanceof BASE.data.responses.ValidationErrorResponse) {
+                                                    // We should not keep trying to repeat the erroring request.
+                                                    // TODO: Is this the best way to handle this? I'm removing the entity from the local store
+                                                    serviceToWatch.remove(localInstance).then(function (response) {
+                                                        syncDataContext.statusData.remove(data);
+                                                        syncDataContext.saveChanges().then(setValue);
+                                                    });
+                                                }
                                                 setError(e);
                                             });
 
@@ -420,22 +467,27 @@
                             } else if (statusString === "removed") {
 
                                 var defaultRemoveHandler = function () {
-                                    mutator.toRemote(instance).then(function () {
+                                    var instance = new Type();
 
-                                        if (!mappingTypes.hasKey(Type)) {
-                                            primaryKeys.forEach(function (key) {
-                                                instance[key.fieldName] = key.remote;
-                                            });
-                                        }
+                                    if (!mappingTypes.hasKey(Type)) {
+                                        primaryKeys.forEach(function (key) {
+                                            instance[key.fieldName] = key.remote;
+                                        });
+                                    }
 
-                                        remoteService.remove(instance).then(function (response) {
+                                    remoteService.remove(instance).then(function (response) {
 
+                                        syncDataContext.statuses.remove(status);
+                                        syncDataContext.saveChanges().then(setValue);
+
+                                    }).ifError(function (e) {
+                                        // If it's already not on the remote, who cares?
+                                        if (e instanceof BASE.data.responses.EntityNotFoundErrorResponse) {
                                             syncDataContext.statuses.remove(status);
                                             syncDataContext.saveChanges().then(setValue);
-
-                                        }).ifError(function (e) {
+                                        } else {
                                             setError(e);
-                                        });
+                                        }
                                     });
                                 };
 
@@ -573,8 +625,8 @@
 
         var readyFuture = new Future(function (setValue, setError) {
 
-            var sqliteDatabase = new BASE.data.databases.Sqlite({
-                name: "sync",
+            sqliteDatabase = new BASE.data.databases.Sqlite({
+                name: syncDatabaseName || "sync",
                 edm: edm
             });
 
@@ -609,7 +661,7 @@
             remoteSyncFilterByType.add(Type, queryable);
         };
 
-        // Actions are: add, update.
+        // Actions are: added, updated.
         self.addRemoteSyncTrigger = function (Type, action, trigger) {
             remoteSyncTriggersByType.add(Type, action, trigger);
         };
@@ -650,6 +702,10 @@
 
         self.onReady = function (callback) {
             return readyFuture.then(callback);
+        };
+
+        self.hardReset = function () {
+            return sqliteDatabase.dropAll();
         };
 
         self.disableSyncByType = function (Type) {

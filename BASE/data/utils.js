@@ -21,7 +21,7 @@
 
             return false;
         },
-        flattenEntity: function (obj) {
+        flattenEntity: function (obj, keepComplexObjects) {
             var clone = new obj.constructor();
             var self = this;
 
@@ -33,9 +33,23 @@
                         clone[key] = obj[key];
                     }
                 } else {
-                    clone[key] = undefined;
+                    if (!keepComplexObjects) {
+                        clone[key] = undefined;
+                    }
                 }
             });
+
+            return clone;
+        },
+        shallowCloneEntity: function (entity) {
+            var Type = entity.constructor;
+            var clone = new Type();
+
+            for (var x in clone) {
+                if (BASE.data.utils.isPrimitive(entity[x])) {
+                    clone[x] = entity[x];
+                }
+            }
 
             return clone;
         },

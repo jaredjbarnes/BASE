@@ -4,10 +4,11 @@
 
     BASE.namespace("BASE.async");
 
-    var emptyFn = function () { };
+
 
     var Continuation = BASE.async.Continuation;
     var Future = BASE.async.Future;
+    var emptyFn = function () { };
 
     BASE.async.Sequence = function () {
         var self = this;
@@ -16,6 +17,8 @@
         var futures = [];
         var completedFutures = [];
         var observable = new BASE.util.Observable();
+
+
 
         var defaultState = {
             whenAll: function (callback) {
@@ -85,7 +88,7 @@
             },
             start: emptyFn
         };
-        
+
         var canceledState = {
             whenAll: emptyFn,
             whenAny: emptyFn,
@@ -127,25 +130,30 @@
             if (typeof callback === "function") {
                 state.whenAll(callback);
             }
+            return self;
         };
         self.whenAny = function (callback) {
             if (typeof callback === "function") {
                 state.whenAny(callback);
             }
+            return self;
         };
         self.ifCanceled = function (callback) {
             if (typeof callback === "function") {
                 state.ifCanceled(callback);
             }
+            return self;
         };
         self.onComplete = function (callback) {
             if (typeof callback === "function") {
                 state.onComplete(callback);
             }
+            return self;
         };
 
         self.start = function () {
             state.start();
+            return self;
         };
 
         add.apply(null, arguments);

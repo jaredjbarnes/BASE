@@ -50,6 +50,24 @@
         }
     };
 
+    $.fn.scopeSetter = function (name) {
+        var $this = $(this[0]);
+
+        var scope = $this.data("__scope__");
+        if (!scope) {
+            scope = {};
+            $this.data("__scope__", scope);
+        }
+
+        var value = scope[name];
+
+        if (typeof value === "undefined" && $this.parent().length > 0) {
+            return $this.parent().scopeSetter(name);
+        }
+
+        return $this.parent().controller();
+    };
+
     var Scope = function ($element) {
         this.get = function (name) {
             return $element.scope(name);
@@ -220,7 +238,7 @@
     };
 
     var handleStyles = function (url, $element) {
-        $element.find("style").remove().each(function (index) {
+        var attachStyle = function (index) {
             var $this = $(this);
             var style = $componentStyles[0];
             var exist;
@@ -240,7 +258,12 @@
                 text = createLinks(text);
                 appendStyle(text);
             }
-        });
+        };
+
+        if ($element[0].tagName.toUpperCase() === "STYLE") {
+            $element.remove().each(attachStyle);
+        }
+        $element.find("style").remove().each(attachStyle);
     };
 
     var ComponentCache = function () {
@@ -269,7 +292,6 @@
                             $this.attr("owner", guid);
                         });
 
-                        handleStyles(url, $element);
 
                         $element.children().each(function () {
                             var oldElement = this;
@@ -280,7 +302,13 @@
                         });
 
                         task.start().whenAll(function (futures) {
-                            setValue(element);
+                            handleStyles(url, $element);
+                            if (element.tagName.toUpperCase() === "STYLE") {
+                                setValue(document.createElement("STYLE"));
+                            } else {
+                                cache[url] = new Future.fromResult(element);
+                                setValue(element);
+                            }
                         });
                     });
                 });
@@ -413,15 +441,16 @@
                                 }
                             });
 
-
-
                             var scope = new Scope($element);
 
                             var instance = new Controller(element, tags, scope);
+
+
                             $element.data("controller", instance);
                             $element.data("scope", scope);
 
                             setValue(instance);
+
                         });
                     });
                 }

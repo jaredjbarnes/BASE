@@ -121,6 +121,17 @@
             return dataStores.get(Type);
         };
 
+        // WARNING: Deletes all the tables in this database
+        self.dropAll = function () {
+            return new Future(function(setValue, setError){
+                var dropTask = new Task();
+                dataStores.getKeys().forEach(function (key) {
+                    dropTask.add(dataStores.get(key).drop());
+                });
+                dropTask.start().whenAll(setValue);
+            });
+        };
+
         readyFuture.then();
     };
 

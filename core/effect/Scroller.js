@@ -981,6 +981,8 @@ BASE.require(["core.effect.Animate"], function () {
                                 if (!self.__refreshActive) {
                                     self.__startDeceleration(timeStamp);
                                 }
+                            } else {
+                                self.options.scrollingComplete();
                             }
                         } else {
                             self.options.scrollingComplete();

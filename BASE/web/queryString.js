@@ -23,7 +23,7 @@
             var keyValues = querystring.split("&");
             keyValues.forEach(function (keyValue) {
                 var split = keyValue.split("=");
-                values[split[0]] = split[1];
+                values[split[0]] = decodeURIComponent(split[1]);
             });
 
         }

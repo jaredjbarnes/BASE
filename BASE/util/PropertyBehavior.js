@@ -69,6 +69,7 @@
     
     BASE.util.PropertyBehavior = function () {
         var self = this;
+        var currentValues = {};
         
         BASE.assertNotGlobal(self);
         
@@ -98,6 +99,20 @@
             });
         });
         
+        self.loadProperty = function (name, value) {
+            var oldValue = currentValues[name];
+            
+            if (oldValue !== value) {
+                currentValues[name] = value;
+                self.notify({
+                    type: "propertyLoad",
+                    property: name,
+                    oldValue: oldValue,
+                    newValue: value
+                });
+            }
+        };
+        
         self.observeProperty = function (property, callback) {
             var observer = new Observer(function () {
                 var index = observers.indexOf(observer);
@@ -111,7 +126,7 @@
             observers.push(observer);
             return observer;
         };
-
+        
         self.observeAllProperties = function (callback) {
             var observer = new Observer(function () {
                 var index = observers.indexOf(observer);
@@ -119,7 +134,7 @@
                     observers.splice(index, 1);
                 }
             }).onEach(callback);
-
+            
             observers.push(observer);
             return observer;
         };
@@ -130,10 +145,10 @@
                 
                 var definedProperty = Object.getOwnPropertyDescriptor(self, key);
                 var oldSetter = definedProperty.set || function () { };
-                var oldGetter = definedProperty.get || function () { return currentValue; };
+                var oldGetter = definedProperty.get || function () { return currentValues[key]; };
                 var getter;
                 var setter;
-                var currentValue = self[key];
+                currentValues[key] = self[key];
                 
                 if (!definedProperty || definedProperty.configurable) {
                     
@@ -147,9 +162,9 @@
                     
                     setter = function (value) {
                         oldSetter(value);
-                        var oldValue = currentValue;
-                        if (value !== currentValue) {
-                            currentValue = value;
+                        var oldValue = currentValues[key];
+                        if (value !== currentValues[key]) {
+                            currentValues[key] = value;
                             
                             var propertyBehaviors = behaviors.get(key) || new Hashmap();
                             propertyBehaviors.getValues().forEach(function (propertyBehavior) {

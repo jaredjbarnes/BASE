@@ -38,9 +38,6 @@
         var manyToManyAsTargetObservers = new MultiKeyMap();
 
         var mappingRelationships = new Hashmap();
-
-
-
         var addedEntities = new Hashmap();
 
         var getOneToOneRelationships = edm.getOneToOneRelationships;
@@ -72,55 +69,68 @@
             relationships.forEach(function (relationship) {
                 var property = relationship.hasOne;
 
-                assertProperty(entity, property);
+                if (typeof property !== "undefined") {
 
-                var withOneSetter = relationship.withOne;
-                var withForeignKeySetter = relationship.withForeignKey;
-                var key = relationship.hasKey;
+                    assertProperty(entity, property);
 
-                var action = function (e) {
-                    var oldTarget = e.oldValue;
-                    var newTarget = e.newValue;
-                    self.add(oldTarget);
-                    self.add(newTarget);
+                    var withOneSetter = relationship.withOne;
+                    var withForeignKeySetter = relationship.withForeignKey;
+                    var key = relationship.hasKey;
 
-                    if (oldTarget && oldTarget[relationship.withForeignKey] === entity[relationship.hasKey]) {
-                        oldTarget[withOneSetter] = null;
-                        oldTarget[withForeignKeySetter] = null;
+                    var action = function (e) {
+                        var oldTarget = e.oldValue;
+                        var newTarget = e.newValue;
+                        //self.add(oldTarget);
+                        self.add(newTarget);
 
-                        if (relationship.optional !== true) {
-                            self.remove(oldTarget);
-                        }
-                    }
+                        if (typeof withOneSetter !== "undefined") {
+                            if (oldTarget && oldTarget[relationship.withForeignKey] === entity[relationship.hasKey]) {
+                                oldTarget[withOneSetter] = null;
+                                var primaryKeyHash = edm.getPrimaryKeyProperties(relationship.ofType).reduce(function (hash, name) {
+                                    hash[name] = true;
+                                    return hash;
+                                }, {});
 
-                    if (newTarget && newTarget[relationship.withOne] !== entity) {
-                        newTarget[withOneSetter] = entity;
-                    }
+                                if (!primaryKeyHash[withForeignKeySetter]) {
+                                    oldTarget[withForeignKeySetter] = null;
+                                }
 
-                    if (entity[key] === null) {
-                        var idObserver = entity.observeProperty(key, function (e) {
-                            if (entity[property] !== null) {
-                                entity[property][withForeignKeySetter] = e.newValue;
+                                if (relationship.optional !== true) {
+                                    self.remove(oldTarget);
+                                }
                             }
-                            idObserver.dispose();
-                        });
 
-                    } else {
-                        if (newTarget !== null) {
-                            newTarget[withForeignKeySetter] = entity[key];
+                            if (newTarget && newTarget[relationship.withOne] !== entity) {
+                                newTarget[withOneSetter] = entity;
+                            }
                         }
-                    }
 
-                };
+                        if (entity[key] === null) {
+                            var idObserver = entity.observeProperty(key, function (e) {
+                                if (entity[property] !== null) {
+                                    entity[property][withForeignKeySetter] = e.newValue;
+                                }
+                                idObserver.dispose();
+                            });
 
-                // Link if there is a entity already there.
-                action({
-                    oldValue: null,
-                    newValue: entity[property]
-                });
+                        } else {
+                            if (newTarget !== null) {
+                                newTarget[withForeignKeySetter] = entity[key];
+                            }
+                        }
 
-                var observer = entity.observeProperty(property, action);
-                oneToOneObservers.add(entity, property, observer);
+                    };
+
+                    // Link if there is a entity already there.
+                    action({
+                        oldValue: null,
+                        newValue: entity[property]
+                    });
+
+
+                    var observer = entity.observeProperty(property, action);
+                    oneToOneObservers.add(entity, property, observer);
+                }
             });
 
         };
@@ -132,35 +142,38 @@
             relationships.forEach(function (relationship) {
                 var property = relationship.withOne;
 
-                assertProperty(entity, property);
+                if (typeof property !== "undefined") {
+                    assertProperty(entity, property);
 
-                var hasOneSetter = relationship.hasOne;
+                    var hasOneSetter = relationship.hasOne;
 
-                var action = function (e) {
-                    var oldSource = e.oldValue;
-                    var newSource = e.newValue;
+                    var action = function (e) {
+                        var oldSource = e.oldValue;
+                        var newSource = e.newValue;
 
-                    self.add(oldSource);
-                    self.add(newSource);
+                        //self.add(oldSource);
+                        self.add(newSource);
 
-                    if (oldSource && oldSource[relationship.hasOne] === entity) {
-                        oldSource[hasOneSetter] = null;
-                    }
+                        if (typeof hasOneSetter !== "undefined") {
+                            if (oldSource && oldSource[relationship.hasOne] === entity) {
+                                oldSource[hasOneSetter] = null;
+                            }
 
-                    if (newSource && newSource[relationship.hasOne] !== entity) {
-                        newSource[hasOneSetter] = entity;
-                    }
+                            if (newSource && newSource[relationship.hasOne] !== entity) {
+                                newSource[hasOneSetter] = entity;
+                            }
+                        }
+                    };
+                    // Link if there is a entity already there.
+                    action({
+                        oldValue: null,
+                        newValue: entity[property],
+                        isSetUp: true
+                    });
 
-                };
-                // Link if there is a entity already there.
-                action({
-                    oldValue: null,
-                    newValue: entity[property],
-                    isSetUp: true
-                });
-
-                var observer = entity.observeProperty(property, action);
-                oneToOneAsTargetObservers.add(entity, property, observer);
+                    var observer = entity.observeProperty(property, action);
+                    oneToOneAsTargetObservers.add(entity, property, observer);
+                }
             });
 
         };
@@ -172,58 +185,64 @@
             relationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
 
-                assertProperty(entity, property);
+                if (typeof property !== "undefined") {
+                    assertProperty(entity, property);
 
-                var withOneSetter = relationship.withOne;
-                var withForeignKeySetter = relationship.withForeignKey;
-                var key = relationship.hasKey;
+                    var withOneSetter = relationship.withOne;
+                    var withForeignKeySetter = relationship.withForeignKey;
+                    var key = relationship.hasKey;
 
-                var action = function (e) {
-                    var newItems = e.newItems;
-                    var oldItems = e.oldItems;
+                    var action = function (e) {
+                        var newItems = e.newItems;
+                        var oldItems = e.oldItems;
 
-                    newItems.forEach(function (item) {
-                        self.add(item);
-                        item[withOneSetter] = entity;
+                        newItems.forEach(function (item) {
+                            self.add(item);
+                            if (typeof withOneSetter !== "undefined") {
+                                item[withOneSetter] = entity;
+                            }
 
-                        if (entity[key] === null) {
-                            var idObserver = entity.observeProperty(key, function (e) {
-                                if (item && entity[property].indexOf(item) > -1) {
-                                    item[withForeignKeySetter] = e.newValue;
+                            if (entity[key] === null) {
+                                var idObserver = entity.observeProperty(key, function (e) {
+                                    if (item && entity[property].indexOf(item) > -1) {
+                                        item[withForeignKeySetter] = e.newValue;
+                                    }
+                                    idObserver.dispose();
+                                });
+                            } else {
+                                if (item !== null) {
+                                    item[withForeignKeySetter] = entity[key];
                                 }
-                                idObserver.dispose();
-                            });
-                        } else {
-                            if (item !== null) {
-                                item[withForeignKeySetter] = entity[key];
                             }
-                        }
+                        });
+
+                        oldItems.forEach(function (item) {
+                            // Detach from entity if its still bound.
+                            if (item[relationship.withForeignKey] === entity[relationship.hasKey]) {
+                                if (typeof withOneSetter !== "undefined") {
+                                    item[withOneSetter] = null;
+                                }
+                                item[withForeignKeySetter] = null;
+
+                                if (relationship.optional !== true) {
+                                    self.remove(item);
+                                }
+                            }
+
+                        });
+
+                    };
+
+                    action({
+                        oldItems: [],
+                        newItems: entity[property].slice(0)
                     });
 
-                    oldItems.forEach(function (item) {
-                        // Detach from entity if its still bound.
-                        if (item[relationship.withForeignKey] === entity[relationship.hasKey]) {
-                            item[withOneSetter] = null;
-                            item[withForeignKeySetter] = null;
+                    BASE.collections.ObservableArray.apply(entity[property]);
 
-                            if (relationship.optional !== true) {
-                                self.remove(item);
-                            }
-                        }
-
-                    });
-
-                };
-
-                action({
-                    oldItems: [],
-                    newItems: entity[property].slice(0)
-                });
-
-                BASE.collections.ObservableArray.apply(entity[property]);
-
-                var observer = entity[property].observe(action);
-                oneToManyObservers.add(entity, property, observer);
+                    var observer = entity[property].observe(action);
+                    oneToManyObservers.add(entity, property, observer);
+                }
             });
         };
 
@@ -234,37 +253,43 @@
             relationships.forEach(function (relationship) {
                 var property = relationship.withOne;
 
-                assertProperty(entity, property);
+                if (typeof property !== "undefined") {
+                    assertProperty(entity, property);
 
-                var action = function (e) {
-                    var oldValue = e.oldValue;
-                    var newValue = e.newValue;
+                    var action = function (e) {
+                        var oldValue = e.oldValue;
+                        var newValue = e.newValue;
 
-                    self.add(newValue);
+                        self.add(newValue);
 
-                    if (oldValue) {
-                        if (relationship.optional === true) {
-                            oldValue[relationship.hasMany].unload(entity);
-                        } else {
-                            oldValue[relationship.hasMany].remove(entity);
+                        if (typeof relationship.hasMany !== "undefined") {
+
+                            if (oldValue) {
+                                if (relationship.optional === true) {
+                                    oldValue[relationship.hasMany].unload(entity);
+                                } else {
+                                    oldValue[relationship.hasMany].remove(entity);
+                                }
+                            }
+
+                            if (newValue) {
+                                var index = newValue[relationship.hasMany].indexOf(entity);
+                                if (index === -1) {
+                                    newValue[relationship.hasMany].push(entity);
+                                }
+                            }
+
                         }
-                    }
+                    };
 
-                    if (newValue) {
-                        var index = newValue[relationship.hasMany].indexOf(entity);
-                        if (index === -1) {
-                            newValue[relationship.hasMany].push(entity);
-                        }
-                    }
-                };
+                    action({
+                        oldValue: null,
+                        newValue: entity[property]
+                    });
 
-                action({
-                    oldValue: null,
-                    newValue: entity[property]
-                });
-
-                var observer = entity.observeProperty(property, action);
-                oneToManyAsTargetObservers.add(entity, property, observer);
+                    var observer = entity.observeProperty(property, action);
+                    oneToManyAsTargetObservers.add(entity, property, observer);
+                }
             });
         };
 
@@ -274,71 +299,80 @@
 
             relationships.forEach(function (relationship) {
                 var property = relationship.hasMany;
+                if (typeof property !== "undefined") {
 
-                assertProperty(entity, property);
+                    assertProperty(entity, property);
 
-                var action = function (e) {
-                    var oldItems = e.oldItems;
-                    var newItems = e.newItems;
+                    var action = function (e) {
+                        var oldItems = e.oldItems;
+                        var newItems = e.newItems;
 
-                    var mappingEntities = getMappingEntities(relationship);
+                        var mappingEntities = getMappingEntities(relationship);
 
-                    oldItems.forEach(function (target) {
-                        var targetArray = target[relationship.withMany];
-                        targetArray.unload(entity);
+                        oldItems.forEach(function (target) {
 
-                        var mappingEntity = mappingEntities.remove(entity, target);
-                        var MappingEntity;
+                            if (typeof relationship.withMany !== "undefined") {
+                                var targetArray = target[relationship.withMany];
+                                targetArray.unload(entity);
+                            }
 
-                        if (mappingEntity === null) {
-                            MappingEntity = relationship.usingMappingType;
-                            mappingEntity = new MappingEntity();
-                            mappingEntity.source = entity;
-                            mappingEntity.target = target;
-                            mappingEntity.relationship = relationship;
-                        }
+                            var mappingEntity = mappingEntities.remove(entity, target);
+                            var MappingEntity;
 
-                        self.notify({
-                            type: "entityRemoved",
-                            entity: mappingEntity
+                            if (mappingEntity === null) {
+                                MappingEntity = relationship.usingMappingType;
+                                mappingEntity = new MappingEntity();
+                                mappingEntity.source = entity;
+                                mappingEntity.target = target;
+                                mappingEntity.relationship = relationship;
+                            }
+
+                            self.notify({
+                                type: "entityRemoved",
+                                entity: mappingEntity
+                            });
                         });
+
+                        newItems.forEach(function (target) {
+                            self.add(target);
+
+                            if (typeof relationship.withMany !== "undefined") {
+                                var targetArray = target[relationship.withMany];
+                                var index = targetArray.indexOf(entity);
+
+                                if (index === -1) {
+                                    targetArray.push(entity);
+                                }
+                            }
+
+                            var mappingEntity = mappingEntities.get(entity, target);
+                            var MappingEntity;
+
+                            if (mappingEntity === null) {
+                                MappingEntity = relationship.usingMappingType;
+                                mappingEntity = new MappingEntity();
+                                mappingEntity.source = entity;
+                                mappingEntity.target = target;
+                                mappingEntity.relationship = relationship;
+
+                                mappingEntities.add(entity, target, mappingEntity);
+                            }
+
+                            self.add(mappingEntity);
+
+                        });
+
+                    };
+
+                    action({
+                        oldItems: [],
+                        newItems: entity[property].slice(0)
                     });
 
-                    newItems.forEach(function (target) {
-                        self.add(target);
-                        var targetArray = target[relationship.withMany];
-                        var index = targetArray.indexOf(entity);
-                        if (index === -1) {
-                            targetArray.push(entity);
-                        }
-
-                        var mappingEntity = mappingEntities.get(entity, target);
-                        var MappingEntity;
-
-                        if (mappingEntity === null) {
-                            MappingEntity = relationship.usingMappingType;
-                            mappingEntity = new MappingEntity();
-                            mappingEntity.source = entity;
-                            mappingEntity.target = target;
-                            mappingEntity.relationship = relationship;
-
-                            mappingEntities.add(entity, target, mappingEntity);
-                        }
-
-                        self.add(mappingEntity);
-
-                    });
-
-                };
-
-                action({
-                    oldItems: [],
-                    newItems: entity[property].slice(0)
-                });
-
-                BASE.collections.ObservableArray.apply(entity[property]);
-                var observer = entity[property].observe(action);
-                manyToManyObservers.add(entity, property, observer);
+                    BASE.collections.ObservableArray.apply(entity[property]);
+                    var observer = entity[property].observe(action);
+                    manyToManyObservers.add(entity, property, observer);
+                }
             });
         };
 
@@ -348,74 +382,81 @@
 
             relationships.forEach(function (relationship) {
                 var property = relationship.withMany;
+                if (typeof property !== "undefined") {
 
-                assertProperty(entity, property);
+                    assertProperty(entity, property);
 
-                var action = function (e) {
-                    var oldItems = e.oldItems;
-                    var newItems = e.newItems;
+                    var action = function (e) {
+                        var oldItems = e.oldItems;
+                        var newItems = e.newItems;
 
-                    var mappingEntities = getMappingEntities(relationship);
+                        var mappingEntities = getMappingEntities(relationship);
 
-                    oldItems.forEach(function (source) {
-                        var sourceArray = source[relationship.hasMany];
+                        oldItems.forEach(function (source) {
 
-                        sourceArray.unload(entity);
+                            if (typeof relationship.hasMany !== "undefined") {
+                                var sourceArray = source[relationship.hasMany];
+                                sourceArray.unload(entity);
+                            }
 
-                        var mappingEntity = mappingEntities.remove(source, entity);
-                        var MappingEntity;
+                            var mappingEntity = mappingEntities.remove(source, entity);
+                            var MappingEntity;
 
-                        if (mappingEntity === null) {
-                            MappingEntity = relationship.usingMappingType;
-                            mappingEntity = new MappingEntity();
-                            mappingEntity.source = source;
-                            mappingEntity.target = entity;
-                            mappingEntity.relationship = relationship;
-                        }
+                            if (mappingEntity === null) {
+                                MappingEntity = relationship.usingMappingType;
+                                mappingEntity = new MappingEntity();
+                                mappingEntity.source = source;
+                                mappingEntity.target = entity;
+                                mappingEntity.relationship = relationship;
+                            }
 
-                        self.notify({
-                            type: "entityRemoved",
-                            entity: mappingEntity
+                            self.notify({
+                                type: "entityRemoved",
+                                entity: mappingEntity
+                            });
+
                         });
 
+                        newItems.forEach(function (source) {
+                            self.add(source);
+
+                            if (typeof relationship.hasMany !== "undefined") {
+                                var sourceArray = source[relationship.hasMany];
+                                var index = sourceArray.indexOf(entity);
+
+                                if (index === -1) {
+                                    sourceArray.push(entity);
+                                }
+                            }
+
+                            var mappingEntity = mappingEntities.get(source, entity);
+                            var MappingEntity;
+
+                            if (mappingEntity === null) {
+                                MappingEntity = relationship.usingMappingType;
+                                mappingEntity = new MappingEntity();
+                                mappingEntity.source = source;
+                                mappingEntity.target = entity;
+                                mappingEntity.relationship = relationship;
+
+                                mappingEntities.add(source, entity, mappingEntity);
+                            }
+
+                            self.add(mappingEntity);
+
+                        });
+                    };
+
+                    action({
+                        oldItems: [],
+                        newItems: entity[property].slice(0)
                     });
 
-                    newItems.forEach(function (source) {
-                        self.add(source);
-                        var sourceArray = source[relationship.hasMany];
-                        var index = sourceArray.indexOf(entity);
+                    BASE.collections.ObservableArray.apply(entity[property]);
 
-                        if (index === -1) {
-                            sourceArray.push(entity);
-                        }
-
-                        var mappingEntity = mappingEntities.get(source, entity);
-                        var MappingEntity;
-
-                        if (mappingEntity === null) {
-                            MappingEntity = relationship.usingMappingType;
-                            mappingEntity = new MappingEntity();
-                            mappingEntity.source = source;
-                            mappingEntity.target = entity;
-                            mappingEntity.relationship = relationship;
-
-                            mappingEntities.add(source, entity, mappingEntity);
-                        }
-
-                        self.add(mappingEntity);
-
-                    });
-                };
-
-                action({
-                    oldItems: [],
-                    newItems: entity[property].slice(0)
-                });
-
-                BASE.collections.ObservableArray.apply(entity[property]);
-
-                var observer = entity[property].observe(action);
-                manyToManyAsTargetObservers.add(entity, property, observer);
+                    var observer = entity[property].observe(action);
+                    manyToManyAsTargetObservers.add(entity, property, observer);
+                }
             });
 
         };
@@ -483,27 +524,39 @@
             var manyToManyAsTarget = getManyToManyAsTargetRelationships(entity);
 
             oneToOne.forEach(function (relationship) {
-                entity[relationship.hasOne] = null;
+                if (typeof relationship.hasOne !== "undefined") {
+                    entity[relationship.hasOne] = null;
+                }
             });
 
             oneToOneAsTarget.forEach(function (relationship) {
-                entity[relationship.withOne] = null;
+                if (typeof relationship.withOne !== "undefined") {
+                    entity[relationship.withOne] = null;
+                }
             });
 
             oneToMany.forEach(function (relationship) {
-                entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+                if (typeof relationship.hasMany !== "undefined") {
+                    entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+                }
             });
 
             oneToManyAsTarget.forEach(function (relationship) {
-                entity[relationship.withOne] = null;
+                if (typeof relationship.withOne !== "undefined") {
+                    entity[relationship.withOne] = null;
+                }
             });
 
             manyToMany.forEach(function (relationship) {
-                entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+                if (typeof relationship.hasMany !== "undefined") {
+                    entity[relationship.hasMany].splice(0, entity[relationship.hasMany].length);
+                }
             });
 
             manyToManyAsTarget.forEach(function (relationship) {
-                entity[relationship.withMany].splice(0, entity[relationship.withMany].length);
+                if (typeof relationship.withMany !== "undefined") {
+                    entity[relationship.withMany].splice(0, entity[relationship.withMany].length);
+                }
             });
         };
 
@@ -545,9 +598,7 @@
                     entity: entity
                 });
             }
-
         };
-
     };
 
 });
